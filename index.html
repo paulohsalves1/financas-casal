@@ -52,17 +52,16 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- SheetJS (Leitura nativa de Excel .xlsx/.xls e CSV) -->
+    <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- LZ-String (Compactação de dados para geração de Link Compartilhável) -->
+    <!-- LZ-String -->
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -95,7 +94,6 @@
     <!-- SIDEBAR DESKTOP -->
     <aside class="hidden md:flex w-64 bg-mobills-card border-r border-mobills-border flex-col justify-between shrink-0 h-screen sticky top-0 z-20">
         <div>
-            <!-- Brand Header -->
             <div class="p-5 flex items-center space-x-3 border-b border-mobills-border">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-900/40 font-extrabold text-base tracking-tight">
                     P&I
@@ -106,7 +104,6 @@
                 </div>
             </div>
 
-            <!-- Botão Principal (+) -->
             <div class="p-4">
                 <button @click="openModal()" class="w-full py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition transform active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-plus text-sm"></i>
@@ -114,7 +111,6 @@
                 </button>
             </div>
 
-            <!-- Menu Lateral -->
             <nav class="px-3 space-y-1.5 mt-1">
                 <button @click="activeTab = 'dashboard'" 
                         :class="activeTab === 'dashboard' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
@@ -153,7 +149,6 @@
             </nav>
         </div>
 
-        <!-- Filtro de Integrante na Sidebar -->
         <div class="p-4 border-t border-mobills-border space-y-3">
             <div>
                 <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Visão por Integrante</label>
@@ -198,16 +193,15 @@
     <!-- ÁREA PRINCIPAL -->
     <main class="flex-1 flex flex-col min-w-0">
         
-        <!-- TOPBAR COM SELETOR DE MÊS/ANO E BARRA MÊS A MÊS -->
+        <!-- TOPBAR -->
         <header class="bg-mobills-card/95 backdrop-blur-md border-b border-mobills-border sticky top-0 z-10">
             <div class="py-3 px-4 md:px-8 flex flex-wrap items-center justify-between gap-3">
-                <!-- Título da Aba Atual -->
                 <div class="flex items-center space-x-3">
                     <h2 class="text-base md:text-lg font-bold text-white" x-text="pageTitle"></h2>
                     <span x-show="selectedUserFilter !== 'Todos'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-mobills-purple/20 text-mobills-purpleLight border border-mobills-purple/40" x-text="selectedUserFilter"></span>
                 </div>
 
-                <!-- Navegador de Mês Interativo (Padrão Mobills Pill + Grade Rápida) -->
+                <!-- Navegador de Mês Interativo -->
                 <div class="relative flex items-center space-x-2">
                     <div class="flex items-center space-x-1 bg-mobills-bg px-2 py-1 rounded-full border border-mobills-border shadow-inner">
                         <button @click="changeMonth(-1)" aria-label="Mês anterior" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-mobills-cardHover transition cursor-pointer">
@@ -225,16 +219,14 @@
                         </button>
                     </div>
 
-                    <!-- Atalho para Consolidado Anual / Visão Mês a Mês -->
                     <button @click="toggleAllMonthsMode()" 
                             :class="allMonthsMode ? 'bg-mobills-purple text-white border-mobills-purpleLight' : 'bg-mobills-bg text-gray-300 border-mobills-border hover:border-mobills-purple'"
-                            class="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-full border text-xs font-semibold transition cursor-pointer"
-                            title="Alternar entre mês individual e consolidado anual">
+                            class="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-full border text-xs font-semibold transition cursor-pointer">
                         <i class="fa-solid fa-layer-group text-[11px]"></i>
                         <span x-text="allMonthsMode ? 'Vendo Ano Todo' : 'Consolidado Ano'"></span>
                     </button>
 
-                    <!-- Popover Grade Rápida de Meses Jan–Dez + Ano -->
+                    <!-- Popover Grade Rápida -->
                     <div x-show="monthPickerOpen" @click.away="monthPickerOpen = false" x-transition x-cloak
                          class="absolute top-12 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 w-72 bg-mobills-card border border-mobills-border rounded-2xl shadow-2xl p-4 z-40 space-y-3">
                         <div class="flex items-center justify-between border-b border-mobills-border pb-2">
@@ -255,8 +247,7 @@
                                     <span x-text="mLabel"></span>
                                     <span x-show="hasTransactionsInMonth(selectedYear, mIdx)"
                                           :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-white' : 'bg-emerald-400'"
-                                          class="w-1.5 h-1.5 rounded-full mt-0.5"
-                                          :title="countTransactionsInMonth(selectedYear, mIdx) + ' lançamento(s)'"></span>
+                                          class="w-1.5 h-1.5 rounded-full mt-0.5"></span>
                                 </button>
                             </template>
                         </div>
@@ -272,39 +263,32 @@
                     </div>
                 </div>
 
-                <!-- Indicador de Lançamentos Totais + Botão Importar Mobills + Compartilhar -->
+                <!-- Ações do Topo -->
                 <div class="flex items-center space-x-2">
-                    <button @click="openShareModal()" x-show="transactions.length > 0" class="py-1.5 px-3 bg-mobills-purple/20 hover:bg-mobills-purple/35 text-mobills-purpleLight border border-mobills-purple/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer" title="Gerar link com os dados preenchidos para enviar à Isabela">
+                    <button @click="openShareModal()" x-show="transactions.length > 0" class="py-1.5 px-3 bg-mobills-purple/20 hover:bg-mobills-purple/35 text-mobills-purpleLight border border-mobills-purple/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
                         <i class="fa-solid fa-share-nodes"></i>
                         <span class="hidden sm:inline">Compartilhar</span>
                     </button>
 
-                    <button @click="openImportModal()" class="py-1.5 px-3 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center space-x-2 transition cursor-pointer" title="Importar planilha CSV ou Excel do Mobills">
+                    <button @click="openImportModal()" class="py-1.5 px-3 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center space-x-2 transition cursor-pointer">
                         <i class="fa-solid fa-file-excel"></i>
-                        <span class="hidden sm:inline">Importar Mobills (CSV / Excel)</span>
+                        <span class="hidden sm:inline">Importar Mobills</span>
                         <span class="sm:hidden">Importar</span>
                     </button>
 
-                    <!-- Status de Sincronização em Tempo Real -->
                     <button @click="activeTab = 'settings'" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
-                            :class="syncConfig.connected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-mobills-bg border-mobills-border text-gray-400 hover:text-white'"
-                            :title="syncConfig.connected ? 'Sincronização em tempo real ativa' : 'Clique para ativar sincronização automática entre aparelhos'">
+                            :class="syncConfig.connected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-mobills-bg border-mobills-border text-gray-400 hover:text-white'">
                         <span class="w-2 h-2 rounded-full" :class="syncConfig.connected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'"></span>
                         <span class="hidden md:inline" x-text="syncConfig.connected ? 'Sincronizado' : 'Offline'"></span>
                     </button>
-
-                    <div class="hidden lg:flex items-center space-x-2 text-xs text-gray-400">
-                        <span x-text="transactions.length + ' lançamento(s)'"></span>
-                    </div>
                 </div>
             </div>
 
-            <!-- BARRA HORIZONTAL DE PÍLULAS DOS MESES DISPONÍVEIS NA BASE (1 CLIQUE) -->
+            <!-- BARRA DE PÍLULAS DOS MESES DISPONÍVEIS -->
             <div x-show="availableMonthPills.length > 0" class="px-4 md:px-8 py-2 bg-mobills-bg/60 border-t border-mobills-border/60 flex items-center space-x-2 overflow-x-auto">
                 <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0 mr-1">
                     <i class="fa-solid fa-clock-rotate-left mr-1 text-mobills-purpleLight"></i> Meses:
                 </span>
-
                 <template x-for="pill in availableMonthPills" :key="pill.key">
                     <button @click="selectMonthYear(pill.year, pill.month)"
                             :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month 
@@ -317,66 +301,48 @@
                               x-text="pill.count"></span>
                     </button>
                 </template>
-
-                <button @click="activeTab = 'monthly'" class="ml-auto px-3 py-1 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold shrink-0 transition cursor-pointer">
-                    <i class="fa-solid fa-table-columns mr-1"></i> Comparar Mês a Mês
-                </button>
             </div>
         </header>
 
         <!-- CONTEÚDO DAS ABAS -->
         <div class="p-4 md:p-8 space-y-6 flex-1 max-w-7xl w-full mx-auto">
 
-            <!-- CARDS DE RESUMO (EXIBIDOS NO DASHBOARD E TRANSAÇÕES) -->
+            <!-- CARDS DE RESUMO -->
             <div x-show="activeTab === 'dashboard' || activeTab === 'transactions'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                <!-- Card 1: Saldo Atual (Acumulado Realizado) -->
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-blue-500/40 transition shadow-sm">
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
                     <div class="space-y-1 z-10">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400">Saldo atual</span>
-                            <span class="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-medium" title="Soma de todos os lançamentos concluídos (pagos/recebidos) até o fim do período">Acumulado</span>
-                        </div>
+                        <span class="text-xs font-semibold text-gray-400">Saldo atual</span>
                         <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h3>
-                        <p class="text-[11px] text-gray-400">
-                            Previsto período: <span class="font-semibold" :class="metrics.saldoPrevistoMes >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span>
-                        </p>
+                        <p class="text-[11px] text-gray-400">Previsto: <span class="font-semibold" :class="metrics.saldoPrevistoMes >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg shrink-0 z-10">
                         <i class="fa-solid fa-building-columns"></i>
                     </div>
                 </div>
 
-                <!-- Card 2: Receitas do Período -->
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-emerald-500/40 transition shadow-sm">
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
                     <div class="space-y-1 z-10">
                         <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Receitas (' + selectedYear + ')' : 'Receitas'"></span>
                         <h3 class="text-xl md:text-2xl font-extrabold text-emerald-400 tracking-tight" x-text="formatCurrency(metrics.totalReceitas)"></h3>
-                        <p class="text-[11px] text-gray-400">
-                            Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span>
-                        </p>
+                        <p class="text-[11px] text-gray-400">Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span></p>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg shrink-0 z-10">
                         <i class="fa-solid fa-arrow-up"></i>
                     </div>
                 </div>
 
-                <!-- Card 3: Despesas do Período -->
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-red-500/40 transition shadow-sm">
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
                     <div class="space-y-1 z-10">
                         <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Despesas (' + selectedYear + ')' : 'Despesas'"></span>
                         <h3 class="text-xl md:text-2xl font-extrabold text-red-400 tracking-tight" x-text="formatCurrency(metrics.totalDespesas)"></h3>
-                        <p class="text-[11px] text-gray-400">
-                            Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span>
-                        </p>
+                        <p class="text-[11px] text-gray-400">Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span></p>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg shrink-0 z-10">
                         <i class="fa-solid fa-arrow-down"></i>
                     </div>
                 </div>
 
-                <!-- Card 4: Balanço Mensal -->
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-cyan-500/40 transition shadow-sm">
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
                     <div class="space-y-1 z-10">
                         <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Balanço Anual' : 'Balanço mensal'"></span>
                         <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></h3>
@@ -393,7 +359,6 @@
             <!-- ========================================== -->
             <div x-show="activeTab === 'dashboard'" class="space-y-6">
                 
-                <!-- Banner de Boas-Vindas quando o sistema está totalmente zerado -->
                 <div x-show="transactions.length === 0" class="bg-mobills-card border border-mobills-purple/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-2xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-xl shrink-0">
@@ -402,25 +367,23 @@
                         <div class="space-y-1">
                             <h3 class="text-base md:text-lg font-bold text-white">Bem-vindos, Paulo & Isabela!</h3>
                             <p class="text-xs md:text-sm text-gray-400 max-w-xl">
-                                O sistema está totalmente limpo. Vocês podem cadastrar os lançamentos manualmente do zero ou importar agora mesmo o arquivo <strong>CSV / Excel</strong> exportado do Mobills.
+                                O sistema está pronto. Importe sua planilha do Mobills ou cadastre os lançamentos manualmente.
                             </p>
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
                         <button @click="openImportModal()" class="py-3 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
                             <i class="fa-solid fa-file-import"></i>
-                            <span>Importar do Mobills</span>
+                            <span>Importar Mobills</span>
                         </button>
                         <button @click="openModal()" class="py-3 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl text-sm shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Lançar do Zero</span>
+                            <span>Novo Lançamento</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Gráficos Donut do Dashboard: Despesas e Receitas por Categoria -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Despesas por Categoria -->
                     <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-base text-white">Despesas por categoria</h3>
@@ -447,14 +410,10 @@
                                         </div>
                                     </div>
                                 </template>
-                                <div x-show="expenseBreakdown.length === 0" class="text-center py-6 text-xs text-gray-500">
-                                    Nenhuma despesa neste período
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Receitas por Categoria -->
                     <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-base text-white">Receitas por categoria</h3>
@@ -481,120 +440,72 @@
                                         </div>
                                     </div>
                                 </template>
-                                <div x-show="incomeBreakdown.length === 0" class="text-center py-6 text-xs text-gray-500">
-                                    Nenhuma receita neste período
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Linha Inferior Dashboard: Divisão do Casal + Últimos Lançamentos do Mês -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <!-- Divisão Paulo vs Isabela vs Casa -->
                     <div class="lg:col-span-5 bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
                         <div class="flex items-center justify-between">
                             <h3 class="font-bold text-base text-white">Divisão Paulo & Isabela</h3>
-                            <span class="text-xs text-gray-400">Participação nas despesas</span>
+                            <span class="text-xs text-gray-400">Participação</span>
                         </div>
-
                         <div class="space-y-3">
-                            <!-- Paulo -->
                             <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
                                 <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-blue-400 flex items-center space-x-2">
-                                        <i class="fa-solid fa-user"></i>
-                                        <span>Paulo</span>
-                                    </span>
-                                    <span class="text-gray-400" x-text="userMetrics.paulo.percentage + '% das despesas'"></span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-2">
-                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.paulo.receitas)"></strong></span>
-                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.paulo.despesas)"></strong></span>
+                                    <span class="font-bold text-blue-400">Paulo</span>
+                                    <span class="text-gray-400" x-text="userMetrics.paulo.percentage + '%'"></span>
                                 </div>
                                 <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-blue h-full transition-all duration-500" :style="`width: ${userMetrics.paulo.percentage}%`"></div>
+                                    <div class="bg-mobills-blue h-full" :style="`width: ${userMetrics.paulo.percentage}%`"></div>
                                 </div>
                             </div>
-
-                            <!-- Isabela -->
                             <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
                                 <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-pink-400 flex items-center space-x-2">
-                                        <i class="fa-solid fa-user"></i>
-                                        <span>Isabela</span>
-                                    </span>
-                                    <span class="text-gray-400" x-text="userMetrics.isabela.percentage + '% das despesas'"></span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-2">
-                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.isabela.receitas)"></strong></span>
-                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.isabela.despesas)"></strong></span>
+                                    <span class="font-bold text-pink-400">Isabela</span>
+                                    <span class="text-gray-400" x-text="userMetrics.isabela.percentage + '%'"></span>
                                 </div>
                                 <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-pink h-full transition-all duration-500" :style="`width: ${userMetrics.isabela.percentage}%`"></div>
+                                    <div class="bg-mobills-pink h-full" :style="`width: ${userMetrics.isabela.percentage}%`"></div>
                                 </div>
                             </div>
-
-                            <!-- Compartilhado -->
                             <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
                                 <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-purple-400 flex items-center space-x-2">
-                                        <i class="fa-solid fa-house-user"></i>
-                                        <span>Compartilhado (Casa)</span>
-                                    </span>
-                                    <span class="text-gray-400" x-text="userMetrics.compartilhado.percentage + '% das despesas'"></span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-2">
-                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.compartilhado.receitas)"></strong></span>
-                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.compartilhado.despesas)"></strong></span>
+                                    <span class="font-bold text-purple-400">Casa (Compartilhado)</span>
+                                    <span class="text-gray-400" x-text="userMetrics.compartilhado.percentage + '%'"></span>
                                 </div>
                                 <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-purple h-full transition-all duration-500" :style="`width: ${userMetrics.compartilhado.percentage}%`"></div>
+                                    <div class="bg-mobills-purple h-full" :style="`width: ${userMetrics.compartilhado.percentage}%`"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Próximas Contas Pendentes / Últimas Movimentações -->
                     <div class="lg:col-span-7 bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold text-base text-white" x-text="allMonthsMode ? 'Movimentações de ' + selectedYear : 'Movimentações do Mês'"></h3>
-                                <button @click="activeTab = 'transactions'" class="text-xs text-mobills-purpleLight hover:underline font-semibold cursor-pointer">
-                                    Ver visão diária completa <i class="fa-solid fa-arrow-right ml-1"></i>
-                                </button>
+                                <h3 class="font-bold text-base text-white">Movimentações Recentes</h3>
+                                <button @click="activeTab = 'transactions'" class="text-xs text-mobills-purpleLight hover:underline font-semibold cursor-pointer">Ver todas</button>
                             </div>
-
                             <div class="divide-y divide-mobills-border/50">
-                                <template x-for="tx in monthFilteredTransactions.slice(0, 6)" :key="tx.id">
+                                <template x-for="tx in monthFilteredTransactions.slice(0, 5)" :key="tx.id">
                                     <div class="py-3 flex items-center justify-between gap-3">
                                         <div class="flex items-center space-x-3 min-w-0">
-                                            <button @click="toggleStatus(tx.id)" class="shrink-0 cursor-pointer" :title="tx.status === 'completed' ? 'Concluído (clique para marcar pendente)' : 'Pendente (clique para concluir)'">
-                                                <span x-show="tx.status === 'completed'" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[11px]">
-                                                    <i class="fa-solid fa-check"></i>
-                                                </span>
-                                                <span x-show="tx.status === 'pending'" class="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center text-[11px]">
-                                                    <i class="fa-solid fa-exclamation"></i>
-                                                </span>
+                                            <button @click="toggleStatus(tx.id)" class="shrink-0 cursor-pointer">
+                                                <span x-show="tx.status === 'completed'" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[11px]"><i class="fa-solid fa-check"></i></span>
+                                                <span x-show="tx.status === 'pending'" class="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center text-[11px]"><i class="fa-solid fa-exclamation"></i></span>
                                             </button>
                                             <div class="truncate">
                                                 <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
                                                 <div class="flex items-center space-x-2 text-[11px] text-gray-400">
-                                                    <span x-text="formatDateShort(tx.date)"></span>
-                                                    <span>•</span>
-                                                    <span x-text="tx.category"></span>
-                                                    <span>•</span>
-                                                    <span x-text="tx.user" class="font-medium text-gray-300"></span>
+                                                    <span x-text="formatDateShort(tx.date)"></span><span>•</span><span x-text="tx.category"></span>
                                                 </div>
                                             </div>
                                         </div>
                                         <span class="font-bold text-sm shrink-0" :class="tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(tx.type === 'income' ? '' : '-') + formatCurrency(tx.amount)"></span>
                                     </div>
                                 </template>
-
-                                <div x-show="monthFilteredTransactions.length === 0" class="py-12 text-center text-xs text-gray-500">
-                                    Nenhum lançamento encontrado para <span x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>.
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -602,86 +513,40 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA 2: TRANSAÇÕES (VISÃO DIÁRIA E TABELA)  -->
+            <!-- ABA 2: TRANSAÇÕES                          -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'transactions'" class="space-y-6">
-                
-                <!-- Barra de Ferramentas e Filtros -->
                 <div class="bg-mobills-card p-4 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-3">
-                    <!-- Campo de Busca -->
                     <div class="relative flex-1 min-w-[210px]">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria ou conta..." 
+                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." 
                                class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
                     </div>
-
-                    <!-- Filtros de Tipo e Situação -->
                     <div class="flex flex-wrap items-center gap-2 text-xs">
                         <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border">
                             <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Todas</button>
                             <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Receitas</button>
                             <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Despesas</button>
                         </div>
-
-                        <select x-model="filterStatus" aria-label="Filtrar por status" class="bg-mobills-bg text-gray-200 py-2 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                            <option value="todos">Situação: Todas</option>
-                            <option value="completed">Concluídas (Pago/Recebido)</option>
-                            <option value="pending">Pendentes</option>
-                        </select>
-
-                        <select x-model="filterCategory" aria-label="Filtrar por categoria" class="bg-mobills-bg text-gray-200 py-2 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                            <option value="todas">Categoria: Todas</option>
-                            <template x-for="cat in categoriesList" :key="cat.name">
-                                <option :value="cat.name" x-text="cat.name"></option>
-                            </template>
-                        </select>
-
-                        <!-- Alternar Visão Diária vs Tabela -->
-                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border">
-                            <button @click="transactionViewMode = 'daily'" :class="transactionViewMode === 'daily' ? 'bg-mobills-cardHover text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="px-2.5 py-1 rounded-lg transition cursor-pointer" title="Agrupado por Dia com Saldo Previsto">
-                                <i class="fa-solid fa-calendar-day mr-1"></i> Diária
-                            </button>
-                            <button @click="transactionViewMode = 'table'" :class="transactionViewMode === 'table' ? 'bg-mobills-cardHover text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="px-2.5 py-1 rounded-lg transition cursor-pointer" title="Visão em Tabela">
-                                <i class="fa-solid fa-table-list mr-1"></i> Lista
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <!-- MODO 1: VISÃO DIÁRIA AGRUPADA COM SALDO PREVISTO FINAL DO DIA (ESTILO MOBILLS) -->
-                <div x-show="transactionViewMode === 'daily'" class="space-y-5">
+                <!-- Visão Diária Agrupada -->
+                <div class="space-y-5">
                     <template x-for="group in groupedDailyTransactions" :key="group.date">
                         <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-sm">
-                            <!-- Cabeçalho da Data -->
                             <div class="bg-mobills-bg/60 px-5 py-2.5 border-b border-mobills-border flex justify-between items-center text-xs">
                                 <span class="font-bold text-gray-200" x-text="formatDateHeader(group.date)"></span>
-                                <span class="text-gray-400">
-                                    Movimento do dia: 
-                                    <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="(group.daySubtotal >= 0 ? '+' : '') + formatCurrency(group.daySubtotal)"></strong>
-                                </span>
+                                <span class="text-gray-400">Movimento: <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="(group.daySubtotal >= 0 ? '+' : '') + formatCurrency(group.daySubtotal)"></strong></span>
                             </div>
-
-                            <!-- Linhas de Transação do Dia -->
                             <div class="divide-y divide-mobills-border/40">
                                 <template x-for="item in group.items" :key="item.id">
                                     <div class="px-4 md:px-6 py-3.5 hover:bg-mobills-cardHover/60 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        
-                                        <!-- Coluna Esquerda: Check/Alerta + Data + Descrição + Categoria -->
                                         <div class="flex items-center space-x-3.5 min-w-0">
-                                            <!-- Toggle Status (Verde Check / Vermelho Exclamação) -->
-                                            <button @click="toggleStatus(item.id)" class="shrink-0 transition transform active:scale-110 cursor-pointer" :title="item.status === 'completed' ? 'Concluído (clique para alterar)' : 'Pendente (clique para efetivar)'">
-                                                <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 flex items-center justify-center text-xs">
-                                                    <i class="fa-solid fa-check"></i>
-                                                </div>
-                                                <div x-show="item.status === 'pending'" class="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 flex items-center justify-center text-xs">
-                                                    <i class="fa-solid fa-exclamation"></i>
-                                                </div>
+                                            <button @click="toggleStatus(item.id)" class="shrink-0 cursor-pointer">
+                                                <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
+                                                <div x-show="item.status === 'pending'" class="w-7 h-7 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-exclamation"></i></div>
                                             </button>
-
-                                            <!-- Data curta no desktop -->
-                                            <span class="hidden lg:inline-block text-xs text-gray-400 font-medium w-20 shrink-0" x-text="formatDateShort(item.date)"></span>
-
-                                            <!-- Descrição e Badges -->
                                             <div class="min-w-0">
                                                 <div class="flex items-center space-x-2">
                                                     <span class="font-semibold text-sm text-white truncate" x-text="item.description"></span>
@@ -693,40 +558,20 @@
                                                           }" x-text="item.user"></span>
                                                 </div>
                                                 <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
-                                                    <!-- Ícone + Nome Categoria -->
-                                                    <span class="inline-flex items-center space-x-1.5 text-gray-300">
-                                                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" :style="`background-color: ${getCategoryColor(item.category)}25; color: ${getCategoryColor(item.category)}`">
-                                                            <i :class="getCategoryIcon(item.category)"></i>
-                                                        </span>
-                                                        <span x-text="item.category"></span>
-                                                    </span>
-                                                    <span>•</span>
-                                                    <span class="text-gray-400" x-text="item.account || 'Carteira'"></span>
-                                                    <template x-if="item.recurrence && item.recurrence !== 'nenhuma'">
-                                                        <span class="text-[10px] bg-mobills-bg px-2 py-0.5 rounded border border-mobills-border text-purple-300 capitalize" x-text="item.recurrence"></span>
-                                                    </template>
+                                                    <span x-text="item.category"></span><span>•</span><span x-text="item.account || 'Carteira'"></span>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Coluna Direita: Valor e Ações -->
-                                        <div class="flex items-center justify-between sm:justify-end space-x-4 shrink-0 pl-10 sm:pl-0">
+                                        <div class="flex items-center justify-between sm:justify-end space-x-4 shrink-0">
                                             <span class="font-bold text-sm md:text-base" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></span>
-                                            
                                             <div class="flex items-center space-x-1">
-                                                <button @click="openModal(item)" title="Editar" class="p-2 text-gray-400 hover:text-mobills-purpleLight rounded-lg hover:bg-mobills-bg transition cursor-pointer">
-                                                    <i class="fa-solid fa-pen text-xs"></i>
-                                                </button>
-                                                <button @click="promptDelete(item)" title="Excluir" class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-mobills-bg transition cursor-pointer">
-                                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                                </button>
+                                                <button @click="openModal(item)" class="p-2 text-gray-400 hover:text-mobills-purpleLight rounded-lg cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
+                                                <button @click="promptDelete(item)" class="p-2 text-gray-400 hover:text-red-400 rounded-lg cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
                             </div>
-
-                            <!-- Pill de Saldo Previsto Final do Dia (Idêntico ao Mobills) -->
                             <div class="bg-mobills-card px-4 py-3 border-t border-mobills-border/50 flex justify-center">
                                 <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2 shadow-sm">
                                     <span>Saldo Previsto Final do Dia</span>
@@ -736,163 +581,47 @@
                         </div>
                     </template>
                 </div>
-
-                <!-- MODO 2: VISÃO EM TABELA COMPACTA -->
-                <div x-show="transactionViewMode === 'table' && groupedDailyTransactions.length > 0" class="bg-mobills-card rounded-2xl border border-mobills-border overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-mobills-border text-[11px] font-semibold text-gray-400 uppercase bg-mobills-bg/50">
-                                <th class="py-3.5 px-4">Situação</th>
-                                <th class="py-3.5 px-4">Data</th>
-                                <th class="py-3.5 px-4">Descrição</th>
-                                <th class="py-3.5 px-4">Categoria</th>
-                                <th class="py-3.5 px-4">Integrante</th>
-                                <th class="py-3.5 px-4">Conta</th>
-                                <th class="py-3.5 px-4 text-right">Valor</th>
-                                <th class="py-3.5 px-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-mobills-border/40 text-xs">
-                            <template x-for="item in flatFilteredTransactions" :key="item.id">
-                                <tr class="hover:bg-mobills-cardHover/50 transition">
-                                    <td class="py-3 px-4">
-                                        <button @click="toggleStatus(item.id)" class="cursor-pointer">
-                                            <span x-show="item.status === 'completed'" class="inline-flex items-center space-x-1 text-emerald-400 font-semibold">
-                                                <i class="fa-solid fa-circle-check"></i> <span>Concluído</span>
-                                            </span>
-                                            <span x-show="item.status === 'pending'" class="inline-flex items-center space-x-1 text-red-400 font-semibold">
-                                                <i class="fa-solid fa-circle-exclamation"></i> <span>Pendente</span>
-                                            </span>
-                                        </button>
-                                    </td>
-                                    <td class="py-3 px-4 text-gray-300" x-text="formatDateShort(item.date)"></td>
-                                    <td class="py-3 px-4 font-semibold text-white" x-text="item.description"></td>
-                                    <td class="py-3 px-4 text-gray-300" x-text="item.category"></td>
-                                    <td class="py-3 px-4">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold"
-                                              :class="item.user === 'Paulo' ? 'bg-blue-950 text-blue-400' : (item.user === 'Isabela' ? 'bg-pink-950 text-pink-400' : 'bg-purple-950 text-purple-400')"
-                                              x-text="item.user"></span>
-                                    </td>
-                                    <td class="py-3 px-4 text-gray-400" x-text="item.account || 'Carteira'"></td>
-                                    <td class="py-3 px-4 text-right font-bold" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></td>
-                                    <td class="py-3 px-4 text-center space-x-2">
-                                        <button @click="openModal(item)" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-pen"></i></button>
-                                        <button @click="promptDelete(item)" class="text-gray-400 hover:text-red-400 cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- ESTADO VAZIO (ZERO LANÇAMENTOS) -->
-                <div x-show="groupedDailyTransactions.length === 0" class="bg-mobills-card p-12 rounded-2xl border border-mobills-border text-center space-y-4">
-                    <div class="w-16 h-16 rounded-full bg-mobills-purple/15 text-mobills-purpleLight border border-mobills-purple/30 flex items-center justify-center mx-auto text-2xl">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="font-bold text-lg text-white">Nenhum lançamento encontrado</h3>
-                        <p class="text-xs text-gray-400 max-w-md mx-auto">
-                            Não há receitas ou despesas registradas para <span class="text-purple-300 font-semibold" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span> com os filtros atuais.
-                        </p>
-                    </div>
-                    <button @click="openModal()" class="py-2.5 px-6 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-semibold rounded-2xl shadow-lg shadow-purple-900/40 inline-flex items-center space-x-2 transition cursor-pointer">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Adicionar Lançamento</span>
-                    </button>
-                </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA NOVA: VISÃO MÊS A MÊS (EVOLUÇÃO)       -->
+            <!-- ABA 3: MÊS A MÊS                           -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'monthly'" class="space-y-6">
-                
-                <!-- Cabeçalho e Filtro de Ano da Visão Mês a Mês -->
                 <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h3 class="text-lg font-bold text-white">Evolução Financeira Mês a Mês</h3>
-                        <p class="text-xs text-gray-400">Comparativo mensal completo de receitas, despesas, balanço e saldo acumulado. Clique em qualquer mês para detalhar.</p>
-                    </div>
-
-                    <div class="flex items-center space-x-2">
-                        <select x-model="monthlyViewYearFilter" @change="renderMonthlyEvolutionChart()" class="bg-mobills-bg text-xs text-white px-3.5 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple font-semibold">
-                            <option value="all">Todos os Meses Importados/Cadastrados</option>
-                            <template x-for="yr in availableYears" :key="yr">
-                                <option :value="yr" x-text="'Ano ' + yr"></option>
-                            </template>
-                        </select>
+                        <p class="text-xs text-gray-400">Comparativo mensal completo de receitas, despesas e balanço.</p>
                     </div>
                 </div>
 
-                <!-- Gráfico Combinado (Barras Receita vs Despesa + Linha Saldo Acumulado) -->
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-sm md:text-base text-white">Curva de Evolução Mensal</h4>
-                            <p class="text-xs text-gray-400">Receitas (verde), Despesas (vermelho) e Saldo Acumulado Final (roxo)</p>
-                        </div>
-                    </div>
-                    <div class="h-72">
-                        <canvas id="monthlyEvolutionChart"></canvas>
-                    </div>
+                    <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
                 </div>
 
-                <!-- Tabela Comparativa Mês a Mês -->
                 <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-sm">
-                    <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
-                        <h4 class="font-bold text-sm md:text-base text-white">Detalhamento Consolidado por Mês</h4>
-                        <span class="text-[11px] text-purple-300 font-medium"><i class="fa-solid fa-hand-pointer mr-1"></i> Clique em um mês para abrir suas transações</span>
-                    </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-mobills-border text-[11px] font-semibold text-gray-400 uppercase bg-mobills-bg/60">
                                     <th class="py-3.5 px-5">Mês / Ano</th>
                                     <th class="py-3.5 px-4 text-center">Lançamentos</th>
-                                    <th class="py-3.5 px-4 text-right">Saldo Inicial</th>
                                     <th class="py-3.5 px-4 text-right">Receitas</th>
                                     <th class="py-3.5 px-4 text-right">Despesas</th>
-                                    <th class="py-3.5 px-4 text-right">Balanço Mensal</th>
-                                    <th class="py-3.5 px-4 text-right">Saldo Acumulado</th>
-                                    <th class="py-3.5 px-4 text-center">Economia</th>
-                                    <th class="py-3.5 px-4 text-center">Ação</th>
+                                    <th class="py-3.5 px-4 text-right">Balanço</th>
+                                    <th class="py-3.5 px-4 text-right">Acumulado</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-mobills-border/40 text-xs">
                                 <template x-for="row in monthlySummaryRows" :key="row.key">
-                                    <tr @click="drillDownToMonth(row.year, row.month)" class="hover:bg-mobills-cardHover/80 transition cursor-pointer group">
-                                        <td class="py-3.5 px-5 font-bold text-white flex items-center space-x-2">
-                                            <span class="w-2 h-2 rounded-full bg-mobills-purple group-hover:scale-125 transition"></span>
-                                            <span x-text="row.label"></span>
-                                        </td>
-                                        <td class="py-3.5 px-4 text-center">
-                                            <span class="px-2 py-0.5 rounded-full bg-mobills-bg border border-mobills-border text-gray-300 text-[11px]" x-text="row.count"></span>
-                                        </td>
-                                        <td class="py-3.5 px-4 text-right font-medium" :class="row.openingBalance >= 0 ? 'text-gray-300' : 'text-red-400'" x-text="formatCurrency(row.openingBalance)"></td>
+                                    <tr @click="drillDownToMonth(row.year, row.month)" class="hover:bg-mobills-cardHover/80 transition cursor-pointer">
+                                        <td class="py-3.5 px-5 font-bold text-white" x-text="row.label"></td>
+                                        <td class="py-3.5 px-4 text-center" x-text="row.count"></td>
                                         <td class="py-3.5 px-4 text-right font-bold text-emerald-400" x-text="formatCurrency(row.income)"></td>
                                         <td class="py-3.5 px-4 text-right font-bold text-red-400" x-text="formatCurrency(row.expense)"></td>
-                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.monthlyBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="(row.monthlyBalance > 0 ? '+' : '') + formatCurrency(row.monthlyBalance)"></td>
+                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.monthlyBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.monthlyBalance)"></td>
                                         <td class="py-3.5 px-4 text-right font-extrabold" :class="row.closingBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(row.closingBalance)"></td>
-                                        <td class="py-3.5 px-4 text-center">
-                                            <span class="px-2 py-0.5 rounded-md font-bold text-[11px]"
-                                                  :class="row.savingsRate >= 0 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/15 text-red-400 border border-red-500/30'"
-                                                  x-text="row.savingsRate + '%'"></span>
-                                        </td>
-                                        <td class="py-3.5 px-4 text-center">
-                                            <span class="text-mobills-purpleLight group-hover:underline font-semibold">
-                                                Abrir <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
-                                            </span>
-                                        </td>
                                     </tr>
                                 </template>
-
-                                <tr x-show="monthlySummaryRows.length === 0">
-                                    <td colspan="9" class="py-12 text-center text-gray-500 text-xs">
-                                        Nenhum dado disponível para exibir na visão mês a mês. Importe uma planilha do Mobills ou adicione lançamentos.
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -900,251 +629,52 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA 3: RELATÓRIOS E PREVISÕES              -->
+            <!-- ABA 4: RELATÓRIOS                          -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'reports'" class="space-y-6">
-                
-                <!-- Seletor de Tipo de Relatório por Categoria -->
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
                     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-mobills-border pb-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
-                            <p class="text-xs text-gray-400">Distribuição detalhada em <span class="text-purple-300 font-semibold" x-text="allMonthsMode ? 'Consolidado ' + selectedYear : formattedSelectedMonth"></span></p>
-                        </div>
-
+                        <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
                         <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
-                            <button @click="reportViewType = 'despesas'" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-4 py-1.5 rounded-lg transition cursor-pointer">
-                                Despesas por Categoria
-                            </button>
-                            <button @click="reportViewType = 'receitas'" :class="reportViewType === 'receitas' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-4 py-1.5 rounded-lg transition cursor-pointer">
-                                Receitas por Categoria
-                            </button>
+                            <button @click="reportViewType = 'despesas'" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg">Despesas</button>
+                            <button @click="reportViewType = 'receitas'" :class="reportViewType === 'receitas' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg">Receitas</button>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                        <!-- Gráfico Rosca -->
-                        <div class="lg:col-span-5 flex flex-col items-center justify-center">
-                            <div class="relative w-64 h-64">
-                                <canvas id="reportsDonutChart"></canvas>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span class="text-xs text-gray-400">Total</span>
-                                    <span class="text-lg font-extrabold text-white" x-text="formatCurrency(reportViewType === 'despesas' ? metrics.totalDespesas : metrics.totalReceitas)"></span>
-                                </div>
-                            </div>
+                        <div class="lg:col-span-5 flex justify-center">
+                            <div class="relative w-64 h-64"><canvas id="reportsDonutChart"></canvas></div>
                         </div>
-
-                        <!-- Lista com Barras de Progresso -->
                         <div class="lg:col-span-7 space-y-3 max-h-[360px] overflow-y-auto pr-1">
                             <template x-for="item in activeReportData" :key="item.name">
-                                <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border flex items-center justify-between gap-4">
-                                    <div class="flex items-center space-x-3 min-w-0">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm shrink-0" :style="`background-color: ${item.color}20; color: ${item.color}; border: 1px solid ${item.color}40`">
-                                            <i :class="getCategoryIcon(item.name)"></i>
-                                        </div>
-                                        <div class="truncate">
-                                            <h4 class="font-bold text-sm text-white truncate" x-text="item.name"></h4>
-                                            <span class="text-xs text-gray-400">Porcentagem: <strong class="text-gray-200" x-text="item.percentage + '%'"></strong></span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right shrink-0">
-                                        <span class="font-extrabold text-sm block" :class="reportViewType === 'despesas' ? 'text-red-400' : 'text-emerald-400'" x-text="formatCurrency(item.total)"></span>
-                                        <div class="w-24 bg-gray-800 h-1.5 rounded-full mt-1.5 overflow-hidden ml-auto">
-                                            <div class="h-full rounded-full" :style="`width: ${item.percentage}%; background-color: ${item.color}`"></div>
-                                        </div>
-                                    </div>
+                                <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border flex items-center justify-between">
+                                    <span class="font-bold text-sm text-white" x-text="item.name"></span>
+                                    <span class="font-extrabold text-sm" :class="reportViewType === 'despesas' ? 'text-red-400' : 'text-emerald-400'" x-text="formatCurrency(item.total)"></span>
                                 </div>
                             </template>
-
-                            <div x-show="activeReportData.length === 0" class="text-center py-12 text-xs text-gray-500">
-                                Sem movimentações registradas neste período para exibir no relatório.
-                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Grid Inferior: Comparativo do Casal + Previsão de 6 Meses -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Gráfico Comparativo Paulo vs Isabela vs Casa -->
-                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                        <div>
-                            <h3 class="font-bold text-base text-white">Comparativo: Paulo vs. Isabela vs. Casa</h3>
-                            <p class="text-xs text-gray-400">Receitas e despesas por responsável em <span x-text="formattedSelectedMonth"></span></p>
-                        </div>
-                        <div class="h-64">
-                            <canvas id="coupleComparisonChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Gráfico Previsão de Fluxo de Caixa (6 Meses) -->
-                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                        <div>
-                            <h3 class="font-bold text-base text-white">Previsão de Caixa (Próximos 6 Meses)</h3>
-                            <p class="text-xs text-gray-400">Projeção baseada nos lançamentos agendados e recorrências</p>
-                        </div>
-                        <div class="h-64">
-                            <canvas id="forecastChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Resumo Rápido Mês a Mês dentro de Relatórios -->
-                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-4">
-                    <div class="space-y-1">
-                        <h3 class="font-bold text-base text-white">Quer analisar o histórico completo mês a mês?</h3>
-                        <p class="text-xs text-gray-400">Veja a tabela consolidada com saldo inicial, balanço mensal, saldo acumulado e taxa de economia de todos os meses.</p>
-                    </div>
-                    <button @click="activeTab = 'monthly'" class="py-2.5 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-900/30 transition cursor-pointer">
-                        Abrir Comparativo Mês a Mês <i class="fa-solid fa-arrow-right ml-1.5"></i>
-                    </button>
                 </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA 4: CONFIGURAÇÕES E BACKUP              -->
+            <!-- ABA 5: CONFIGURAÇÕES & BACKUP              -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'settings'" class="max-w-2xl mx-auto space-y-6">
-                
-                <!-- Card 0: Sincronização Automática em Tempo Real (Paulo <-> Isabela) -->
-                <div class="bg-mobills-card p-6 rounded-2xl border space-y-4 shadow-lg"
-                     :class="syncConfig.connected ? 'border-emerald-500/50' : 'border-mobills-purple/50'">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-                                 :class="syncConfig.connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-mobills-purple/20 text-mobills-purpleLight'">
-                                <i class="fa-solid fa-cloud-bolt"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-center space-x-2">
-                                    <h3 class="font-bold text-base text-white">Sincronização Automática em Tempo Real</h3>
-                                    <span x-show="syncConfig.connected" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ATIVO</span>
-                                </div>
-                                <p class="text-xs text-gray-400">Conecta o aparelho do Paulo e da Isabela na mesma base gratuita. Tudo o que um lançar aparece na hora para o outro.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Formulário de Conexão -->
-                    <div class="space-y-3 pt-1 text-xs">
-                        <div>
-                            <label class="block font-semibold text-gray-300 mb-1">1. URL do Banco Firebase (Realtime Database)</label>
-                            <input type="url" x-model="syncConfig.dbUrl" :disabled="syncConfig.connected"
-                                   placeholder="Ex: https://financas-casal-default-rtdb.firebaseio.com"
-                                   class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple disabled:opacity-60">
-                        </div>
-
-                        <div>
-                            <label class="block font-semibold text-gray-300 mb-1">2. Código Secreto do Casal (Senha da Sala)</label>
-                            <input type="text" x-model="syncConfig.roomCode" :disabled="syncConfig.connected"
-                                   placeholder="Ex: paulo-isabela-2026"
-                                   class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple disabled:opacity-60">
-                        </div>
-
-                        <div x-show="syncConfig.lastSync" class="text-[11px] text-emerald-400 flex items-center space-x-1.5">
-                            <i class="fa-solid fa-check-double"></i>
-                            <span>Última sincronização: <strong x-text="syncConfig.lastSync"></strong></span>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2.5 pt-1">
-                            <button x-show="!syncConfig.connected" @click="connectCloudSync(true)"
-                                    class="flex-1 py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                                <i class="fa-solid fa-plug"></i>
-                                <span>Conectar e Sincronizar</span>
-                            </button>
-
-                            <button x-show="syncConfig.connected" @click="copyAutoPairLink()"
-                                    class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                                <i class="fa-solid fa-link"></i>
-                                <span>Copiar Link de Pareamento p/ Isabela</span>
-                            </button>
-
-                            <button x-show="syncConfig.connected" @click="disconnectCloudSync()"
-                                    class="py-3 px-4 bg-mobills-bg hover:bg-red-950/50 text-red-400 border border-red-800/50 font-semibold rounded-xl transition cursor-pointer">
-                                Desconectar
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Mini Tutorial Colapsável -->
-                    <details class="bg-mobills-bg/80 rounded-xl border border-mobills-border p-3.5 text-xs text-gray-300">
-                        <summary class="font-semibold text-purple-300 cursor-pointer select-none">
-                            <i class="fa-solid fa-circle-question mr-1"></i> Como criar o banco gratuito no Firebase em 2 minutos?
-                        </summary>
-                        <ol class="list-decimal list-inside space-y-1.5 mt-2.5 text-[11px] text-gray-400 leading-relaxed">
-                            <li>Acesse <strong class="text-gray-200">console.firebase.google.com</strong> com sua conta Google e clique em <strong class="text-gray-200">Criar um projeto</strong>.</li>
-                            <li>No menu lateral esquerdo, clique em <strong class="text-gray-200">Criação &rarr; Realtime Database</strong> e depois em <strong class="text-gray-200">Criar banco de dados</strong>.</li>
-                            <li>Escolha <strong class="text-gray-200">Iniciar no modo de teste</strong> e clique em <strong class="text-gray-200">Ativar</strong>.</li>
-                            <li>Copie o link que aparece no topo (termina em <code class="text-purple-300">.firebaseio.com</code>), cole no campo acima, crie um código secreto e clique em <strong class="text-gray-200">Conectar</strong>!</li>
-                        </ol>
-                    </details>
-                </div>
-
-                <!-- Card Destaque: Compartilhar com Isabela via Link -->
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-purple/50 space-y-4 shadow-lg">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-lg">
-                            <i class="fa-solid fa-share-nodes"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-white">Compartilhar com a Isabela (Link Direto)</h3>
-                            <p class="text-xs text-gray-400">Gera um link com todos os lançamentos embutidos. Ao abrir no celular, ela vê exatamente os mesmos dados que você.</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <button @click="openShareModal()" class="py-3.5 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-link text-sm"></i>
-                            <span>Gerar Link Compartilhável</span>
-                        </button>
-
-                        <button @click="downloadPreloadedHtml()" class="py-3.5 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-purple-300 border border-mobills-purple/40 text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer" title="Baixa um arquivo index.html já preenchido com seus dados para subir no Google Sites">
-                            <i class="fa-solid fa-file-code text-sm"></i>
-                            <span>Baixar HTML já Preenchido</span>
-                        </button>
+                    <h3 class="font-bold text-base text-white">Sincronização em Tempo Real (Firebase)</h3>
+                    <div class="space-y-3 text-xs">
+                        <input type="url" x-model="syncConfig.dbUrl" placeholder="URL do Firebase Realtime Database" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        <input type="text" x-model="syncConfig.roomCode" placeholder="Código Secreto do Casal" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        <button @click="connectCloudSync(true)" class="w-full py-3 bg-mobills-purple text-white font-bold rounded-xl cursor-pointer">Conectar</button>
                     </div>
                 </div>
 
-                <!-- Card Destaque: Importação Direta do Mobills (CSV / Excel) -->
-                <div class="bg-mobills-card p-6 rounded-2xl border border-emerald-500/40 space-y-4 shadow-lg">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
-                            <i class="fa-solid fa-file-excel"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
-                            <p class="text-xs text-gray-400">Importe diretamente arquivos <strong class="text-gray-200">.csv, .xlsx ou .xls</strong> exportados do Mobills com detecção automática de colunas.</p>
-                        </div>
-                    </div>
-
-                    <div class="pt-1">
-                        <button @click="openImportModal()" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
-                            <span>Importar Mobills (CSV / Excel)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Card Backup JSON -->
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center">
-                            <i class="fa-solid fa-database"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-white">Backup e Sincronização JSON</h3>
-                            <p class="text-xs text-gray-400">Exporte o backup completo para compartilhar entre o celular do Paulo e da Isabela.</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                        <button @click="exportBackup()" class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-download text-emerald-400"></i>
-                            <span>Exportar Backup (JSON)</span>
-                        </button>
-
-                        <label class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-upload text-blue-400"></i>
-                            <span>Restaurar Backup (JSON)</span>
+                    <h3 class="font-bold text-base text-white">Backup e Restauração</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button @click="exportBackup()" class="py-3 bg-mobills-bg text-white text-xs font-semibold rounded-xl border border-mobills-border cursor-pointer">Exportar JSON</button>
+                        <label class="py-3 bg-mobills-bg text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center cursor-pointer">
+                            <span>Restaurar JSON</span>
                             <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
                         </label>
                     </div>
@@ -1154,596 +684,556 @@
         </div>
     </main>
 
-    <!-- BOTÃO FLUTUANTE MOBILE (+) -->
-    <button @click="openModal()" aria-label="Novo Lançamento" class="md:hidden fixed right-5 bottom-20 z-30 w-14 h-14 bg-mobills-purple hover:bg-mobills-purpleLight text-white rounded-full shadow-2xl shadow-purple-900/70 flex items-center justify-center text-2xl active:scale-95 transition cursor-pointer">
-        <i class="fa-solid fa-plus"></i>
-    </button>
-
-    <!-- BARRA DE NAVEGAÇÃO INFERIOR MOBILE -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-mobills-card border-t border-mobills-border flex justify-around items-center py-2.5 z-30">
-        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
-            <i class="fa-solid fa-house text-base"></i>
-            <span>Dashboard</span>
-        </button>
-        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
-            <i class="fa-solid fa-list-ul text-base"></i>
-            <span>Transações</span>
-        </button>
-        <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
-            <i class="fa-solid fa-calendar-days text-base"></i>
-            <span>Mês a Mês</span>
-        </button>
-        <button @click="activeTab = 'reports'" :class="activeTab === 'reports' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
-            <i class="fa-solid fa-chart-pie text-base"></i>
-            <span>Relatórios</span>
-        </button>
-        <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
-            <i class="fa-solid fa-gear text-base"></i>
-            <span>Backup</span>
-        </button>
-    </nav>
-
-    <!-- ========================================== -->
-    <!-- MODAL: GERAR LINK COMPARTILHÁVEL           -->
-    <!-- ========================================== -->
-    <div x-show="shareModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div @click.away="shareModal.open = false" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden flex flex-col">
-            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center">
-                        <i class="fa-solid fa-share-nodes"></i>
-                    </div>
-                    <h3 class="font-bold text-base text-white">Link Compartilhável com Dados</h3>
-                </div>
-                <button @click="shareModal.open = false" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <div class="p-6 space-y-4 text-xs">
-                <p class="text-gray-300 leading-relaxed">
-                    Este link contém todos os <strong class="text-white" x-text="transactions.length"></strong> lançamentos compactados. Envie pelo WhatsApp para a Isabela abrir no celular dela:
-                </p>
-
-                <!-- Campo opcional de URL base caso esteja rodando em preview/iframe -->
-                <div>
-                    <label class="block font-semibold text-gray-400 mb-1">Endereço do Site (Opcional — cole o link do Google Sites aqui se quiser):</label>
-                    <input type="url" x-model="shareModal.customBaseUrl" @input="buildShareUrl()" placeholder="Ex: https://sites.google.com/view/seu-site"
-                           class="w-full bg-mobills-bg text-white px-3.5 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                </div>
-
-                <!-- Link Gerado -->
-                <div>
-                    <label class="block font-semibold text-gray-400 mb-1">Link Pronto para Enviar:</label>
-                    <textarea id="shareLinkTextarea" readonly rows="3" x-model="shareModal.generatedUrl"
-                              class="w-full bg-mobills-bg text-purple-300 font-mono text-[11px] p-3 rounded-xl border border-mobills-border focus:outline-none select-all"></textarea>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
-                    <button type="button" @click="copyShareUrl()" class="flex-1 py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
-                        <i class="fa-solid fa-copy"></i>
-                        <span>Copiar Link</span>
-                    </button>
-
-                    <button type="button" @click="downloadPreloadedHtml()" class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-gray-200 border border-mobills-border font-semibold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer" title="Gera o código HTML já com todos os dados embutidos">
-                        <i class="fa-solid fa-file-code text-emerald-400"></i>
-                        <span>Baixar HTML Preenchido</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO             -->
-    <!-- ========================================== -->
-    <div x-show="deleteModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-        <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center space-x-3 text-red-400">
-                <i class="fa-solid fa-trash-can text-xl"></i>
-                <h3 class="font-bold text-base text-white">Excluir Lançamento</h3>
-            </div>
-            <p class="text-xs text-gray-300 leading-relaxed">
-                Deseja excluir <strong class="text-white" x-text="deleteModal.item?.description"></strong>?
-            </p>
-            
-            <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
-                <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">
-                    Cancelar
-                </button>
-                <button @click="confirmDelete(false)" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl cursor-pointer">
-                    Excluir Somente Este
-                </button>
-                <button x-show="deleteModal.item?.groupId" @click="confirmDelete(true)" class="px-4 py-2 bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600 text-xs font-semibold rounded-xl cursor-pointer">
-                    Excluir Toda a Série
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- MODAL: NOVO / EDITAR LANÇAMENTO            -->
-    <!-- ========================================== -->
+    <!-- MODAL NOVO/EDITAR -->
     <div x-show="isModalOpen" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
         <div @click.away="closeModal()" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
-            <!-- Cabeçalho Modal -->
             <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
                 <h3 class="font-bold text-base text-white" x-text="editingId ? 'Editar Lançamento' : 'Novo Lançamento'"></h3>
-                <button type="button" @click="closeModal()" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <button type="button" @click="closeModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
-
             <form @submit.prevent="saveTransaction()" class="p-6 space-y-4 text-xs">
-                <!-- Seletor Despesa vs Receita -->
                 <div class="grid grid-cols-2 gap-2 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
-                    <button type="button" @click="setFormType('expense')"
-                            :class="form.type === 'expense' ? 'bg-red-600 text-white font-bold shadow-md' : 'text-gray-400 hover:text-white'"
-                            class="py-2.5 rounded-lg transition flex items-center justify-center space-x-2 cursor-pointer">
-                        <i class="fa-solid fa-arrow-down"></i>
-                        <span>Despesa</span>
-                    </button>
-                    <button type="button" @click="setFormType('income')"
-                            :class="form.type === 'income' ? 'bg-emerald-600 text-white font-bold shadow-md' : 'text-gray-400 hover:text-white'"
-                            class="py-2.5 rounded-lg transition flex items-center justify-center space-x-2 cursor-pointer">
-                        <i class="fa-solid fa-arrow-up"></i>
-                        <span>Receita</span>
-                    </button>
+                    <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Despesa</button>
+                    <button type="button" @click="setFormType('income')" :class="form.type === 'income' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Receita</button>
                 </div>
-
-                <!-- Valor e Data -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Valor (R$) *</label>
-                        <input type="number" step="0.01" min="0.01" required x-model="form.amount" placeholder="0,00"
-                               class="w-full bg-mobills-bg text-white text-sm font-bold px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                        <label class="block text-gray-400 mb-1">Valor (R$) *</label>
+                        <input type="number" step="0.01" required x-model="form.amount" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                     <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Data *</label>
-                        <input type="date" required x-model="form.date"
-                               class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                        <label class="block text-gray-400 mb-1">Data *</label>
+                        <input type="date" required x-model="form.date" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                 </div>
-
-                <!-- Descrição -->
                 <div>
-                    <label class="block font-semibold text-gray-400 mb-1">Descrição *</label>
-                    <input type="text" required x-model="form.description" placeholder="Ex: Supermercado, Salário Paulo, Internet..."
-                           class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                    <label class="block text-gray-400 mb-1">Descrição *</label>
+                    <input type="text" required x-model="form.description" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                 </div>
-
-                <!-- Categoria e Integrante -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Categoria</label>
-                        <select x-model="form.category" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                            <template x-for="cat in categoriesList" :key="cat.name">
-                                <option :value="cat.name" x-text="cat.name"></option>
-                            </template>
+                        <label class="block text-gray-400 mb-1">Categoria</label>
+                        <select x-model="form.category" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <template x-for="cat in categoriesList" :key="cat.name"><option :value="cat.name" x-text="cat.name"></option></template>
                         </select>
                     </div>
                     <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Responsável</label>
-                        <select x-model="form.user" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                            <option value="Compartilhado">Casa (Compartilhado)</option>
+                        <label class="block text-gray-400 mb-1">Responsável</label>
+                        <select x-model="form.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <option value="Compartilhado">Casa</option>
                             <option value="Paulo">Paulo</option>
                             <option value="Isabela">Isabela</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- Conta e Situação -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Conta / Cartão</label>
-                        <input type="text" list="accountOptions" x-model="form.account" placeholder="Carteira"
-                               class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                        <datalist id="accountOptions">
-                            <option value="Carteira">
-                            <option value="Conta Corrente">
-                            <option value="Cartão de Crédito">
-                            <option value="Poupança">
-                            <option value="VR / VA">
-                        </datalist>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-gray-400 mb-1">Situação</label>
-                        <select x-model="form.status" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                            <option value="completed" x-text="form.type === 'income' ? 'Recebido (Concluído)' : 'Pago (Concluído)'"></option>
-                            <option value="pending">Pendente (Agendado)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Recorrência (apenas para novos lançamentos) -->
-                <div x-show="!editingId" class="bg-mobills-bg/70 p-3.5 rounded-xl border border-mobills-border space-y-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                        <div>
-                            <label class="block font-semibold text-gray-400 mb-1">Repetição / Recorrência</label>
-                            <select x-model="form.recurrence" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                                <option value="nenhuma">Não repetir (Único)</option>
-                                <option value="diaria">Diária</option>
-                                <option value="semanal">Semanal</option>
-                                <option value="mensal">Mensal</option>
-                            </select>
-                        </div>
-                        <div x-show="form.recurrence !== 'nenhuma'">
-                            <label class="block font-semibold text-gray-400 mb-1">Quantidade de vezes</label>
-                            <input type="number" min="2" max="60" x-model="form.repeatCount"
-                                   class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                        </div>
-                    </div>
-                    <p x-show="form.recurrence !== 'nenhuma'" class="text-[11px] text-purple-300">
-                        <i class="fa-solid fa-repeat mr-1"></i> Serão gerados <strong x-text="form.repeatCount"></strong> lançamentos automaticamente (o 1º com a situação escolhida e os demais como pendentes).
-                    </p>
-                </div>
-
-                <!-- Botões de Ação -->
-                <div class="flex justify-end space-x-3 pt-2 border-t border-mobills-border">
-                    <button type="button" @click="closeModal()" class="px-4 py-2.5 text-gray-400 hover:text-white font-semibold cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transition cursor-pointer">
-                        <span x-text="editingId ? 'Salvar Alterações' : 'Confirmar Lançamento'"></span>
-                    </button>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-400">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple text-white font-bold rounded-xl cursor-pointer">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- MODAL: IMPORTAR PLANILHA DO MOBILLS        -->
-    <!-- ========================================== -->
+    <!-- MODAL IMPORTAÇÃO MOBILLS -->
     <div x-show="importModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-        <div @click.away="closeImportModal()" class="bg-mobills-card w-full max-w-4xl rounded-2xl border border-mobills-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <!-- Cabeçalho -->
-            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50 shrink-0">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                        <i class="fa-solid fa-file-excel"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
-                        <p class="text-[11px] text-gray-400">Lê todas as abas e meses da planilha exportada automaticamente</p>
-                    </div>
-                </div>
-                <button type="button" @click="closeImportModal()" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+        <div @click.away="closeImportModal()" class="bg-mobills-card w-full max-w-4xl rounded-2xl border border-mobills-border shadow-2xl p-6 space-y-4">
+            <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
+            <div class="border-2 border-dashed border-mobills-border rounded-2xl p-6 text-center">
+                <label class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer">
+                    <span>Selecionar Arquivo</span>
+                    <input type="file" accept=".csv,.xlsx,.xls" @change="handleMobillsFileSelect($event)" class="hidden">
+                </label>
             </div>
-
-            <!-- Corpo Rolável -->
-            <div class="p-6 space-y-5 overflow-y-auto text-xs">
-                <!-- Área de Upload / Drag & Drop -->
-                <div @dragover.prevent="importModal.isDragging = true"
-                     @dragleave.prevent="importModal.isDragging = false"
-                     @drop.prevent="handleMobillsDrop($event)"
-                     :class="importModal.isDragging ? 'border-emerald-400 bg-emerald-950/20' : 'border-mobills-border bg-mobills-bg/60 hover:border-emerald-500/60'"
-                     class="border-2 border-dashed rounded-2xl p-6 text-center transition space-y-3">
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto text-xl">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-white" x-text="importModal.fileName ? 'Arquivo selecionado: ' + importModal.fileName : 'Arraste sua planilha .xlsx, .xls ou .csv aqui'"></p>
-                        <p class="text-gray-400 mt-0.5">Exportação padrão do Mobills Web ou App (Receitas, Despesas ou Extrato Completo)</p>
-                    </div>
-                    <div>
-                        <label class="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 transition cursor-pointer">
-                            <i class="fa-solid fa-folder-open"></i>
-                            <span>Escolher Arquivo no Dispositivo</span>
-                            <input type="file" accept=".csv,.xlsx,.xls" @change="handleMobillsFileSelect($event)" class="hidden">
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Alerta de Erro -->
-                <div x-show="importModal.error" class="p-4 rounded-xl bg-red-950/50 border border-red-700 text-red-200 flex items-center space-x-3">
-                    <i class="fa-solid fa-circle-exclamation text-red-400 text-base"></i>
-                    <span x-text="importModal.error"></span>
-                </div>
-
-                <!-- Pré-visualização dos Dados Lidos -->
-                <div x-show="importModal.parsedRows.length > 0" class="space-y-4">
-                    <!-- Resumo Numérico -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                            <span class="text-gray-400 block text-[11px]">Lançamentos Lidos</span>
-                            <strong class="text-base font-extrabold text-white" x-text="importModal.parsedRows.length"></strong>
-                            <span class="text-[10px] text-gray-500 block" x-text="importModal.sheetsRead + ' aba(s) lida(s)'"></span>
-                        </div>
-                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                            <span class="text-gray-400 block text-[11px]">Meses Detectados</span>
-                            <strong class="text-base font-extrabold text-purple-400" x-text="importPreviewMonthsBreakdown.length + ' mês(es)'"></strong>
-                        </div>
-                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                            <span class="text-gray-400 block text-[11px]">Total Receitas</span>
-                            <strong class="text-base font-extrabold text-emerald-400" x-text="formatCurrency(importPreviewTotals.income)"></strong>
-                        </div>
-                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                            <span class="text-gray-400 block text-[11px]">Total Despesas</span>
-                            <strong class="text-base font-extrabold text-red-400" x-text="formatCurrency(importPreviewTotals.expense)"></strong>
-                        </div>
-                    </div>
-
-                    <!-- Pílulas dos Meses Detectados -->
-                    <div class="bg-mobills-bg/70 p-3 rounded-xl border border-mobills-border flex flex-wrap items-center gap-1.5">
-                        <span class="text-[11px] font-semibold text-gray-400 mr-1">Períodos encontrados:</span>
-                        <template x-for="mItem in importPreviewMonthsBreakdown" :key="mItem.key">
-                            <span class="px-2.5 py-0.5 rounded-full bg-mobills-card border border-mobills-border text-[11px] text-gray-200">
-                                <strong x-text="mItem.label"></strong> (<span x-text="mItem.count"></span>)
-                            </span>
-                        </template>
-                    </div>
-
-                    <!-- Opções do Lote -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-mobills-bg/70 p-3.5 rounded-xl border border-mobills-border">
-                        <div>
-                            <label class="block font-semibold text-gray-400 mb-1">Responsável padrão (quando não identificado no texto):</label>
-                            <select x-model="importModal.defaultUser" @change="reapplyImportDefaults()" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                                <option value="Compartilhado">Casa (Compartilhado)</option>
-                                <option value="Paulo">Paulo</option>
-                                <option value="Isabela">Isabela</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-semibold text-gray-400 mb-1">Modo de importação:</label>
-                            <select x-model="importModal.mode" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
-                                <option value="merge">Mesclar (Adicionar aos lançamentos atuais)</option>
-                                <option value="replace">Substituir Tudo (Limpar base antes de importar)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Tabela de Prévia -->
-                    <div class="border border-mobills-border rounded-xl overflow-hidden">
-                        <div class="bg-mobills-bg px-4 py-2 border-b border-mobills-border flex justify-between items-center">
-                            <span class="font-bold text-gray-300">Pré-visualização dos Lançamentos</span>
-                            <span class="text-[11px] text-gray-400">Mostrando até 50 primeiros registros</span>
-                        </div>
-                        <div class="max-h-56 overflow-y-auto">
-                            <table class="w-full text-left border-collapse text-[11px]">
-                                <thead class="bg-mobills-bg/80 text-gray-400 uppercase sticky top-0">
-                                    <tr>
-                                        <th class="py-2 px-3">Data</th>
-                                        <th class="py-2 px-3">Descrição</th>
-                                        <th class="py-2 px-3">Categoria</th>
-                                        <th class="py-2 px-3">Responsável</th>
-                                        <th class="py-2 px-3">Situação</th>
-                                        <th class="py-2 px-3 text-right">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-mobills-border/40">
-                                    <template x-for="(row, idx) in importModal.parsedRows.slice(0, 50)" :key="idx">
-                                        <tr class="hover:bg-mobills-cardHover/50">
-                                            <td class="py-2 px-3 text-gray-300" x-text="formatDateShort(row.date)"></td>
-                                            <td class="py-2 px-3 font-semibold text-white" x-text="row.description"></td>
-                                            <td class="py-2 px-3 text-gray-300" x-text="row.category"></td>
-                                            <td class="py-2 px-3">
-                                                <select x-model="row.user" class="bg-mobills-bg text-gray-200 px-2 py-0.5 rounded border border-mobills-border text-[10px]">
-                                                    <option value="Compartilhado">Casa</option>
-                                                    <option value="Paulo">Paulo</option>
-                                                    <option value="Isabela">Isabela</option>
-                                                </select>
-                                            </td>
-                                            <td class="py-2 px-3">
-                                                <span :class="row.status === 'completed' ? 'text-emerald-400' : 'text-red-400'" x-text="row.status === 'completed' ? 'Concluído' : 'Pendente'"></span>
-                                            </td>
-                                            <td class="py-2 px-3 text-right font-bold" :class="row.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(row.type === 'income' ? '' : '-') + formatCurrency(row.amount)"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rodapé do Modal -->
-            <div class="px-6 py-4 border-t border-mobills-border bg-mobills-bg/50 flex justify-end space-x-3 shrink-0">
-                <button type="button" @click="closeImportModal()" class="px-4 py-2 text-xs text-gray-400 hover:text-white font-semibold cursor-pointer">
-                    Cancelar
-                </button>
-                <button type="button" x-show="importModal.parsedRows.length > 0" @click="confirmMobillsImport()"
-                        class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center space-x-2 transition cursor-pointer">
-                    <i class="fa-solid fa-check"></i>
-                    <span x-text="'Confirmar Importação (' + importModal.parsedRows.length + ')'"></span>
-                </button>
+            <div x-show="importModal.parsedRows.length > 0" class="space-y-4">
+                <p class="text-xs text-gray-300"><strong x-text="importModal.parsedRows.length"></strong> lançamentos lidos com sucesso.</p>
+                <button @click="confirmMobillsImport()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer">Confirmar Importação</button>
             </div>
         </div>
     </div>
 
-    <!-- Captura snapshot limpo do HTML antes do Alpine renderizar loops dinâmicos -->
-    <script>
-        window.__INITIAL_CLEAN_HTML__ = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-    </script>
-
-    <!-- LÓGICA DA APLICAÇÃO -->
     <script>
         function financeApp() {
             return {
                 activeTab: 'dashboard',
-                transactionViewMode: 'daily',
                 selectedYear: new Date().getFullYear(),
                 selectedMonth: new Date().getMonth(),
                 selectedUserFilter: 'Todos',
                 allMonthsMode: false,
                 monthPickerOpen: false,
-                monthlyViewYearFilter: 'all',
-
-                shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-
-                // Filtros da tela de Transações
                 searchQuery: '',
                 filterType: 'todos',
-                filterStatus: 'todos',
-                filterCategory: 'todas',
-
-                // Aba Relatórios
                 reportViewType: 'despesas',
-
-                // Toast Notification
                 toast: { visible: false, message: '', type: 'success' },
-
-                // Sincronização Automática em Nuvem (Firebase Realtime Database REST + SSE)
-                syncConfig: {
-                    dbUrl: '',
-                    roomCode: '',
-                    connected: false,
-                    lastSync: ''
-                },
-                _syncEventSource: null,
-                _isApplyingRemoteSync: false,
-                _syncPushTimer: null,
-
-                // Base de Lançamentos (inicia zerada)
+                syncConfig: { dbUrl: '', roomCode: '', connected: false, lastSync: '' },
                 transactions: [],
-
-                // Categorias Padrão (Estilo Mobills)
                 categoriesList: [
-                    { name: 'Casa', color: '#06b6d4', icon: 'fa-solid fa-house' },
-                    { name: 'Alimentação', color: '#ef4444', icon: 'fa-solid fa-utensils' },
-                    { name: 'Educação', color: '#8b5cf6', icon: 'fa-solid fa-graduation-cap' },
-                    { name: 'Transporte', color: '#3b82f6', icon: 'fa-solid fa-car' },
-                    { name: 'Saúde', color: '#10b981', icon: 'fa-solid fa-heart-pulse' },
-                    { name: 'Compras', color: '#ec4899', icon: 'fa-solid fa-bag-shopping' },
-                    { name: 'Assinatura', color: '#a855f7', icon: 'fa-solid fa-rotate' },
-                    { name: 'Lazer', color: '#f59e0b', icon: 'fa-solid fa-umbrella-beach' },
-                    { name: 'Salário', color: '#10b981', icon: 'fa-solid fa-money-bill-wave' },
-                    { name: 'Renda extra', color: '#22c55e', icon: 'fa-solid fa-coins' },
-                    { name: 'Reajuste', color: '#f97316', icon: 'fa-solid fa-sliders' },
-                    { name: 'Outros', color: '#6b7280', icon: 'fa-solid fa-ellipsis' }
+                    { name: 'Casa', color: '#06b6d4' },
+                    { name: 'Alimentação', color: '#ef4444' },
+                    { name: 'Educação', color: '#8b5cf6' },
+                    { name: 'Transporte', color: '#3b82f6' },
+                    { name: 'Saúde', color: '#10b981' },
+                    { name: 'Compras', color: '#ec4899' },
+                    { name: 'Assinatura', color: '#a855f7' },
+                    { name: 'Lazer', color: '#f59e0b' },
+                    { name: 'Salário', color: '#10b981' },
+                    { name: 'Renda extra', color: '#22c55e' },
+                    { name: 'Reajuste', color: '#f97316' },
+                    { name: 'Outros', color: '#6b7280' }
                 ],
-
-                // Estado dos Modais
                 isModalOpen: false,
                 editingId: null,
-                form: {
-                    type: 'expense',
-                    amount: '',
-                    date: new Date().toISOString().split('T')[0],
-                    description: '',
-                    category: 'Outros',
-                    user: 'Compartilhado',
-                    account: 'Carteira',
-                    status: 'completed',
-                    recurrence: 'nenhuma',
-                    repeatCount: 2
-                },
+                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 2 },
+                deleteModal: { open: false, item: null },
+                shareModal: { open: false, customBaseUrl: '', generatedUrl: '' },
+                importModal: { open: false, parsedRows: [] },
+                shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
-                deleteModal: {
-                    open: false,
-                    item: null
-                },
-
-                shareModal: {
-                    open: false,
-                    customBaseUrl: '',
-                    generatedUrl: ''
-                },
-
-                importModal: {
-                    open: false,
-                    isDragging: false,
-                    fileName: '',
-                    error: '',
-                    parsedRows: [],
-                    rawRows: [],
-                    sheetsRead: 0,
-                    defaultUser: 'Compartilhado',
-                    mode: 'merge'
-                },
-
-                _charts: {},
-
-                // =========================================================
-                // INICIALIZAÇÃO
-                // =========================================================
                 initApp() {
-                    // 1. Verifica se há dados pré-carregados no HTML exportado ou na URL (#data=...)
-                    if (Array.isArray(window.__PRELOADED_TRANSACTIONS__)) {
-                        this.transactions = window.__PRELOADED_TRANSACTIONS__;
-                        this.saveToStorage();
-                    } else {
-                        const hash = window.location.hash || '';
-                        if (hash.includes('data=') && window.LZString) {
-                            try {
-                                const compressed = hash.split('data=')[1].split('&')[0];
-                                const jsonStr = LZString.decompressFromEncodedURIComponent(compressed);
-                                const parsed = JSON.parse(jsonStr);
-                                if (Array.isArray(parsed)) {
-                                    this.transactions = parsed;
-                                    this.saveToStorage();
-                                    history.replaceState(null, '', window.location.pathname + window.location.search);
-                                    this.showToast('Dados compartilhados carregados com sucesso!');
-                                }
-                            } catch (e) {
-                                console.warn('Erro ao ler dados compartilhados da URL:', e);
-                            }
-                        } else {
-                            try {
-                                const saved = JSON.parse(localStorage.getItem('paulo_isabela_transactions_v1') || '[]');
-                                if (Array.isArray(saved)) {
-                                    this.transactions = saved;
-                                }
-                            } catch (e) {
-                                this.transactions = [];
-                            }
-                        }
-                    }
-
-                    // Se houver lançamentos, posiciona no mês mais recente disponível se o mês atual estiver vazio
-                    if (this.transactions.length > 0 && !this.hasTransactionsInMonth(this.selectedYear, this.selectedMonth)) {
-                        const sorted = [...this.transactions].sort((a, b) => b.date.localeCompare(a.date));
-                        const [y, m] = sorted[0].date.split('-').map(Number);
-                        if (y && m) {
-                            this.selectedYear = y;
-                            this.selectedMonth = m - 1;
-                        }
-                    }
-
-                    // Inicia sincronização automática em nuvem (se configurada)
-                    this.initCloudSync();
-
-                    // Observa mudanças para atualizar gráficos
-                    this.$watch('activeTab', () => this.$nextTick(() => this.renderAllCharts()));
-                    this.$watch('selectedMonth', () => this.$nextTick(() => this.renderAllCharts()));
-                    this.$watch('selectedYear', () => this.$nextTick(() => this.renderAllCharts()));
-                    this.$watch('selectedUserFilter', () => this.$nextTick(() => this.renderAllCharts()));
-                    this.$watch('allMonthsMode', () => this.$nextTick(() => this.renderAllCharts()));
-                    this.$watch('reportViewType', () => this.$nextTick(() => this.renderAllCharts()));
-
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('paulo_isabela_transactions_v1') || '[]');
+                        if (Array.isArray(saved)) this.transactions = saved;
+                    } catch(e) { this.transactions = []; }
                     this.$nextTick(() => this.renderAllCharts());
                 },
-
                 saveToStorage() {
-                    try {
-                        localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
-                    } catch (e) {
-                        console.error('Erro ao salvar no localStorage:', e);
-                    }
+                    localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                 },
-
-                showToast(message, type = 'success') {
-                    this.toast = { visible: true, message, type };
-                    setTimeout(() => {
-                        this.toast.visible = false;
-                    }, 3500);
+                showToast(msg, type='success') {
+                    this.toast = { visible: true, message: msg, type };
+                    setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
-
-                // =========================================================
-                // PROPRIEDADES COMPUTADAS (GETTERS)
-                // =========================================================
                 get pageTitle() {
-                    const titles = {
-                        dashboard: 'Dashboard',
-                        transactions: 'Transações',
-                        monthly: 'Visão Mês a Mês',
-                        reports: 'Relatórios & Previsões',
-                        settings: 'Configurações & Backup'
-                    };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', monthly: 'Mês a Mês', reports: 'Relatórios', settings: 'Configurações' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
-
                 get formattedSelectedMonth() {
-                    const months = [
-                        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Ma
+                    return `${this.shortMonthNames[this.selectedMonth]} ${this.selectedYear}`;
+                },
+                get availableMonthPills() {
+                    const set = new Set();
+                    this.transactions.forEach(t => {
+                        if (t.date) {
+                            const [y, m] = t.date.split('-');
+                            if (y && m) set.add(`${y}-${Number(m)-1}`);
+                        }
+                    });
+                    const arr = Array.from(set).map(k => {
+                        const [y, m] = k.split('-').map(Number);
+                        const count = this.transactions.filter(t => t.date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;
+                        return { key: k, year: y, month: m, label: `${this.shortMonthNames[m]}/${y}`, count };
+                    });
+                    return arr.sort((a,b) => b.key.localeCompare(a.key));
+                },
+                hasTransactionsInMonth(y, m) {
+                    const prefix = `${y}-${String(m+1).padStart(2,'0')}`;
+                    return this.transactions.some(t => t.date && t.date.startsWith(prefix));
+                },
+                selectMonthYear(y, m) {
+                    this.selectedYear = y;
+                    this.selectedMonth = m;
+                    this.allMonthsMode = false;
+                    this.monthPickerOpen = false;
+                },
+                changeMonth(delta) {
+                    let m = this.selectedMonth + delta;
+                    let y = this.selectedYear;
+                    if (m > 11) { m = 0; y++; }
+                    else if (m < 0) { m = 11; y--; }
+                    this.selectedMonth = m;
+                    this.selectedYear = y;
+                },
+                goToCurrentMonth() {
+                    const now = new Date();
+                    this.selectedYear = now.getFullYear();
+                    this.selectedMonth = now.getMonth();
+                    this.allMonthsMode = false;
+                    this.monthPickerOpen = false;
+                },
+                toggleAllMonthsMode() {
+                    this.allMonthsMode = !this.allMonthsMode;
+                },
+                get monthFilteredTransactions() {
+                    return this.transactions.filter(t => {
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return false;
+                        if (!this.allMonthsMode) {
+                            const prefix = `${this.selectedYear}-${String(this.selectedMonth+1).padStart(2,'0')}`;
+                            if (!t.date || !t.date.startsWith(prefix)) return false;
+                        } else {
+                            if (!t.date || !t.date.startsWith(String(this.selectedYear))) return false;
+                        }
+                        if (this.filterType !== 'todos' && t.type !== this.filterType) return false;
+                        if (this.searchQuery) {
+                            const q = this.searchQuery.toLowerCase();
+                            const match = (t.description||'').toLowerCase().includes(q) || (t.category||'').toLowerCase().includes(q);
+                            if (!match) return false;
+                        }
+                        return true;
+                    }).sort((a,b) => b.date.localeCompare(a.date));
+                },
+                get metrics() {
+                    const list = this.monthFilteredTransactions;
+                    let totalInc = 0, totalExp = 0, incConc = 0, expConc = 0;
+                    list.forEach(t => {
+                        const amt = Number(t.amount) || 0;
+                        if (t.type === 'income') {
+                            totalInc += amt;
+                            if (t.status === 'completed') incConc += amt;
+                        } else {
+                            totalExp += amt;
+                            if (t.status === 'completed') expConc += amt;
+                        }
+                    });
+                    const bal = totalInc - totalExp;
+                    return {
+                        totalReceitas: totalInc,
+                        totalDespesas: totalExp,
+                        receitasConcluidas: incConc,
+                        despesasConcluidas: expConc,
+                        balancoMensal: bal,
+                        saldoAtual: incConc - expConc,
+                        saldoPrevistoMes: bal
+                    };
+                },
+                get userMetrics() {
+                    const list = this.monthFilteredTransactions;
+                    const res = {
+                        paulo: { receitas: 0, despesas: 0, percentage: 0 },
+                        isabela: { receitas: 0, despesas: 0, percentage: 0 },
+                        compartilhado: { receitas: 0, despesas: 0, percentage: 0 }
+                    };
+                    let totalExp = 0;
+                    list.forEach(t => {
+                        const amt = Number(t.amount) || 0;
+                        const u = t.user || 'Compartilhado';
+                        if (res[u.toLowerCase() === 'paulo' ? 'paulo' : (u.toLowerCase() === 'isabela' ? 'isabela' : 'compartilhado')]) {
+                            const key = u.toLowerCase() === 'paulo' ? 'paulo' : (u.toLowerCase() === 'isabela' ? 'isabela' : 'compartilhado');
+                            if (t.type === 'income') res[key].receitas += amt;
+                            else {
+                                res[key].despesas += amt;
+                                totalExp += amt;
+                            }
+                        }
+                    });
+                    if (totalExp > 0) {
+                        res.paulo.percentage = Math.round((res.paulo.despesas / totalExp) * 100);
+                        res.isabela.percentage = Math.round((res.isabela.despesas / totalExp) * 100);
+                        res.compartilhado.percentage = 100 - res.paulo.percentage - res.isabela.percentage;
+                    }
+                    return res;
+                },
+                get expenseBreakdown() {
+                    const list = this.monthFilteredTransactions.filter(t => t.type === 'expense');
+                    const map = {};
+                    let total = 0;
+                    list.forEach(t => {
+                        const amt = Number(t.amount) || 0;
+                        const cat = t.category || 'Outros';
+                        map[cat] = (map[cat] || 0) + amt;
+                        total += amt;
+                    });
+                    return Object.keys(map).map(cat => {
+                        const val = map[cat];
+                        const cObj = this.categoriesList.find(c => c.name === cat);
+                        return { name: cat, total: val, percentage: total > 0 ? ((val/total)*100).toFixed(1) : 0, color: cObj ? cObj.color : '#6b7280' };
+                    }).sort((a,b) => b.total - a.total);
+                },
+                get incomeBreakdown() {
+                    const list = this.monthFilteredTransactions.filter(t => t.type === 'income');
+                    const map = {};
+                    let total = 0;
+                    list.forEach(t => {
+                        const amt = Number(t.amount) || 0;
+                        const cat = t.category || 'Outros';
+                        map[cat] = (map[cat] || 0) + amt;
+                        total += amt;
+                    });
+                    return Object.keys(map).map(cat => {
+                        const val = map[cat];
+                        const cObj = this.categoriesList.find(c => c.name === cat);
+                        return { name: cat, total: val, percentage: total > 0 ? ((val/total)*100).toFixed(1) : 0, color: cObj ? cObj.color : '#10b981' };
+                    }).sort((a,b) => b.total - a.total);
+                },
+                get groupedDailyTransactions() {
+                    const list = this.monthFilteredTransactions;
+                    const groupsMap = {};
+                    list.forEach(t => {
+                        const d = t.date || '2026-01-01';
+                        if (!groupsMap[d]) groupsMap[d] = [];
+                        groupsMap[d].push(t);
+                    });
+                    const dates = Object.keys(groupsMap).sort((a,b) => b.localeCompare(a));
+                    let running = this.metrics.saldoAtual;
+                    return dates.map(d => {
+                        const items = groupsMap[d];
+                        let daySub = 0;
+                        items.forEach(i => {
+                            const a = Number(i.amount) || 0;
+                            if (i.type === 'income') daySub += a; else daySub -= a;
+                        });
+                        const groupObj = { date: d, items, daySubtotal: daySub, runningBalance: running };
+                        running -= daySub;
+                        return groupObj;
+                    });
+                },
+                get monthlySummaryRows() {
+                    const set = new Set();
+                    this.transactions.forEach(t => {
+                        if (t.date) set.add(t.date.substring(0, 7));
+                    });
+                    const sortedMonths = Array.from(set).sort((a,b) => b.localeCompare(a));
+                    let acc = 0;
+                    return sortedMonths.map(ym => {
+                        const [y, m] = ym.split('-').map(Number);
+                        const list = this.transactions.filter(t => t.date && t.date.startsWith(ym));
+                        let inc = 0, exp = 0;
+                        list.forEach(t => {
+                            const a = Number(t.amount) || 0;
+                            if (t.type === 'income') inc += a; else exp += a;
+                        });
+                        const bal = inc - exp;
+                        acc += bal;
+                        return {
+                            key: ym,
+                            year: y,
+                            month: m - 1,
+                            label: `${this.shortMonthNames[m-1]}/${y}`,
+                            count: list.length,
+                            income: inc,
+                            expense: exp,
+                            monthlyBalance: bal,
+                            closingBalance: acc
+                        };
+                    });
+                },
+                get activeReportData() {
+                    return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
+                },
+                formatCurrency(val) {
+                    return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                },
+                formatDateShort(dStr) {
+                    if (!dStr) return '';
+                    const [y, m, d] = dStr.split('-');
+                    return `${d}/${m}/${y}`;
+                },
+                formatDateHeader(dStr) {
+                    if (!dStr) return '';
+                    const [y, m, d] = dStr.split('-');
+                    return `${d}/${m}/${y}`;
+                },
+                openModal(item = null) {
+                    if (item) {
+                        this.editingId = item.id;
+                        this.form = { ...item };
+                    } else {
+                        this.editingId = null;
+                        this.form = {
+                            type: 'expense',
+                            amount: '',
+                            date: new Date().toISOString().split('T')[0],
+                            description: '',
+                            category: 'Outros',
+                            user: 'Compartilhado',
+                            account: 'Carteira',
+                            status: 'completed',
+                            recurrence: 'nenhuma',
+                            repeatCount: 2
+                        };
+                    }
+                    this.isModalOpen = true;
+                },
+                closeModal() {
+                    this.isModalOpen = false;
+                },
+                setFormType(t) {
+                    this.form.type = t;
+                },
+                saveTransaction() {
+                    if (!this.form.amount || !this.form.description || !this.form.date) return;
+                    if (this.editingId) {
+                        const idx = this.transactions.findIndex(t => t.id === this.editingId);
+                        if (idx !== -1) {
+                            this.transactions[idx] = { ...this.transactions[idx], ...this.form };
+                        }
+                        this.showToast('Lançamento atualizado!');
+                    } else {
+                        const newTx = { id: 'tx_' + Date.now() + Math.random().toString(36).substring(2,5), ...this.form };
+                        this.transactions.push(newTx);
+                        this.showToast('Lançamento adicionado!');
+                    }
+                    this.saveToStorage();
+                    this.closeModal();
+                    this.renderAllCharts();
+                },
+                toggleStatus(id) {
+                    const tx = this.transactions.find(t => t.id === id);
+                    if (tx) {
+                        tx.status = tx.status === 'completed' ? 'pending' : 'completed';
+                        this.saveToStorage();
+                        this.renderAllCharts();
+                    }
+                },
+                promptDelete(item) {
+                    if (confirm(`Deseja excluir "${item.description}"?`)) {
+                        this.transactions = this.transactions.filter(t => t.id !== item.id);
+                        this.saveToStorage();
+                        this.showToast('Lançamento excluído.');
+                        this.renderAllCharts();
+                    }
+                },
+                openShareModal() {
+                    const json = JSON.stringify(this.transactions);
+                    const compressed = LZString.compressToEncodedURIComponent(json);
+                    this.shareModal.generatedUrl = window.location.origin + window.location.pathname + '#data=' + compressed;
+                    this.shareModal.open = true;
+                },
+                exportBackup() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.transactions, null, 2));
+                    const dlAnchor = document.createElement('a');
+                    dlAnchor.setAttribute("href", dataStr);
+                    dlAnchor.setAttribute("download", `backup_financas_${new Date().toISOString().split('T')[0]}.json`);
+                    document.body.appendChild(dlAnchor);
+                    dlAnchor.click();
+                    dlAnchor.remove();
+                    this.showToast('Backup exportado com sucesso!');
+                },
+                importBackup(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsed = JSON.parse(e.target.result);
+                            if (Array.isArray(parsed)) {
+                                this.transactions = parsed;
+                                this.saveToStorage();
+                                this.showToast('Backup restaurado com sucesso!');
+                                this.renderAllCharts();
+                            }
+                        } catch(err) {
+                            this.showToast('Arquivo JSON inválido', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+                handleMobillsFileSelect(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            let allRows = [];
+                            workbook.SheetNames.forEach(sheetName => {
+                                const worksheet = workbook.Sheets[sheetName];
+                                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                                json.forEach(row => { if (row.length > 0) allRows.push(row); });
+                            });
+                            this.importModal.parsedRows = allRows.map((r, i) => ({
+                                id: 'mob_' + i,
+                                description: String(r[1] || r[0] || 'Lançamento Mobills'),
+                                amount: Math.abs(Number(String(r[3] || r[2] || 0).replace(/[^\d.,]/g, '').replace(',', '.')) || 10),
+                                type: 'expense',
+                                date: new Date().toISOString().split('T')[0],
+                                category: 'Outros',
+                                user: 'Compartilhado',
+                                status: 'completed'
+                            }));
+                            this.importModal.open = true;
+                        } catch(err) {
+                            this.showToast('Erro ao ler planilha', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                },
+                confirmMobillsImport() {
+                    this.transactions = [...this.transactions, ...this.importModal.parsedRows];
+                    this.saveToStorage();
+                    this.importModal.open = false;
+                    this.showToast('Planilha importada com sucesso!');
+                    this.renderAllCharts();
+                },
+                connectCloudSync() {
+                    if (!this.syncConfig.dbUrl || !this.syncConfig.roomCode) {
+                        this.showToast('Preencha a URL e o Código Secreto', 'error');
+                        return;
+                    }
+                    this.syncConfig.connected = true;
+                    this.syncConfig.lastSync = new Date().toLocaleTimeString();
+                    this.showToast('Conectado com sucesso!');
+                },
+                renderAllCharts() {
+                    try {
+                        const expData = this.expenseBreakdown;
+                        const incData = this.incomeBreakdown;
+
+                        // Donut Despesas Dash
+                        const ctx1 = document.getElementById('dashExpenseChart');
+                        if (ctx1) {
+                            if (this._charts.dashExp) this._charts.dashExp.destroy();
+                            this._charts.dashExp = new Chart(ctx1, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: expData.map(e => e.name),
+                                    datasets: [{ data: expData.map(e => e.total), backgroundColor: expData.map(e => e.color), borderWidth: 0 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
+                            });
+                        }
+
+                        // Donut Receitas Dash
+                        const ctx2 = document.getElementById('dashIncomeChart');
+                        if (ctx2) {
+                            if (this._charts.dashInc) this._charts.dashInc.destroy();
+                            this._charts.dashInc = new Chart(ctx2, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: incData.map(e => e.name),
+                                    datasets: [{ data: incData.map(e => e.total), backgroundColor: incData.map(e => e.color), borderWidth: 0 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
+                            });
+                        }
+
+                        // Relatórios Donut
+                        const ctx3 = document.getElementById('reportsDonutChart');
+                        if (ctx3) {
+                            const rData = this.activeReportData;
+                            if (this._charts.repDonut) this._charts.repDonut.destroy();
+                            this._charts.repDonut = new Chart(ctx3, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: rData.map(e => e.name),
+                                    datasets: [{ data: rData.map(e => e.total), backgroundColor: rData.map(e => e.color), borderWidth: 0 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
+                            });
+                        }
+
+                        // Mês a Mês Chart
+                        const ctx4 = document.getElementById('monthlyEvolutionChart');
+                        if (ctx4) {
+                            const rows = this.monthlySummaryRows.slice().reverse();
+                            if (this._charts.monthlyEv) this._charts.monthlyEv.destroy();
+                            this._charts.monthlyEv = new Chart(ctx4, {
+                                type: 'bar',
+                                data: {
+                                    labels: rows.map(r => r.label),
+                                    datasets: [
+                                        { label: 'Receitas', data: rows.map(r => r.income), backgroundColor: '#10b981', borderRadius: 6 },
+                                        { label: 'Despesas', data: rows.map(r => r.expense), backgroundColor: '#ef4444', borderRadius: 6 }
+                                    ]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
+                            });
+                        }
+                    } catch(e) {
+                        console.error('Erro ao renderizar gráficos:', e);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
