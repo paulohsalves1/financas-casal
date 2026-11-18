@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#121216">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
     <title>Paulo & Isabela | Controle Financeiro</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%237c3aed'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='800' font-size='26'%3EP%26amp;I%3C/text%3E%3C/svg%3E">
     
@@ -22,9 +19,7 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         mobills: {
                             bg: '#121216',
@@ -50,35 +45,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/Chart.js"></script>
 
-    <!-- SheetJS -->
+    <!-- SheetJS (Excel/CSV) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- LZ-String -->
-    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121216;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2c2c38;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #7c3aed;
-        }
-        [x-cloak] {
-            display: none !important;
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #121216; }
+        ::-webkit-scrollbar-thumb { background: #2c2c38; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-mobills-bg text-gray-100 font-sans antialiased min-h-screen flex flex-col md:flex-row pb-20 md:pb-0 selection:bg-mobills-purple selection:text-white" x-data="financeApp()" x-init="initApp()">
@@ -95,7 +75,7 @@
     <aside class="hidden md:flex w-64 bg-mobills-card border-r border-mobills-border flex-col justify-between shrink-0 h-screen sticky top-0 z-20">
         <div>
             <div class="p-5 flex items-center space-x-3 border-b border-mobills-border">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-900/40 font-extrabold text-base tracking-tight">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-900/40 font-extrabold text-base">
                     P&I
                 </div>
                 <div>
@@ -105,44 +85,30 @@
             </div>
 
             <div class="p-4">
-                <button @click="openModal()" class="w-full py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition transform active:scale-95 cursor-pointer">
+                <button @click="openModal()" class="w-full py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
                     <i class="fa-solid fa-plus text-sm"></i>
                     <span class="text-sm">Novo Lançamento</span>
                 </button>
             </div>
 
             <nav class="px-3 space-y-1.5 mt-1">
-                <button @click="activeTab = 'dashboard'" 
-                        :class="activeTab === 'dashboard' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-house w-5 text-center"></i>
                     <span>Dashboard</span>
                 </button>
-
-                <button @click="activeTab = 'transactions'" 
-                        :class="activeTab === 'transactions' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-list-ul w-5 text-center"></i>
                     <span>Transações</span>
                 </button>
-
-                <button @click="activeTab = 'monthly'" 
-                        :class="activeTab === 'monthly' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-calendar-days w-5 text-center"></i>
                     <span>Mês a Mês</span>
                 </button>
-
-                <button @click="activeTab = 'reports'" 
-                        :class="activeTab === 'reports' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                <button @click="activeTab = 'reports'" :class="activeTab === 'reports' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                     <span>Relatórios & Previsões</span>
                 </button>
-
-                <button @click="activeTab = 'settings'" 
-                        :class="activeTab === 'settings' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-gear w-5 text-center"></i>
                     <span>Configurações / Backup</span>
                 </button>
@@ -153,18 +119,10 @@
             <div>
                 <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Visão por Integrante</label>
                 <div class="grid grid-cols-2 gap-1.5 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
-                    <button @click="selectedUserFilter = 'Todos'" :class="selectedUserFilter === 'Todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
-                        Todos
-                    </button>
-                    <button @click="selectedUserFilter = 'Paulo'" :class="selectedUserFilter === 'Paulo' ? 'bg-mobills-blue text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
-                        Paulo
-                    </button>
-                    <button @click="selectedUserFilter = 'Isabela'" :class="selectedUserFilter === 'Isabela' ? 'bg-mobills-pink text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
-                        Isabela
-                    </button>
-                    <button @click="selectedUserFilter = 'Compartilhado'" :class="selectedUserFilter === 'Compartilhado' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
-                        Casa
-                    </button>
+                    <button @click="selectedUserFilter = 'Todos'" :class="selectedUserFilter === 'Todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Todos</button>
+                    <button @click="selectedUserFilter = 'Paulo'" :class="selectedUserFilter === 'Paulo' ? 'bg-mobills-blue text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Paulo</button>
+                    <button @click="selectedUserFilter = 'Isabela'" :class="selectedUserFilter === 'Isabela' ? 'bg-mobills-pink text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Isabela</button>
+                    <button @click="selectedUserFilter = 'Compartilhado'" :class="selectedUserFilter === 'Compartilhado' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Casa</button>
                 </div>
             </div>
         </div>
@@ -173,20 +131,17 @@
     <!-- HEADER MOBILE -->
     <header class="md:hidden bg-mobills-card border-b border-mobills-border px-4 py-3 flex justify-between items-center sticky top-0 z-20">
         <div class="flex items-center space-x-2.5">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white font-extrabold text-xs">
-                P&I
-            </div>
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white font-extrabold text-xs">P&I</div>
             <div>
                 <span class="font-bold text-sm text-white block leading-none">Paulo & Isabela</span>
                 <span class="text-[10px] text-purple-400 font-medium">Finanças</span>
             </div>
         </div>
-        
-        <select x-model="selectedUserFilter" aria-label="Filtrar por integrante" class="bg-mobills-bg text-gray-200 text-xs py-1.5 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+        <select x-model="selectedUserFilter" aria-label="Filtrar por integrante" class="bg-mobills-bg text-gray-200 text-xs py-1.5 px-3 rounded-xl border border-mobills-border focus:outline-none">
             <option value="Todos">Todos</option>
             <option value="Paulo">Paulo</option>
             <option value="Isabela">Isabela</option>
-            <option value="Compartilhado">Casa (Compartilhado)</option>
+            <option value="Compartilhado">Casa</option>
         </select>
     </header>
 
@@ -207,13 +162,11 @@
                         <button @click="changeMonth(-1)" aria-label="Mês anterior" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-mobills-cardHover transition cursor-pointer">
                             <i class="fa-solid fa-chevron-left text-xs"></i>
                         </button>
-
                         <button @click="monthPickerOpen = !monthPickerOpen" class="px-3 py-1 rounded-full text-xs md:text-sm font-bold text-white hover:bg-mobills-cardHover flex items-center space-x-2 transition cursor-pointer">
                             <i class="fa-regular fa-calendar text-mobills-purpleLight text-xs"></i>
                             <span x-text="allMonthsMode ? `Consolidado ${selectedYear}` : formattedSelectedMonth"></span>
                             <i class="fa-solid fa-caret-down text-[10px] text-gray-400"></i>
                         </button>
-
                         <button @click="changeMonth(1)" aria-label="Próximo mês" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-mobills-cardHover transition cursor-pointer">
                             <i class="fa-solid fa-chevron-right text-xs"></i>
                         </button>
@@ -230,33 +183,23 @@
                     <div x-show="monthPickerOpen" @click.away="monthPickerOpen = false" x-transition x-cloak
                          class="absolute top-12 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 w-72 bg-mobills-card border border-mobills-border rounded-2xl shadow-2xl p-4 z-40 space-y-3">
                         <div class="flex items-center justify-between border-b border-mobills-border pb-2">
-                            <button @click="selectedYear--" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer">
-                                <i class="fa-solid fa-chevron-left text-xs"></i>
-                            </button>
+                            <button @click="selectedYear--" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-left text-xs"></i></button>
                             <span class="font-extrabold text-sm text-white" x-text="selectedYear"></span>
-                            <button @click="selectedYear++" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer">
-                                <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
+                            <button @click="selectedYear++" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                         </div>
-
                         <div class="grid grid-cols-3 gap-1.5">
                             <template x-for="(mLabel, mIdx) in shortMonthNames" :key="mIdx">
                                 <button @click="selectMonthYear(selectedYear, mIdx)"
                                         :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-mobills-purple text-white font-bold shadow-md' : 'bg-mobills-bg text-gray-300 hover:bg-mobills-cardHover'"
                                         class="relative py-2 rounded-xl text-xs transition flex flex-col items-center justify-center cursor-pointer">
                                     <span x-text="mLabel"></span>
-                                    <span x-show="hasTransactionsInMonth(selectedYear, mIdx)"
-                                          :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-white' : 'bg-emerald-400'"
-                                          class="w-1.5 h-1.5 rounded-full mt-0.5"></span>
+                                    <span x-show="hasTransactionsInMonth(selectedYear, mIdx)" :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-white' : 'bg-emerald-400'" class="w-1.5 h-1.5 rounded-full mt-0.5"></span>
                                 </button>
                             </template>
                         </div>
-
                         <div class="pt-2 border-t border-mobills-border flex items-center justify-between gap-2">
-                            <button @click="goToCurrentMonth()" class="flex-1 py-1.5 bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 text-[11px] font-semibold rounded-lg border border-mobills-border cursor-pointer">
-                                Mês Atual
-                            </button>
-                            <button @click="allMonthsMode = !allMonthsMode; monthPickerOpen = false" class="flex-1 py-1.5 bg-mobills-purple/20 hover:bg-mobills-purple/30 text-mobills-purpleLight text-[11px] font-semibold rounded-lg border border-mobills-purple/40 cursor-pointer">
+                            <button @click="goToCurrentMonth()" class="flex-1 py-1.5 bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 text-[11px] font-semibold rounded-lg border border-mobills-border cursor-pointer">Mês Atual</button>
+                            <button @click="allMonthsMode = !allMonthsMode; monthPickerOpen = false" class="flex-1 py-1.5 bg-mobills-purple/20 text-mobills-purpleLight text-[11px] font-semibold rounded-lg border border-mobills-purple/40 cursor-pointer">
                                 <span x-text="allMonthsMode ? 'Filtrar Mês' : 'Ano Inteiro'"></span>
                             </button>
                         </div>
@@ -265,92 +208,71 @@
 
                 <!-- Ações do Topo -->
                 <div class="flex items-center space-x-2">
-                    <button @click="openShareModal()" x-show="transactions.length > 0" class="py-1.5 px-3 bg-mobills-purple/20 hover:bg-mobills-purple/35 text-mobills-purpleLight border border-mobills-purple/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
-                        <i class="fa-solid fa-share-nodes"></i>
-                        <span class="hidden sm:inline">Compartilhar</span>
-                    </button>
-
                     <button @click="openImportModal()" class="py-1.5 px-3 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center space-x-2 transition cursor-pointer">
                         <i class="fa-solid fa-file-excel"></i>
-                        <span class="hidden sm:inline">Importar Mobills</span>
-                        <span class="sm:hidden">Importar</span>
+                        <span>Importar Mobills</span>
                     </button>
-
                     <button @click="activeTab = 'settings'" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
-                            :class="syncConfig.connected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-mobills-bg border-mobills-border text-gray-400 hover:text-white'">
+                            :class="syncConfig.connected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-mobills-bg border-mobills-border text-gray-400'">
                         <span class="w-2 h-2 rounded-full" :class="syncConfig.connected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'"></span>
                         <span class="hidden md:inline" x-text="syncConfig.connected ? 'Sincronizado' : 'Offline'"></span>
                     </button>
                 </div>
             </div>
 
-            <!-- BARRA DE PÍLULAS DOS MESES DISPONÍVEIS -->
+            <!-- BARRA DE PÍLULAS DOS MESES -->
             <div x-show="availableMonthPills.length > 0" class="px-4 md:px-8 py-2 bg-mobills-bg/60 border-t border-mobills-border/60 flex items-center space-x-2 overflow-x-auto">
-                <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0 mr-1">
-                    <i class="fa-solid fa-clock-rotate-left mr-1 text-mobills-purpleLight"></i> Meses:
-                </span>
+                <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0 mr-1"><i class="fa-solid fa-clock-rotate-left mr-1 text-mobills-purpleLight"></i> Meses:</span>
                 <template x-for="pill in availableMonthPills" :key="pill.key">
                     <button @click="selectMonthYear(pill.year, pill.month)"
-                            :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month 
-                                ? 'bg-mobills-purple text-white border-mobills-purpleLight font-bold shadow-sm' 
-                                : 'bg-mobills-card text-gray-300 border-mobills-border hover:border-mobills-purple/60 hover:text-white'"
+                            :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month ? 'bg-mobills-purple text-white border-mobills-purpleLight font-bold' : 'bg-mobills-card text-gray-300 border-mobills-border'"
                             class="px-3 py-1 rounded-full border text-xs transition flex items-center space-x-1.5 shrink-0 cursor-pointer">
                         <span x-text="pill.label"></span>
-                        <span class="px-1.5 py-0.2 rounded-full text-[10px]"
-                              :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month ? 'bg-white/20 text-white' : 'bg-mobills-bg text-gray-400'"
-                              x-text="pill.count"></span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month ? 'bg-white/20 text-white' : 'bg-mobills-bg text-gray-400'" x-text="pill.count"></span>
                     </button>
                 </template>
             </div>
         </header>
 
-        <!-- CONTEÚDO DAS ABAS -->
+        <!-- CONTEÚDO -->
         <div class="p-4 md:p-8 space-y-6 flex-1 max-w-7xl w-full mx-auto">
 
             <!-- CARDS DE RESUMO -->
             <div x-show="activeTab === 'dashboard' || activeTab === 'transactions'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
-                    <div class="space-y-1 z-10">
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between shadow-sm">
+                    <div class="space-y-1">
                         <span class="text-xs font-semibold text-gray-400">Saldo atual</span>
                         <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h3>
-                        <p class="text-[11px] text-gray-400">Previsto: <span class="font-semibold" :class="metrics.saldoPrevistoMes >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
+                        <p class="text-[11px] text-gray-400">Previsto: <span class="font-semibold text-gray-200" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg shrink-0 z-10">
-                        <i class="fa-solid fa-building-columns"></i>
-                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg"><i class="fa-solid fa-building-columns"></i></div>
                 </div>
 
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
-                    <div class="space-y-1 z-10">
-                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Receitas (' + selectedYear + ')' : 'Receitas'"></span>
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between shadow-sm">
+                    <div class="space-y-1">
+                        <span class="text-xs font-semibold text-gray-400">Receitas</span>
                         <h3 class="text-xl md:text-2xl font-extrabold text-emerald-400 tracking-tight" x-text="formatCurrency(metrics.totalReceitas)"></h3>
                         <p class="text-[11px] text-gray-400">Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg shrink-0 z-10">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-up"></i></div>
                 </div>
 
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
-                    <div class="space-y-1 z-10">
-                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Despesas (' + selectedYear + ')' : 'Despesas'"></span>
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between shadow-sm">
+                    <div class="space-y-1">
+                        <span class="text-xs font-semibold text-gray-400">Despesas</span>
                         <h3 class="text-xl md:text-2xl font-extrabold text-red-400 tracking-tight" x-text="formatCurrency(metrics.totalDespesas)"></h3>
                         <p class="text-[11px] text-gray-400">Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg shrink-0 z-10">
-                        <i class="fa-solid fa-arrow-down"></i>
-                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-down"></i></div>
                 </div>
 
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden shadow-sm">
-                    <div class="space-y-1 z-10">
-                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Balanço Anual' : 'Balanço mensal'"></span>
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between shadow-sm">
+                    <div class="space-y-1">
+                        <span class="text-xs font-semibold text-gray-400">Balanço mensal</span>
                         <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></h3>
                         <p class="text-[11px] text-gray-400">Receitas - Despesas</p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-lg shrink-0 z-10">
-                        <i class="fa-solid fa-scale-balanced"></i>
-                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-lg"><i class="fa-solid fa-scale-balanced"></i></div>
                 </div>
             </div>
 
@@ -361,53 +283,31 @@
                 
                 <div x-show="transactions.length === 0" class="bg-mobills-card border border-mobills-purple/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
                     <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 rounded-2xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-xl shrink-0">
-                            <i class="fa-solid fa-rocket"></i>
-                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-xl"><i class="fa-solid fa-rocket"></i></div>
                         <div class="space-y-1">
                             <h3 class="text-base md:text-lg font-bold text-white">Bem-vindos, Paulo & Isabela!</h3>
-                            <p class="text-xs md:text-sm text-gray-400 max-w-xl">
-                                O sistema está pronto. Importe sua planilha do Mobills ou cadastre os lançamentos manualmente.
-                            </p>
+                            <p class="text-xs md:text-sm text-gray-400">Importe sua planilha do Mobills ou cadastre as despesas e receitas.</p>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-                        <button @click="openImportModal()" class="py-3 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-file-import"></i>
-                            <span>Importar Mobills</span>
-                        </button>
-                        <button @click="openModal()" class="py-3 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl text-sm shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Novo Lançamento</span>
-                        </button>
+                    <div class="flex gap-3">
+                        <button @click="openImportModal()" class="py-3 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl text-sm cursor-pointer">Importar Mobills</button>
+                        <button @click="openModal()" class="py-3 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl text-sm cursor-pointer">Novo Lançamento</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-base text-white">Despesas por categoria</h3>
-                            <span class="text-xs text-gray-400" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center my-auto">
-                            <div class="relative w-44 h-44 mx-auto">
-                                <canvas id="dashExpenseChart"></canvas>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span class="text-[11px] text-gray-400">Total</span>
-                                    <span class="text-sm font-extrabold text-white" x-text="formatCurrency(metrics.totalDespesas)"></span>
-                                </div>
-                            </div>
-                            <div class="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                        <h3 class="font-bold text-base text-white mb-4">Despesas por categoria</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                            <div class="relative w-44 h-44 mx-auto"><canvas id="dashExpenseChart"></canvas></div>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
                                 <template x-for="cat in expenseBreakdown" :key="cat.name">
                                     <div class="flex items-center justify-between text-xs">
-                                        <div class="flex items-center space-x-2 min-w-0">
+                                        <div class="flex items-center space-x-2 truncate">
                                             <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background-color: ${cat.color}`"></span>
-                                            <span class="text-gray-200 font-medium truncate" x-text="cat.name"></span>
+                                            <span class="text-gray-200 truncate" x-text="cat.name"></span>
                                         </div>
-                                        <div class="text-right shrink-0 ml-2">
-                                            <span class="font-bold text-white block" x-text="formatCurrency(cat.total)"></span>
-                                            <span class="text-[10px] text-gray-400" x-text="cat.percentage + '%'"></span>
-                                        </div>
+                                        <span class="font-bold text-white ml-2" x-text="formatCurrency(cat.total)"></span>
                                     </div>
                                 </template>
                             </div>
@@ -415,95 +315,17 @@
                     </div>
 
                     <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-base text-white">Receitas por categoria</h3>
-                            <span class="text-xs text-gray-400" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center my-auto">
-                            <div class="relative w-44 h-44 mx-auto">
-                                <canvas id="dashIncomeChart"></canvas>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span class="text-[11px] text-gray-400">Total</span>
-                                    <span class="text-sm font-extrabold text-white" x-text="formatCurrency(metrics.totalReceitas)"></span>
-                                </div>
-                            </div>
-                            <div class="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                        <h3 class="font-bold text-base text-white mb-4">Receitas por categoria</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                            <div class="relative w-44 h-44 mx-auto"><canvas id="dashIncomeChart"></canvas></div>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
                                 <template x-for="cat in incomeBreakdown" :key="cat.name">
                                     <div class="flex items-center justify-between text-xs">
-                                        <div class="flex items-center space-x-2 min-w-0">
+                                        <div class="flex items-center space-x-2 truncate">
                                             <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background-color: ${cat.color}`"></span>
-                                            <span class="text-gray-200 font-medium truncate" x-text="cat.name"></span>
+                                            <span class="text-gray-200 truncate" x-text="cat.name"></span>
                                         </div>
-                                        <div class="text-right shrink-0 ml-2">
-                                            <span class="font-bold text-emerald-400 block" x-text="formatCurrency(cat.total)"></span>
-                                            <span class="text-[10px] text-gray-400" x-text="cat.percentage + '%'"></span>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-5 bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-bold text-base text-white">Divisão Paulo & Isabela</h3>
-                            <span class="text-xs text-gray-400">Participação</span>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                                <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-blue-400">Paulo</span>
-                                    <span class="text-gray-400" x-text="userMetrics.paulo.percentage + '%'"></span>
-                                </div>
-                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-blue h-full" :style="`width: ${userMetrics.paulo.percentage}%`"></div>
-                                </div>
-                            </div>
-                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                                <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-pink-400">Isabela</span>
-                                    <span class="text-gray-400" x-text="userMetrics.isabela.percentage + '%'"></span>
-                                </div>
-                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-pink h-full" :style="`width: ${userMetrics.isabela.percentage}%`"></div>
-                                </div>
-                            </div>
-                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
-                                <div class="flex justify-between items-center text-xs mb-1.5">
-                                    <span class="font-bold text-purple-400">Casa (Compartilhado)</span>
-                                    <span class="text-gray-400" x-text="userMetrics.compartilhado.percentage + '%'"></span>
-                                </div>
-                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-mobills-purple h-full" :style="`width: ${userMetrics.compartilhado.percentage}%`"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-7 bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold text-base text-white">Movimentações Recentes</h3>
-                                <button @click="activeTab = 'transactions'" class="text-xs text-mobills-purpleLight hover:underline font-semibold cursor-pointer">Ver todas</button>
-                            </div>
-                            <div class="divide-y divide-mobills-border/50">
-                                <template x-for="tx in monthFilteredTransactions.slice(0, 5)" :key="tx.id">
-                                    <div class="py-3 flex items-center justify-between gap-3">
-                                        <div class="flex items-center space-x-3 min-w-0">
-                                            <button @click="toggleStatus(tx.id)" class="shrink-0 cursor-pointer">
-                                                <span x-show="tx.status === 'completed'" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[11px]"><i class="fa-solid fa-check"></i></span>
-                                                <span x-show="tx.status === 'pending'" class="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center text-[11px]"><i class="fa-solid fa-exclamation"></i></span>
-                                            </button>
-                                            <div class="truncate">
-                                                <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
-                                                <div class="flex items-center space-x-2 text-[11px] text-gray-400">
-                                                    <span x-text="formatDateShort(tx.date)"></span><span>•</span><span x-text="tx.category"></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span class="font-bold text-sm shrink-0" :class="tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(tx.type === 'income' ? '' : '-') + formatCurrency(tx.amount)"></span>
+                                        <span class="font-bold text-emerald-400 ml-2" x-text="formatCurrency(cat.total)"></span>
                                     </div>
                                 </template>
                             </div>
@@ -519,15 +341,12 @@
                 <div class="bg-mobills-card p-4 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-3">
                     <div class="relative flex-1 min-w-[210px]">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." 
-                               class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none">
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 text-xs">
-                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border">
-                            <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Todas</button>
-                            <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Receitas</button>
-                            <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Despesas</button>
-                        </div>
+                    <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
+                        <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg">Todas</button>
+                        <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg">Receitas</button>
+                        <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg">Despesas</button>
                     </div>
                 </div>
 
@@ -541,7 +360,7 @@
                             </div>
                             <div class="divide-y divide-mobills-border/40">
                                 <template x-for="item in group.items" :key="item.id">
-                                    <div class="px-4 md:px-6 py-3.5 hover:bg-mobills-cardHover/60 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="px-4 md:px-6 py-3.5 hover:bg-mobills-cardHover/60 transition flex items-center justify-between gap-3">
                                         <div class="flex items-center space-x-3.5 min-w-0">
                                             <button @click="toggleStatus(item.id)" class="shrink-0 cursor-pointer">
                                                 <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
@@ -550,30 +369,25 @@
                                             <div class="min-w-0">
                                                 <div class="flex items-center space-x-2">
                                                     <span class="font-semibold text-sm text-white truncate" x-text="item.description"></span>
-                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0"
-                                                          :class="{
-                                                              'bg-blue-950/70 text-blue-400 border-blue-800/50': item.user === 'Paulo',
-                                                              'bg-pink-950/70 text-pink-400 border-pink-800/50': item.user === 'Isabela',
-                                                              'bg-purple-950/70 text-purple-400 border-purple-800/50': item.user === 'Compartilhado'
-                                                          }" x-text="item.user"></span>
+                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0" :class="{'bg-blue-950/75 text-blue-400 border-blue-800': item.user === 'Paulo', 'bg-pink-950/75 text-pink-400 border-pink-800': item.user === 'Isabela', 'bg-purple-950/75 text-purple-400 border-purple-800': item.user === 'Compartilhado'}" x-text="item.user"></span>
                                                 </div>
-                                                <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
+                                                <div class="flex items-center space-x-2 mt-1 text-xs text-gray-400">
                                                     <span x-text="item.category"></span><span>•</span><span x-text="item.account || 'Carteira'"></span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="flex items-center justify-between sm:justify-end space-x-4 shrink-0">
+                                        <div class="flex items-center space-x-4 shrink-0">
                                             <span class="font-bold text-sm md:text-base" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></span>
                                             <div class="flex items-center space-x-1">
-                                                <button @click="openModal(item)" class="p-2 text-gray-400 hover:text-mobills-purpleLight rounded-lg cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
-                                                <button @click="promptDelete(item)" class="p-2 text-gray-400 hover:text-red-400 rounded-lg cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                                <button @click="openModal(item)" class="p-2 text-gray-400 hover:text-mobills-purpleLight cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
+                                                <button @click="promptDelete(item)" class="p-2 text-gray-400 hover:text-red-400 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
                             </div>
                             <div class="bg-mobills-card px-4 py-3 border-t border-mobills-border/50 flex justify-center">
-                                <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2 shadow-sm">
+                                <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2">
                                     <span>Saldo Previsto Final do Dia</span>
                                     <strong class="text-sm font-extrabold" :class="group.runningBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
                                 </div>
@@ -587,44 +401,9 @@
             <!-- ABA 3: MÊS A MÊS                           -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'monthly'" class="space-y-6">
-                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Evolução Financeira Mês a Mês</h3>
-                        <p class="text-xs text-gray-400">Comparativo mensal completo de receitas, despesas e balanço.</p>
-                    </div>
-                </div>
-
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                    <h3 class="text-lg font-bold text-white mb-2">Evolução Financeira Mês a Mês</h3>
                     <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
-                </div>
-
-                <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-mobills-border text-[11px] font-semibold text-gray-400 uppercase bg-mobills-bg/60">
-                                    <th class="py-3.5 px-5">Mês / Ano</th>
-                                    <th class="py-3.5 px-4 text-center">Lançamentos</th>
-                                    <th class="py-3.5 px-4 text-right">Receitas</th>
-                                    <th class="py-3.5 px-4 text-right">Despesas</th>
-                                    <th class="py-3.5 px-4 text-right">Balanço</th>
-                                    <th class="py-3.5 px-4 text-right">Acumulado</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-mobills-border/40 text-xs">
-                                <template x-for="row in monthlySummaryRows" :key="row.key">
-                                    <tr @click="drillDownToMonth(row.year, row.month)" class="hover:bg-mobills-cardHover/80 transition cursor-pointer">
-                                        <td class="py-3.5 px-5 font-bold text-white" x-text="row.label"></td>
-                                        <td class="py-3.5 px-4 text-center" x-text="row.count"></td>
-                                        <td class="py-3.5 px-4 text-right font-bold text-emerald-400" x-text="formatCurrency(row.income)"></td>
-                                        <td class="py-3.5 px-4 text-right font-bold text-red-400" x-text="formatCurrency(row.expense)"></td>
-                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.monthlyBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.monthlyBalance)"></td>
-                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.closingBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(row.closingBalance)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
@@ -633,7 +412,7 @@
             <!-- ========================================== -->
             <div x-show="activeTab === 'reports'" class="space-y-6">
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-mobills-border pb-4">
+                    <div class="flex items-center justify-between border-b border-mobills-border pb-4">
                         <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
                         <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
                             <button @click="reportViewType = 'despesas'" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg">Despesas</button>
@@ -641,9 +420,7 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                        <div class="lg:col-span-5 flex justify-center">
-                            <div class="relative w-64 h-64"><canvas id="reportsDonutChart"></canvas></div>
-                        </div>
+                        <div class="lg:col-span-5 flex justify-center"><div class="relative w-64 h-64"><canvas id="reportsDonutChart"></canvas></div></div>
                         <div class="lg:col-span-7 space-y-3 max-h-[360px] overflow-y-auto pr-1">
                             <template x-for="item in activeReportData" :key="item.name">
                                 <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border flex items-center justify-between">
@@ -662,18 +439,38 @@
             <div x-show="activeTab === 'settings'" class="max-w-2xl mx-auto space-y-6">
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-purple/50 space-y-4 shadow-lg">
                     <h3 class="font-bold text-base text-white">Sincronização em Tempo Real (Firebase)</h3>
+                    <p class="text-xs text-gray-400">Insira a URL do seu Realtime Database do Firebase e um Código Secreto para sincronizar automaticamente entre o seu celular e o da Isabela.</p>
                     <div class="space-y-3 text-xs">
-                        <input type="url" x-model="syncConfig.dbUrl" placeholder="URL do Firebase Realtime Database" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
-                        <input type="text" x-model="syncConfig.roomCode" placeholder="Código Secreto do Casal" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
-                        <button @click="connectCloudSync(true)" class="w-full py-3 bg-mobills-purple text-white font-bold rounded-xl cursor-pointer">Conectar</button>
+                        <div>
+                            <label class="block text-gray-400 mb-1">URL do Firebase Realtime Database</label>
+                            <input type="url" x-model="syncConfig.dbUrl" placeholder="https://seu-projeto-default-rtdb.firebaseio.com" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">Código Secreto do Casal</label>
+                            <input type="text" x-model="syncConfig.roomCode" placeholder="Ex: paulo-isabela-2026" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        </div>
+                        <button @click="connectCloudSync(true)" class="w-full py-3 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg cursor-pointer">Conectar e Sincronizar</button>
+                        
+                        <div x-show="syncConfig.connected" class="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between text-emerald-300">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span class="font-semibold">Sincronizado ativamente</span>
+                            </div>
+                        </div>
+                        <div x-show="syncConfig.connected" class="pt-2">
+                            <button @click="copyPairingLink()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center space-x-2 shadow-lg cursor-pointer">
+                                <i class="fa-solid fa-link text-sm"></i>
+                                <span>Copiar Link de Pareamento p/ Isabela</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                    <h3 class="font-bold text-base text-white">Backup e Restauração</h3>
+                    <h3 class="font-bold text-base text-white">Backup e Restauração (JSON)</h3>
                     <div class="grid grid-cols-2 gap-4">
-                        <button @click="exportBackup()" class="py-3 bg-mobills-bg text-white text-xs font-semibold rounded-xl border border-mobills-border cursor-pointer">Exportar JSON</button>
-                        <label class="py-3 bg-mobills-bg text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center cursor-pointer">
+                        <button @click="exportBackup()" class="py-3 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border cursor-pointer">Exportar JSON</button>
+                        <label class="py-3 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center cursor-pointer">
                             <span>Restaurar JSON</span>
                             <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
                         </label>
@@ -684,7 +481,7 @@
         </div>
     </main>
 
-    <!-- MODAL NOVO/EDITAR -->
+    <!-- MODAL NOVO / EDITAR COM RECORRÊNCIA -->
     <div x-show="isModalOpen" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
         <div @click.away="closeModal()" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
             <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
@@ -726,8 +523,24 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Recorrência -->
+                <div x-show="!editingId" class="p-3 bg-mobills-bg rounded-xl border border-mobills-border space-y-2">
+                    <label class="block font-bold text-gray-300">Recorrência</label>
+                    <div class="grid grid-cols-4 gap-1">
+                        <button type="button" @click="form.recurrence = 'nenhuma'" :class="form.recurrence === 'nenhuma' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-card text-gray-400'" class="py-1.5 rounded-lg">Única</button>
+                        <button type="button" @click="form.recurrence = 'diaria'" :class="form.recurrence === 'diaria' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-card text-gray-400'" class="py-1.5 rounded-lg">Diária</button>
+                        <button type="button" @click="form.recurrence = 'semanal'" :class="form.recurrence === 'semanal' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-card text-gray-400'" class="py-1.5 rounded-lg">Semanal</button>
+                        <button type="button" @click="form.recurrence = 'mensal'" :class="form.recurrence === 'mensal' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-card text-gray-400'" class="py-1.5 rounded-lg">Mensal</button>
+                    </div>
+                    <div x-show="form.recurrence !== 'nenhuma'" class="pt-2">
+                        <label class="block text-gray-400 mb-1">Número de repetições:</label>
+                        <input type="number" min="2" max="60" x-model="form.repeatCount" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border">
+                    </div>
+                </div>
+
                 <div class="flex justify-end space-x-3 pt-2">
-                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-400">Cancelar</button>
+                    <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
                     <button type="submit" class="px-6 py-2.5 bg-mobills-purple text-white font-bold rounded-xl cursor-pointer">Salvar</button>
                 </div>
             </form>
@@ -765,6 +578,7 @@
                 reportViewType: 'despesas',
                 toast: { visible: false, message: '', type: 'success' },
                 syncConfig: { dbUrl: '', roomCode: '', connected: false, lastSync: '' },
+                syncTimer: null,
                 transactions: [],
                 categoriesList: [
                     { name: 'Casa', color: '#06b6d4' },
@@ -777,14 +591,11 @@
                     { name: 'Lazer', color: '#f59e0b' },
                     { name: 'Salário', color: '#10b981' },
                     { name: 'Renda extra', color: '#22c55e' },
-                    { name: 'Reajuste', color: '#f97316' },
                     { name: 'Outros', color: '#6b7280' }
                 ],
                 isModalOpen: false,
                 editingId: null,
-                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 2 },
-                deleteModal: { open: false, item: null },
-                shareModal: { open: false, customBaseUrl: '', generatedUrl: '' },
+                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12 },
                 importModal: { open: false, parsedRows: [] },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
@@ -793,17 +604,41 @@
                         const saved = JSON.parse(localStorage.getItem('paulo_isabela_transactions_v1') || '[]');
                         if (Array.isArray(saved)) this.transactions = saved;
                     } catch(e) { this.transactions = []; }
+
+                    const savedSync = localStorage.getItem('paulo_isabela_sync_v1');
+                    if (savedSync) {
+                        try {
+                            const cfg = JSON.parse(savedSync);
+                            this.syncConfig.dbUrl = cfg.dbUrl || '';
+                            this.syncConfig.roomCode = cfg.roomCode || '';
+                            if (this.syncConfig.dbUrl && this.syncConfig.roomCode) {
+                                this.connectCloudSync(false);
+                            }
+                        } catch(e) {}
+                    }
+
+                    // Checar query params para pareamento automático
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const qDb = urlParams.get('db');
+                    const qRoom = urlParams.get('room');
+                    if (qDb && qRoom) {
+                        this.syncConfig.dbUrl = qDb;
+                        this.syncConfig.roomCode = qRoom;
+                        this.connectCloudSync(true);
+                    }
+
                     this.$nextTick(() => this.renderAllCharts());
                 },
                 saveToStorage() {
                     localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                    if (this.syncConfig.connected) this.pushToCloud();
                 },
                 showToast(msg, type='success') {
                     this.toast = { visible: true, message: msg, type };
                     setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
                 get pageTitle() {
-                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', monthly: 'Mês a Mês', reports: 'Relatórios', settings: 'Configurações' };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', settings: 'Configurações / Backup' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
                 get formattedSelectedMonth() {
@@ -819,7 +654,7 @@
                     });
                     const arr = Array.from(set).map(k => {
                         const [y, m] = k.split('-').map(Number);
-                        const count = this.transactions.filter(t => t.date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;
+                        const count = this.transactions.filter(t => t.date && t.date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;
                         return { key: k, year: y, month: m, label: `${this.shortMonthNames[m]}/${y}`, count };
                     });
                     return arr.sort((a,b) => b.key.localeCompare(a.key));
@@ -833,6 +668,7 @@
                     this.selectedMonth = m;
                     this.allMonthsMode = false;
                     this.monthPickerOpen = false;
+                    this.$nextTick(() => this.renderAllCharts());
                 },
                 changeMonth(delta) {
                     let m = this.selectedMonth + delta;
@@ -841,6 +677,7 @@
                     else if (m < 0) { m = 11; y--; }
                     this.selectedMonth = m;
                     this.selectedYear = y;
+                    this.$nextTick(() => this.renderAllCharts());
                 },
                 goToCurrentMonth() {
                     const now = new Date();
@@ -848,9 +685,11 @@
                     this.selectedMonth = now.getMonth();
                     this.allMonthsMode = false;
                     this.monthPickerOpen = false;
+                    this.$nextTick(() => this.renderAllCharts());
                 },
                 toggleAllMonthsMode() {
                     this.allMonthsMode = !this.allMonthsMode;
+                    this.$nextTick(() => this.renderAllCharts());
                 },
                 get monthFilteredTransactions() {
                     return this.transactions.filter(t => {
@@ -893,33 +732,6 @@
                         saldoAtual: incConc - expConc,
                         saldoPrevistoMes: bal
                     };
-                },
-                get userMetrics() {
-                    const list = this.monthFilteredTransactions;
-                    const res = {
-                        paulo: { receitas: 0, despesas: 0, percentage: 0 },
-                        isabela: { receitas: 0, despesas: 0, percentage: 0 },
-                        compartilhado: { receitas: 0, despesas: 0, percentage: 0 }
-                    };
-                    let totalExp = 0;
-                    list.forEach(t => {
-                        const amt = Number(t.amount) || 0;
-                        const u = t.user || 'Compartilhado';
-                        if (res[u.toLowerCase() === 'paulo' ? 'paulo' : (u.toLowerCase() === 'isabela' ? 'isabela' : 'compartilhado')]) {
-                            const key = u.toLowerCase() === 'paulo' ? 'paulo' : (u.toLowerCase() === 'isabela' ? 'isabela' : 'compartilhado');
-                            if (t.type === 'income') res[key].receitas += amt;
-                            else {
-                                res[key].despesas += amt;
-                                totalExp += amt;
-                            }
-                        }
-                    });
-                    if (totalExp > 0) {
-                        res.paulo.percentage = Math.round((res.paulo.despesas / totalExp) * 100);
-                        res.isabela.percentage = Math.round((res.isabela.despesas / totalExp) * 100);
-                        res.compartilhado.percentage = 100 - res.paulo.percentage - res.isabela.percentage;
-                    }
-                    return res;
                 },
                 get expenseBreakdown() {
                     const list = this.monthFilteredTransactions.filter(t => t.type === 'expense');
@@ -975,46 +787,11 @@
                         return groupObj;
                     });
                 },
-                get monthlySummaryRows() {
-                    const set = new Set();
-                    this.transactions.forEach(t => {
-                        if (t.date) set.add(t.date.substring(0, 7));
-                    });
-                    const sortedMonths = Array.from(set).sort((a,b) => b.localeCompare(a));
-                    let acc = 0;
-                    return sortedMonths.map(ym => {
-                        const [y, m] = ym.split('-').map(Number);
-                        const list = this.transactions.filter(t => t.date && t.date.startsWith(ym));
-                        let inc = 0, exp = 0;
-                        list.forEach(t => {
-                            const a = Number(t.amount) || 0;
-                            if (t.type === 'income') inc += a; else exp += a;
-                        });
-                        const bal = inc - exp;
-                        acc += bal;
-                        return {
-                            key: ym,
-                            year: y,
-                            month: m - 1,
-                            label: `${this.shortMonthNames[m-1]}/${y}`,
-                            count: list.length,
-                            income: inc,
-                            expense: exp,
-                            monthlyBalance: bal,
-                            closingBalance: acc
-                        };
-                    });
-                },
                 get activeReportData() {
                     return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
                 },
                 formatCurrency(val) {
                     return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                },
-                formatDateShort(dStr) {
-                    if (!dStr) return '';
-                    const [y, m, d] = dStr.split('-');
-                    return `${d}/${m}/${y}`;
                 },
                 formatDateHeader(dStr) {
                     if (!dStr) return '';
@@ -1027,40 +804,48 @@
                         this.form = { ...item };
                     } else {
                         this.editingId = null;
-                        this.form = {
-                            type: 'expense',
-                            amount: '',
-                            date: new Date().toISOString().split('T')[0],
-                            description: '',
-                            category: 'Outros',
-                            user: 'Compartilhado',
-                            account: 'Carteira',
-                            status: 'completed',
-                            recurrence: 'nenhuma',
-                            repeatCount: 2
-                        };
+                        this.form = { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12 };
                     }
                     this.isModalOpen = true;
                 },
-                closeModal() {
-                    this.isModalOpen = false;
-                },
-                setFormType(t) {
-                    this.form.type = t;
-                },
+                closeModal() { this.isModalOpen = false; },
+                setFormType(t) { this.form.type = t; },
                 saveTransaction() {
                     if (!this.form.amount || !this.form.description || !this.form.date) return;
+                    
                     if (this.editingId) {
                         const idx = this.transactions.findIndex(t => t.id === this.editingId);
-                        if (idx !== -1) {
-                            this.transactions[idx] = { ...this.transactions[idx], ...this.form };
-                        }
+                        if (idx !== -1) this.transactions[idx] = { ...this.transactions[idx], ...this.form };
                         this.showToast('Lançamento atualizado!');
                     } else {
-                        const newTx = { id: 'tx_' + Date.now() + Math.random().toString(36).substring(2,5), ...this.form };
-                        this.transactions.push(newTx);
-                        this.showToast('Lançamento adicionado!');
+                        const count = Number(this.form.recurrence !== 'nenhuma' ? this.form.repeatCount : 1) || 1;
+                        const baseDate = new Date(this.form.date + 'T00:00:00');
+
+                        for (let i = 0; i < count; i++) {
+                            let currDate = new Date(baseDate);
+                            if (this.form.recurrence === 'diaria') currDate.setDate(baseDate.getDate() + i);
+                            else if (this.form.recurrence === 'semanal') currDate.setDate(baseDate.getDate() + (i * 7));
+                            else if (this.form.recurrence === 'mensal') currDate.setMonth(baseDate.getMonth() + i);
+
+                            const dString = currDate.toISOString().split('T')[0];
+                            const desc = count > 1 ? `${this.form.description} (${i + 1}/${count})` : this.form.description;
+                            const status = i === 0 ? this.form.status : 'pending';
+
+                            this.transactions.push({
+                                id: 'tx_' + Date.now() + '_' + i + Math.random().toString(36).substring(2,5),
+                                type: this.form.type,
+                                amount: Number(this.form.amount),
+                                date: dString,
+                                description: desc,
+                                category: this.form.category,
+                                user: this.form.user,
+                                account: this.form.account,
+                                status: status
+                            });
+                        }
+                        this.showToast(count > 1 ? `${count} lançamentos recorrentes gerados!` : 'Lançamento adicionado!');
                     }
+
                     this.saveToStorage();
                     this.closeModal();
                     this.renderAllCharts();
@@ -1081,21 +866,56 @@
                         this.renderAllCharts();
                     }
                 },
-                openShareModal() {
-                    const json = JSON.stringify(this.transactions);
-                    const compressed = LZString.compressToEncodedURIComponent(json);
-                    this.shareModal.generatedUrl = window.location.origin + window.location.pathname + '#data=' + compressed;
-                    this.shareModal.open = true;
+                openImportModal() { this.importModal.open = true; this.importModal.parsedRows = []; },
+                closeImportModal() { this.importModal.open = false; },
+                handleMobillsFileSelect(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            let allRows = [];
+                            workbook.SheetNames.forEach(sheetName => {
+                                const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+                                json.forEach(row => { if (row.length > 0) allRows.push(row); });
+                            });
+                            this.importModal.parsedRows = allRows.map((r, i) => ({
+                                id: 'mob_' + i + '_' + Date.now(),
+                                description: String(r[1] || r[0] || 'Mobills'),
+                                amount: Math.abs(Number(String(r[3] || r[2] || 10).replace(/[^\d.,]/g, '').replace(',', '.')) || 10),
+                                type: 'expense',
+                                date: new Date().toISOString().split('T')[0],
+                                category: 'Outros',
+                                user: 'Compartilhado',
+                                account: 'Carteira',
+                                status: 'completed'
+                            }));
+                            this.showToast(`${this.importModal.parsedRows.length} linhas lidas.`);
+                        } catch(err) {
+                            this.showToast('Erro ao ler arquivo', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                },
+                confirmMobillsImport() {
+                    if (this.importModal.parsedRows.length === 0) return;
+                    this.transactions.push(...this.importModal.parsedRows);
+                    this.saveToStorage();
+                    this.closeImportModal();
+                    this.showToast('Importação concluída com sucesso!');
+                    this.renderAllCharts();
                 },
                 exportBackup() {
                     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.transactions, null, 2));
-                    const dlAnchor = document.createElement('a');
-                    dlAnchor.setAttribute("href", dataStr);
-                    dlAnchor.setAttribute("download", `backup_financas_${new Date().toISOString().split('T')[0]}.json`);
-                    document.body.appendChild(dlAnchor);
-                    dlAnchor.click();
-                    dlAnchor.remove();
-                    this.showToast('Backup exportado com sucesso!');
+                    const dl = document.createElement('a');
+                    dl.setAttribute("href", dataStr);
+                    dl.setAttribute("download", `backup_financas_${new Date().toISOString().split('T')[0]}.json`);
+                    document.body.appendChild(dl);
+                    dl.click();
+                    dl.remove();
+                    this.showToast('Backup exportado!');
                 },
                 importBackup(event) {
                     const file = event.target.files[0];
@@ -1107,130 +927,131 @@
                             if (Array.isArray(parsed)) {
                                 this.transactions = parsed;
                                 this.saveToStorage();
-                                this.showToast('Backup restaurado com sucesso!');
+                                this.showToast('Backup restaurado!');
                                 this.renderAllCharts();
                             }
-                        } catch(err) {
-                            this.showToast('Arquivo JSON inválido', 'error');
-                        }
+                        } catch(err) { this.showToast('Arquivo inválido', 'error'); }
                     };
                     reader.readAsText(file);
                 },
-                handleMobillsFileSelect(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            let allRows = [];
-                            workbook.SheetNames.forEach(sheetName => {
-                                const worksheet = workbook.Sheets[sheetName];
-                                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                                json.forEach(row => { if (row.length > 0) allRows.push(row); });
-                            });
-                            this.importModal.parsedRows = allRows.map((r, i) => ({
-                                id: 'mob_' + i,
-                                description: String(r[1] || r[0] || 'Lançamento Mobills'),
-                                amount: Math.abs(Number(String(r[3] || r[2] || 0).replace(/[^\d.,]/g, '').replace(',', '.')) || 10),
-                                type: 'expense',
-                                date: new Date().toISOString().split('T')[0],
-                                category: 'Outros',
-                                user: 'Compartilhado',
-                                status: 'completed'
-                            }));
-                            this.importModal.open = true;
-                        } catch(err) {
-                            this.showToast('Erro ao ler planilha', 'error');
-                        }
-                    };
-                    reader.readAsArrayBuffer(file);
-                },
-                confirmMobillsImport() {
-                    this.transactions = [...this.transactions, ...this.importModal.parsedRows];
-                    this.saveToStorage();
-                    this.importModal.open = false;
-                    this.showToast('Planilha importada com sucesso!');
-                    this.renderAllCharts();
-                },
-                connectCloudSync() {
+                copyPairingLink() {
                     if (!this.syncConfig.dbUrl || !this.syncConfig.roomCode) {
-                        this.showToast('Preencha a URL e o Código Secreto', 'error');
+                        this.showToast('Conecte primeiro', 'error');
                         return;
                     }
-                    this.syncConfig.connected = true;
-                    this.syncConfig.lastSync = new Date().toLocaleTimeString();
-                    this.showToast('Conectado com sucesso!');
+                    const url = window.location.origin + window.location.pathname + `?db=${encodeURIComponent(this.syncConfig.dbUrl)}&room=${encodeURIComponent(this.syncConfig.roomCode)}`;
+                    const temp = document.createElement('textarea');
+                    temp.value = url;
+                    document.body.appendChild(temp);
+                    temp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(temp);
+                    this.showToast('Link de pareamento copiado para a Isabela!');
                 },
+                async connectCloudSync(showMsg = true) {
+                    if (!this.syncConfig.dbUrl || !this.syncConfig.roomCode) return;
+                    let cleanUrl = this.syncConfig.dbUrl.trim();
+                    if (cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
+                    this.syncConfig.dbUrl = cleanUrl;
+                    localStorage.setItem('paulo_isabela_sync_v1', JSON.stringify({ dbUrl: this.syncConfig.dbUrl, roomCode: this.syncConfig.roomCode }));
+                    
+                    try {
+                        const res = await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`);
+                        const data = await res.json();
+                        if (data && Array.isArray(data)) {
+                            if (data.length >= this.transactions.length) {
+                                this.transactions = data;
+                                localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                            }
+                        } else {
+                            await this.pushToCloud();
+                        }
+                        this.syncConfig.connected = true;
+                        if (showMsg) this.showToast('Sincronizado com sucesso!');
+                        if (this.syncTimer) clearInterval(this.syncTimer);
+                        this.syncTimer = setInterval(() => this.pullFromCloud(), 10000);
+                        this.renderAllCharts();
+                    } catch(e) {
+                        this.syncConfig.connected = false;
+                        if (showMsg) this.showToast('Erro ao conectar ao Firebase', 'error');
+                    }
+                },
+                async pushToCloud() {
+                    if (!this.syncConfig.dbUrl || !this.syncConfig.roomCode) return;
+                    try {
+                        await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`, {
+                            method: 'PUT',
+                            body: JSON.stringify(this.transactions)
+                        });
+                    } catch(e) {}
+                },
+                async pullFromCloud() {
+                    if (!this.syncConfig.dbUrl || !this.syncConfig.roomCode) return;
+                    try {
+                        const res = await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`);
+                        const data = await res.json();
+                        if (data && Array.isArray(data)) {
+                            if (JSON.stringify(data) !== JSON.stringify(this.transactions)) {
+                                this.transactions = data;
+                                localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                                this.renderAllCharts();
+                            }
+                        }
+                    } catch(e) {}
+                },
+                _charts: {},
                 renderAllCharts() {
                     try {
                         const expData = this.expenseBreakdown;
                         const incData = this.incomeBreakdown;
 
-                        // Donut Despesas Dash
                         const ctx1 = document.getElementById('dashExpenseChart');
                         if (ctx1) {
                             if (this._charts.dashExp) this._charts.dashExp.destroy();
                             this._charts.dashExp = new Chart(ctx1, {
                                 type: 'doughnut',
-                                data: {
-                                    labels: expData.map(e => e.name),
-                                    datasets: [{ data: expData.map(e => e.total), backgroundColor: expData.map(e => e.color), borderWidth: 0 }]
-                                },
+                                data: { labels: expData.map(e => e.name), datasets: [{ data: expData.map(e => e.total), backgroundColor: expData.map(e => e.color), borderWidth: 0 }] },
                                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
                             });
                         }
 
-                        // Donut Receitas Dash
                         const ctx2 = document.getElementById('dashIncomeChart');
                         if (ctx2) {
                             if (this._charts.dashInc) this._charts.dashInc.destroy();
                             this._charts.dashInc = new Chart(ctx2, {
                                 type: 'doughnut',
-                                data: {
-                                    labels: incData.map(e => e.name),
-                                    datasets: [{ data: incData.map(e => e.total), backgroundColor: incData.map(e => e.color), borderWidth: 0 }]
-                                },
+                                data: { labels: incData.map(e => e.name), datasets: [{ data: incData.map(e => e.total), backgroundColor: incData.map(e => e.color), borderWidth: 0 }] },
                                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
                             });
                         }
 
-                        // Relatórios Donut
                         const ctx3 = document.getElementById('reportsDonutChart');
                         if (ctx3) {
                             const rData = this.activeReportData;
                             if (this._charts.repDonut) this._charts.repDonut.destroy();
                             this._charts.repDonut = new Chart(ctx3, {
                                 type: 'doughnut',
-                                data: {
-                                    labels: rData.map(e => e.name),
-                                    datasets: [{ data: rData.map(e => e.total), backgroundColor: rData.map(e => e.color), borderWidth: 0 }]
-                                },
+                                data: { labels: rData.map(e => e.name), datasets: [{ data: rData.map(e => e.total), backgroundColor: rData.map(e => e.color), borderWidth: 0 }] },
                                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
                             });
                         }
 
-                        // Mês a Mês Chart
                         const ctx4 = document.getElementById('monthlyEvolutionChart');
                         if (ctx4) {
-                            const rows = this.monthlySummaryRows.slice().reverse();
                             if (this._charts.monthlyEv) this._charts.monthlyEv.destroy();
                             this._charts.monthlyEv = new Chart(ctx4, {
                                 type: 'bar',
                                 data: {
-                                    labels: rows.map(r => r.label),
+                                    labels: [this.formattedSelectedMonth],
                                     datasets: [
-                                        { label: 'Receitas', data: rows.map(r => r.income), backgroundColor: '#10b981', borderRadius: 6 },
-                                        { label: 'Despesas', data: rows.map(r => r.expense), backgroundColor: '#ef4444', borderRadius: 6 }
+                                        { label: 'Receitas', data: [this.metrics.totalReceitas], backgroundColor: '#10b981', borderRadius: 6 },
+                                        { label: 'Despesas', data: [this.metrics.totalDespesas], backgroundColor: '#ef4444', borderRadius: 6 }
                                     ]
                                 },
                                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
                             });
                         }
-                    } catch(e) {
-                        console.error('Erro ao renderizar gráficos:', e);
-                    }
+                    } catch(e) {}
                 }
             }
         }
