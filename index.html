@@ -1,0 +1,3031 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121216">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Paulo & Isabela | Controle Financeiro</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%237c3aed'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='800' font-size='26'%3EP%26amp;I%3C/text%3E%3C/svg%3E">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        mobills: {
+                            bg: '#121216',
+                            card: '#1c1c22',
+                            cardHover: '#24242c',
+                            border: '#2c2c38',
+                            purple: '#7c3aed',
+                            purpleLight: '#8b5cf6',
+                            green: '#10b981',
+                            red: '#ef4444',
+                            blue: '#3b82f6',
+                            pink: '#ec4899',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- SheetJS (Leitura nativa de Excel .xlsx/.xls e CSV) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- LZ-String (Compactação de dados para geração de Link Compartilhável) -->
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121216;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2c2c38;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7c3aed;
+        }
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-mobills-bg text-gray-100 font-sans antialiased min-h-screen flex flex-col md:flex-row pb-20 md:pb-0 selection:bg-mobills-purple selection:text-white" x-data="financeApp()" x-init="initApp()">
+
+    <!-- Notificação Toast Flutuante -->
+    <div x-show="toast.visible" x-transition.opacity.duration.300ms x-cloak
+         class="fixed top-5 right-5 z-50 flex items-center space-x-3 px-4 py-3 rounded-2xl shadow-2xl border backdrop-blur-md"
+         :class="toast.type === 'error' ? 'bg-red-950/90 border-red-700 text-red-200' : 'bg-mobills-card/95 border-mobills-purple text-white'">
+        <i class="fa-solid" :class="toast.type === 'error' ? 'fa-circle-exclamation text-red-400' : 'fa-circle-check text-emerald-400'"></i>
+        <span class="text-xs font-semibold" x-text="toast.message"></span>
+    </div>
+
+    <!-- SIDEBAR DESKTOP -->
+    <aside class="hidden md:flex w-64 bg-mobills-card border-r border-mobills-border flex-col justify-between shrink-0 h-screen sticky top-0 z-20">
+        <div>
+            <!-- Brand Header -->
+            <div class="p-5 flex items-center space-x-3 border-b border-mobills-border">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-900/40 font-extrabold text-base tracking-tight">
+                    P&I
+                </div>
+                <div>
+                    <h1 class="font-bold text-base text-white leading-tight">Paulo & Isabela</h1>
+                    <p class="text-[11px] text-purple-400 font-medium">Controle Financeiro</p>
+                </div>
+            </div>
+
+            <!-- Botão Principal (+) -->
+            <div class="p-4">
+                <button @click="openModal()" class="w-full py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition transform active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                    <span class="text-sm">Novo Lançamento</span>
+                </button>
+            </div>
+
+            <!-- Menu Lateral -->
+            <nav class="px-3 space-y-1.5 mt-1">
+                <button @click="activeTab = 'dashboard'" 
+                        :class="activeTab === 'dashboard' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-house w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </button>
+
+                <button @click="activeTab = 'transactions'" 
+                        :class="activeTab === 'transactions' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-list-ul w-5 text-center"></i>
+                    <span>Transações</span>
+                </button>
+
+                <button @click="activeTab = 'monthly'" 
+                        :class="activeTab === 'monthly' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-calendar-days w-5 text-center"></i>
+                    <span>Mês a Mês</span>
+                </button>
+
+                <button @click="activeTab = 'reports'" 
+                        :class="activeTab === 'reports' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Relatórios & Previsões</span>
+                </button>
+
+                <button @click="activeTab = 'settings'" 
+                        :class="activeTab === 'settings' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" 
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-gear w-5 text-center"></i>
+                    <span>Configurações / Backup</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Filtro de Integrante na Sidebar -->
+        <div class="p-4 border-t border-mobills-border space-y-3">
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Visão por Integrante</label>
+                <div class="grid grid-cols-2 gap-1.5 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
+                    <button @click="selectedUserFilter = 'Todos'" :class="selectedUserFilter === 'Todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
+                        Todos
+                    </button>
+                    <button @click="selectedUserFilter = 'Paulo'" :class="selectedUserFilter === 'Paulo' ? 'bg-mobills-blue text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
+                        Paulo
+                    </button>
+                    <button @click="selectedUserFilter = 'Isabela'" :class="selectedUserFilter === 'Isabela' ? 'bg-mobills-pink text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
+                        Isabela
+                    </button>
+                    <button @click="selectedUserFilter = 'Compartilhado'" :class="selectedUserFilter === 'Compartilhado' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">
+                        Casa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- HEADER MOBILE -->
+    <header class="md:hidden bg-mobills-card border-b border-mobills-border px-4 py-3 flex justify-between items-center sticky top-0 z-20">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-mobills-purple to-indigo-500 flex items-center justify-center text-white font-extrabold text-xs">
+                P&I
+            </div>
+            <div>
+                <span class="font-bold text-sm text-white block leading-none">Paulo & Isabela</span>
+                <span class="text-[10px] text-purple-400 font-medium">Finanças</span>
+            </div>
+        </div>
+        
+        <select x-model="selectedUserFilter" aria-label="Filtrar por integrante" class="bg-mobills-bg text-gray-200 text-xs py-1.5 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+            <option value="Todos">Todos</option>
+            <option value="Paulo">Paulo</option>
+            <option value="Isabela">Isabela</option>
+            <option value="Compartilhado">Casa (Compartilhado)</option>
+        </select>
+    </header>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col min-w-0">
+        
+        <!-- TOPBAR COM SELETOR DE MÊS/ANO E BARRA MÊS A MÊS -->
+        <header class="bg-mobills-card/95 backdrop-blur-md border-b border-mobills-border sticky top-0 z-10">
+            <div class="py-3 px-4 md:px-8 flex flex-wrap items-center justify-between gap-3">
+                <!-- Título da Aba Atual -->
+                <div class="flex items-center space-x-3">
+                    <h2 class="text-base md:text-lg font-bold text-white" x-text="pageTitle"></h2>
+                    <span x-show="selectedUserFilter !== 'Todos'" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-mobills-purple/20 text-mobills-purpleLight border border-mobills-purple/40" x-text="selectedUserFilter"></span>
+                </div>
+
+                <!-- Navegador de Mês Interativo (Padrão Mobills Pill + Grade Rápida) -->
+                <div class="relative flex items-center space-x-2">
+                    <div class="flex items-center space-x-1 bg-mobills-bg px-2 py-1 rounded-full border border-mobills-border shadow-inner">
+                        <button @click="changeMonth(-1)" aria-label="Mês anterior" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-mobills-cardHover transition cursor-pointer">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+
+                        <button @click="monthPickerOpen = !monthPickerOpen" class="px-3 py-1 rounded-full text-xs md:text-sm font-bold text-white hover:bg-mobills-cardHover flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-regular fa-calendar text-mobills-purpleLight text-xs"></i>
+                            <span x-text="allMonthsMode ? `Consolidado ${selectedYear}` : formattedSelectedMonth"></span>
+                            <i class="fa-solid fa-caret-down text-[10px] text-gray-400"></i>
+                        </button>
+
+                        <button @click="changeMonth(1)" aria-label="Próximo mês" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-mobills-cardHover transition cursor-pointer">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Atalho para Consolidado Anual / Visão Mês a Mês -->
+                    <button @click="toggleAllMonthsMode()" 
+                            :class="allMonthsMode ? 'bg-mobills-purple text-white border-mobills-purpleLight' : 'bg-mobills-bg text-gray-300 border-mobills-border hover:border-mobills-purple'"
+                            class="hidden sm:flex items-center space-x-1.5 px-3 py-2 rounded-full border text-xs font-semibold transition cursor-pointer"
+                            title="Alternar entre mês individual e consolidado anual">
+                        <i class="fa-solid fa-layer-group text-[11px]"></i>
+                        <span x-text="allMonthsMode ? 'Vendo Ano Todo' : 'Consolidado Ano'"></span>
+                    </button>
+
+                    <!-- Popover Grade Rápida de Meses Jan–Dez + Ano -->
+                    <div x-show="monthPickerOpen" @click.away="monthPickerOpen = false" x-transition x-cloak
+                         class="absolute top-12 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 w-72 bg-mobills-card border border-mobills-border rounded-2xl shadow-2xl p-4 z-40 space-y-3">
+                        <div class="flex items-center justify-between border-b border-mobills-border pb-2">
+                            <button @click="selectedYear--" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </button>
+                            <span class="font-extrabold text-sm text-white" x-text="selectedYear"></span>
+                            <button @click="selectedYear++" class="w-7 h-7 rounded-lg bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 flex items-center justify-center cursor-pointer">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <template x-for="(mLabel, mIdx) in shortMonthNames" :key="mIdx">
+                                <button @click="selectMonthYear(selectedYear, mIdx)"
+                                        :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-mobills-purple text-white font-bold shadow-md' : 'bg-mobills-bg text-gray-300 hover:bg-mobills-cardHover'"
+                                        class="relative py-2 rounded-xl text-xs transition flex flex-col items-center justify-center cursor-pointer">
+                                    <span x-text="mLabel"></span>
+                                    <span x-show="hasTransactionsInMonth(selectedYear, mIdx)"
+                                          :class="!allMonthsMode && selectedMonth === mIdx ? 'bg-white' : 'bg-emerald-400'"
+                                          class="w-1.5 h-1.5 rounded-full mt-0.5"
+                                          :title="countTransactionsInMonth(selectedYear, mIdx) + ' lançamento(s)'"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <div class="pt-2 border-t border-mobills-border flex items-center justify-between gap-2">
+                            <button @click="goToCurrentMonth()" class="flex-1 py-1.5 bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 text-[11px] font-semibold rounded-lg border border-mobills-border cursor-pointer">
+                                Mês Atual
+                            </button>
+                            <button @click="allMonthsMode = !allMonthsMode; monthPickerOpen = false" class="flex-1 py-1.5 bg-mobills-purple/20 hover:bg-mobills-purple/30 text-mobills-purpleLight text-[11px] font-semibold rounded-lg border border-mobills-purple/40 cursor-pointer">
+                                <span x-text="allMonthsMode ? 'Filtrar Mês' : 'Ano Inteiro'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicador de Lançamentos Totais + Botão Importar Mobills + Compartilhar -->
+                <div class="flex items-center space-x-2">
+                    <button @click="openShareModal()" x-show="transactions.length > 0" class="py-1.5 px-3 bg-mobills-purple/20 hover:bg-mobills-purple/35 text-mobills-purpleLight border border-mobills-purple/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer" title="Gerar link com os dados preenchidos para enviar à Isabela">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span class="hidden sm:inline">Compartilhar</span>
+                    </button>
+
+                    <button @click="openImportModal()" class="py-1.5 px-3 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center space-x-2 transition cursor-pointer" title="Importar planilha CSV ou Excel do Mobills">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span class="hidden sm:inline">Importar Mobills (CSV / Excel)</span>
+                        <span class="sm:hidden">Importar</span>
+                    </button>
+
+                    <div class="hidden lg:flex items-center space-x-2 text-xs text-gray-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span x-text="transactions.length + ' lançamento(s)'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARRA HORIZONTAL DE PÍLULAS DOS MESES DISPONÍVEIS NA BASE (1 CLIQUE) -->
+            <div x-show="availableMonthPills.length > 0" class="px-4 md:px-8 py-2 bg-mobills-bg/60 border-t border-mobills-border/60 flex items-center space-x-2 overflow-x-auto">
+                <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider shrink-0 mr-1">
+                    <i class="fa-solid fa-clock-rotate-left mr-1 text-mobills-purpleLight"></i> Meses:
+                </span>
+
+                <template x-for="pill in availableMonthPills" :key="pill.key">
+                    <button @click="selectMonthYear(pill.year, pill.month)"
+                            :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month 
+                                ? 'bg-mobills-purple text-white border-mobills-purpleLight font-bold shadow-sm' 
+                                : 'bg-mobills-card text-gray-300 border-mobills-border hover:border-mobills-purple/60 hover:text-white'"
+                            class="px-3 py-1 rounded-full border text-xs transition flex items-center space-x-1.5 shrink-0 cursor-pointer">
+                        <span x-text="pill.label"></span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                              :class="!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month ? 'bg-white/20 text-white' : 'bg-mobills-bg text-gray-400'"
+                              x-text="pill.count"></span>
+                    </button>
+                </template>
+
+                <button @click="activeTab = 'monthly'" class="ml-auto px-3 py-1 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold shrink-0 transition cursor-pointer">
+                    <i class="fa-solid fa-table-columns mr-1"></i> Comparar Mês a Mês
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO DAS ABAS -->
+        <div class="p-4 md:p-8 space-y-6 flex-1 max-w-7xl w-full mx-auto">
+
+            <!-- CARDS DE RESUMO (EXIBIDOS NO DASHBOARD E TRANSAÇÕES) -->
+            <div x-show="activeTab === 'dashboard' || activeTab === 'transactions'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Card 1: Saldo Atual (Acumulado Realizado) -->
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-blue-500/40 transition shadow-sm">
+                    <div class="space-y-1 z-10">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-xs font-semibold text-gray-400">Saldo atual</span>
+                            <span class="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-medium" title="Soma de todos os lançamentos concluídos (pagos/recebidos) até o fim do período">Acumulado</span>
+                        </div>
+                        <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h3>
+                        <p class="text-[11px] text-gray-400">
+                            Previsto período: <span class="font-semibold" :class="metrics.saldoPrevistoMes >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg shrink-0 z-10">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                </div>
+
+                <!-- Card 2: Receitas do Período -->
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-emerald-500/40 transition shadow-sm">
+                    <div class="space-y-1 z-10">
+                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Receitas (' + selectedYear + ')' : 'Receitas'"></span>
+                        <h3 class="text-xl md:text-2xl font-extrabold text-emerald-400 tracking-tight" x-text="formatCurrency(metrics.totalReceitas)"></h3>
+                        <p class="text-[11px] text-gray-400">
+                            Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg shrink-0 z-10">
+                        <i class="fa-solid fa-arrow-up"></i>
+                    </div>
+                </div>
+
+                <!-- Card 3: Despesas do Período -->
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-red-500/40 transition shadow-sm">
+                    <div class="space-y-1 z-10">
+                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Despesas (' + selectedYear + ')' : 'Despesas'"></span>
+                        <h3 class="text-xl md:text-2xl font-extrabold text-red-400 tracking-tight" x-text="formatCurrency(metrics.totalDespesas)"></h3>
+                        <p class="text-[11px] text-gray-400">
+                            Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg shrink-0 z-10">
+                        <i class="fa-solid fa-arrow-down"></i>
+                    </div>
+                </div>
+
+                <!-- Card 4: Balanço Mensal -->
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between relative overflow-hidden hover:border-cyan-500/40 transition shadow-sm">
+                    <div class="space-y-1 z-10">
+                        <span class="text-xs font-semibold text-gray-400 block" x-text="allMonthsMode ? 'Balanço Anual' : 'Balanço mensal'"></span>
+                        <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></h3>
+                        <p class="text-[11px] text-gray-400">Receitas - Despesas</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-lg shrink-0 z-10">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 1: DASHBOARD                           -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'dashboard'" class="space-y-6">
+                
+                <!-- Banner de Boas-Vindas quando o sistema está totalmente zerado -->
+                <div x-show="transactions.length === 0" class="bg-mobills-card border border-mobills-purple/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-base md:text-lg font-bold text-white">Bem-vindos, Paulo & Isabela!</h3>
+                            <p class="text-xs md:text-sm text-gray-400 max-w-xl">
+                                O sistema está totalmente limpo. Vocês podem cadastrar os lançamentos manualmente do zero ou importar agora mesmo o arquivo <strong>CSV / Excel</strong> exportado do Mobills.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+                        <button @click="openImportModal()" class="py-3 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span>Importar do Mobills</span>
+                        </button>
+                        <button @click="openModal()" class="py-3 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl text-sm shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Lançar do Zero</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gráficos Donut do Dashboard: Despesas e Receitas por Categoria -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Despesas por Categoria -->
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-base text-white">Despesas por categoria</h3>
+                            <span class="text-xs text-gray-400" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center my-auto">
+                            <div class="relative w-44 h-44 mx-auto">
+                                <canvas id="dashExpenseChart"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-[11px] text-gray-400">Total</span>
+                                    <span class="text-sm font-extrabold text-white" x-text="formatCurrency(metrics.totalDespesas)"></span>
+                                </div>
+                            </div>
+                            <div class="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                                <template x-for="cat in expenseBreakdown" :key="cat.name">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <div class="flex items-center space-x-2 min-w-0">
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background-color: ${cat.color}`"></span>
+                                            <span class="text-gray-200 font-medium truncate" x-text="cat.name"></span>
+                                        </div>
+                                        <div class="text-right shrink-0 ml-2">
+                                            <span class="font-bold text-white block" x-text="formatCurrency(cat.total)"></span>
+                                            <span class="text-[10px] text-gray-400" x-text="cat.percentage + '%'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="expenseBreakdown.length === 0" class="text-center py-6 text-xs text-gray-500">
+                                    Nenhuma despesa neste período
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Receitas por Categoria -->
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-base text-white">Receitas por categoria</h3>
+                            <span class="text-xs text-gray-400" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center my-auto">
+                            <div class="relative w-44 h-44 mx-auto">
+                                <canvas id="dashIncomeChart"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-[11px] text-gray-400">Total</span>
+                                    <span class="text-sm font-extrabold text-white" x-text="formatCurrency(metrics.totalReceitas)"></span>
+                                </div>
+                            </div>
+                            <div class="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                                <template x-for="cat in incomeBreakdown" :key="cat.name">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <div class="flex items-center space-x-2 min-w-0">
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background-color: ${cat.color}`"></span>
+                                            <span class="text-gray-200 font-medium truncate" x-text="cat.name"></span>
+                                        </div>
+                                        <div class="text-right shrink-0 ml-2">
+                                            <span class="font-bold text-emerald-400 block" x-text="formatCurrency(cat.total)"></span>
+                                            <span class="text-[10px] text-gray-400" x-text="cat.percentage + '%'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="incomeBreakdown.length === 0" class="text-center py-6 text-xs text-gray-500">
+                                    Nenhuma receita neste período
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linha Inferior Dashboard: Divisão do Casal + Últimos Lançamentos do Mês -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Divisão Paulo vs Isabela vs Casa -->
+                    <div class="lg:col-span-5 bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-base text-white">Divisão Paulo & Isabela</h3>
+                            <span class="text-xs text-gray-400">Participação nas despesas</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <!-- Paulo -->
+                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                                <div class="flex justify-between items-center text-xs mb-1.5">
+                                    <span class="font-bold text-blue-400 flex items-center space-x-2">
+                                        <i class="fa-solid fa-user"></i>
+                                        <span>Paulo</span>
+                                    </span>
+                                    <span class="text-gray-400" x-text="userMetrics.paulo.percentage + '% das despesas'"></span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.paulo.receitas)"></strong></span>
+                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.paulo.despesas)"></strong></span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-mobills-blue h-full transition-all duration-500" :style="`width: ${userMetrics.paulo.percentage}%`"></div>
+                                </div>
+                            </div>
+
+                            <!-- Isabela -->
+                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                                <div class="flex justify-between items-center text-xs mb-1.5">
+                                    <span class="font-bold text-pink-400 flex items-center space-x-2">
+                                        <i class="fa-solid fa-user"></i>
+                                        <span>Isabela</span>
+                                    </span>
+                                    <span class="text-gray-400" x-text="userMetrics.isabela.percentage + '% das despesas'"></span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.isabela.receitas)"></strong></span>
+                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.isabela.despesas)"></strong></span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-mobills-pink h-full transition-all duration-500" :style="`width: ${userMetrics.isabela.percentage}%`"></div>
+                                </div>
+                            </div>
+
+                            <!-- Compartilhado -->
+                            <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                                <div class="flex justify-between items-center text-xs mb-1.5">
+                                    <span class="font-bold text-purple-400 flex items-center space-x-2">
+                                        <i class="fa-solid fa-house-user"></i>
+                                        <span>Compartilhado (Casa)</span>
+                                    </span>
+                                    <span class="text-gray-400" x-text="userMetrics.compartilhado.percentage + '% das despesas'"></span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="text-gray-400">Entradas: <strong class="text-emerald-400" x-text="formatCurrency(userMetrics.compartilhado.receitas)"></strong></span>
+                                    <span class="text-gray-400">Saídas: <strong class="text-red-400" x-text="formatCurrency(userMetrics.compartilhado.despesas)"></strong></span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-mobills-purple h-full transition-all duration-500" :style="`width: ${userMetrics.compartilhado.percentage}%`"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Próximas Contas Pendentes / Últimas Movimentações -->
+                    <div class="lg:col-span-7 bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-base text-white" x-text="allMonthsMode ? 'Movimentações de ' + selectedYear : 'Movimentações do Mês'"></h3>
+                                <button @click="activeTab = 'transactions'" class="text-xs text-mobills-purpleLight hover:underline font-semibold cursor-pointer">
+                                    Ver visão diária completa <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+
+                            <div class="divide-y divide-mobills-border/50">
+                                <template x-for="tx in monthFilteredTransactions.slice(0, 6)" :key="tx.id">
+                                    <div class="py-3 flex items-center justify-between gap-3">
+                                        <div class="flex items-center space-x-3 min-w-0">
+                                            <button @click="toggleStatus(tx.id)" class="shrink-0 cursor-pointer" :title="tx.status === 'completed' ? 'Concluído (clique para marcar pendente)' : 'Pendente (clique para concluir)'">
+                                                <span x-show="tx.status === 'completed'" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[11px]">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </span>
+                                                <span x-show="tx.status === 'pending'" class="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center text-[11px]">
+                                                    <i class="fa-solid fa-exclamation"></i>
+                                                </span>
+                                            </button>
+                                            <div class="truncate">
+                                                <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
+                                                <div class="flex items-center space-x-2 text-[11px] text-gray-400">
+                                                    <span x-text="formatDateShort(tx.date)"></span>
+                                                    <span>•</span>
+                                                    <span x-text="tx.category"></span>
+                                                    <span>•</span>
+                                                    <span x-text="tx.user" class="font-medium text-gray-300"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="font-bold text-sm shrink-0" :class="tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(tx.type === 'income' ? '' : '-') + formatCurrency(tx.amount)"></span>
+                                    </div>
+                                </template>
+
+                                <div x-show="monthFilteredTransactions.length === 0" class="py-12 text-center text-xs text-gray-500">
+                                    Nenhum lançamento encontrado para <span x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 2: TRANSAÇÕES (VISÃO DIÁRIA E TABELA)  -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'transactions'" class="space-y-6">
+                
+                <!-- Barra de Ferramentas e Filtros -->
+                <div class="bg-mobills-card p-4 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-3">
+                    <!-- Campo de Busca -->
+                    <div class="relative flex-1 min-w-[210px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria ou conta..." 
+                               class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                    </div>
+
+                    <!-- Filtros de Tipo e Situação -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border">
+                            <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Todas</button>
+                            <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Receitas</button>
+                            <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1 rounded-lg transition cursor-pointer">Despesas</button>
+                        </div>
+
+                        <select x-model="filterStatus" aria-label="Filtrar por status" class="bg-mobills-bg text-gray-200 py-2 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                            <option value="todos">Situação: Todas</option>
+                            <option value="completed">Concluídas (Pago/Recebido)</option>
+                            <option value="pending">Pendentes</option>
+                        </select>
+
+                        <select x-model="filterCategory" aria-label="Filtrar por categoria" class="bg-mobills-bg text-gray-200 py-2 px-3 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                            <option value="todas">Categoria: Todas</option>
+                            <template x-for="cat in categoriesList" :key="cat.name">
+                                <option :value="cat.name" x-text="cat.name"></option>
+                            </template>
+                        </select>
+
+                        <!-- Alternar Visão Diária vs Tabela -->
+                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border">
+                            <button @click="transactionViewMode = 'daily'" :class="transactionViewMode === 'daily' ? 'bg-mobills-cardHover text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="px-2.5 py-1 rounded-lg transition cursor-pointer" title="Agrupado por Dia com Saldo Previsto">
+                                <i class="fa-solid fa-calendar-day mr-1"></i> Diária
+                            </button>
+                            <button @click="transactionViewMode = 'table'" :class="transactionViewMode === 'table' ? 'bg-mobills-cardHover text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="px-2.5 py-1 rounded-lg transition cursor-pointer" title="Visão em Tabela">
+                                <i class="fa-solid fa-table-list mr-1"></i> Lista
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODO 1: VISÃO DIÁRIA AGRUPADA COM SALDO PREVISTO FINAL DO DIA (ESTILO MOBILLS) -->
+                <div x-show="transactionViewMode === 'daily'" class="space-y-5">
+                    <template x-for="group in groupedDailyTransactions" :key="group.date">
+                        <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-sm">
+                            <!-- Cabeçalho da Data -->
+                            <div class="bg-mobills-bg/60 px-5 py-2.5 border-b border-mobills-border flex justify-between items-center text-xs">
+                                <span class="font-bold text-gray-200" x-text="formatDateHeader(group.date)"></span>
+                                <span class="text-gray-400">
+                                    Movimento do dia: 
+                                    <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="(group.daySubtotal >= 0 ? '+' : '') + formatCurrency(group.daySubtotal)"></strong>
+                                </span>
+                            </div>
+
+                            <!-- Linhas de Transação do Dia -->
+                            <div class="divide-y divide-mobills-border/40">
+                                <template x-for="item in group.items" :key="item.id">
+                                    <div class="px-4 md:px-6 py-3.5 hover:bg-mobills-cardHover/60 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        
+                                        <!-- Coluna Esquerda: Check/Alerta + Data + Descrição + Categoria -->
+                                        <div class="flex items-center space-x-3.5 min-w-0">
+                                            <!-- Toggle Status (Verde Check / Vermelho Exclamação) -->
+                                            <button @click="toggleStatus(item.id)" class="shrink-0 transition transform active:scale-110 cursor-pointer" :title="item.status === 'completed' ? 'Concluído (clique para alterar)' : 'Pendente (clique para efetivar)'">
+                                                <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 flex items-center justify-center text-xs">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </div>
+                                                <div x-show="item.status === 'pending'" class="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 flex items-center justify-center text-xs">
+                                                    <i class="fa-solid fa-exclamation"></i>
+                                                </div>
+                                            </button>
+
+                                            <!-- Data curta no desktop -->
+                                            <span class="hidden lg:inline-block text-xs text-gray-400 font-medium w-20 shrink-0" x-text="formatDateShort(item.date)"></span>
+
+                                            <!-- Descrição e Badges -->
+                                            <div class="min-w-0">
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="font-semibold text-sm text-white truncate" x-text="item.description"></span>
+                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0"
+                                                          :class="{
+                                                              'bg-blue-950/70 text-blue-400 border-blue-800/50': item.user === 'Paulo',
+                                                              'bg-pink-950/70 text-pink-400 border-pink-800/50': item.user === 'Isabela',
+                                                              'bg-purple-950/70 text-purple-400 border-purple-800/50': item.user === 'Compartilhado'
+                                                          }" x-text="item.user"></span>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-400">
+                                                    <!-- Ícone + Nome Categoria -->
+                                                    <span class="inline-flex items-center space-x-1.5 text-gray-300">
+                                                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" :style="`background-color: ${getCategoryColor(item.category)}25; color: ${getCategoryColor(item.category)}`">
+                                                            <i :class="getCategoryIcon(item.category)"></i>
+                                                        </span>
+                                                        <span x-text="item.category"></span>
+                                                    </span>
+                                                    <span>•</span>
+                                                    <span class="text-gray-400" x-text="item.account || 'Carteira'"></span>
+                                                    <template x-if="item.recurrence && item.recurrence !== 'nenhuma'">
+                                                        <span class="text-[10px] bg-mobills-bg px-2 py-0.5 rounded border border-mobills-border text-purple-300 capitalize" x-text="item.recurrence"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Coluna Direita: Valor e Ações -->
+                                        <div class="flex items-center justify-between sm:justify-end space-x-4 shrink-0 pl-10 sm:pl-0">
+                                            <span class="font-bold text-sm md:text-base" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></span>
+                                            
+                                            <div class="flex items-center space-x-1">
+                                                <button @click="openModal(item)" title="Editar" class="p-2 text-gray-400 hover:text-mobills-purpleLight rounded-lg hover:bg-mobills-bg transition cursor-pointer">
+                                                    <i class="fa-solid fa-pen text-xs"></i>
+                                                </button>
+                                                <button @click="promptDelete(item)" title="Excluir" class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-mobills-bg transition cursor-pointer">
+                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Pill de Saldo Previsto Final do Dia (Idêntico ao Mobills) -->
+                            <div class="bg-mobills-card px-4 py-3 border-t border-mobills-border/50 flex justify-center">
+                                <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2 shadow-sm">
+                                    <span>Saldo Previsto Final do Dia</span>
+                                    <strong class="text-sm font-extrabold" :class="group.runningBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- MODO 2: VISÃO EM TABELA COMPACTA -->
+                <div x-show="transactionViewMode === 'table' && groupedDailyTransactions.length > 0" class="bg-mobills-card rounded-2xl border border-mobills-border overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-mobills-border text-[11px] font-semibold text-gray-400 uppercase bg-mobills-bg/50">
+                                <th class="py-3.5 px-4">Situação</th>
+                                <th class="py-3.5 px-4">Data</th>
+                                <th class="py-3.5 px-4">Descrição</th>
+                                <th class="py-3.5 px-4">Categoria</th>
+                                <th class="py-3.5 px-4">Integrante</th>
+                                <th class="py-3.5 px-4">Conta</th>
+                                <th class="py-3.5 px-4 text-right">Valor</th>
+                                <th class="py-3.5 px-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-mobills-border/40 text-xs">
+                            <template x-for="item in flatFilteredTransactions" :key="item.id">
+                                <tr class="hover:bg-mobills-cardHover/50 transition">
+                                    <td class="py-3 px-4">
+                                        <button @click="toggleStatus(item.id)" class="cursor-pointer">
+                                            <span x-show="item.status === 'completed'" class="inline-flex items-center space-x-1 text-emerald-400 font-semibold">
+                                                <i class="fa-solid fa-circle-check"></i> <span>Concluído</span>
+                                            </span>
+                                            <span x-show="item.status === 'pending'" class="inline-flex items-center space-x-1 text-red-400 font-semibold">
+                                                <i class="fa-solid fa-circle-exclamation"></i> <span>Pendente</span>
+                                            </span>
+                                        </button>
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-300" x-text="formatDateShort(item.date)"></td>
+                                    <td class="py-3 px-4 font-semibold text-white" x-text="item.description"></td>
+                                    <td class="py-3 px-4 text-gray-300" x-text="item.category"></td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                              :class="item.user === 'Paulo' ? 'bg-blue-950 text-blue-400' : (item.user === 'Isabela' ? 'bg-pink-950 text-pink-400' : 'bg-purple-950 text-purple-400')"
+                                              x-text="item.user"></span>
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-400" x-text="item.account || 'Carteira'"></td>
+                                    <td class="py-3 px-4 text-right font-bold" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></td>
+                                    <td class="py-3 px-4 text-center space-x-2">
+                                        <button @click="openModal(item)" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-pen"></i></button>
+                                        <button @click="promptDelete(item)" class="text-gray-400 hover:text-red-400 cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ESTADO VAZIO (ZERO LANÇAMENTOS) -->
+                <div x-show="groupedDailyTransactions.length === 0" class="bg-mobills-card p-12 rounded-2xl border border-mobills-border text-center space-y-4">
+                    <div class="w-16 h-16 rounded-full bg-mobills-purple/15 text-mobills-purpleLight border border-mobills-purple/30 flex items-center justify-center mx-auto text-2xl">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-lg text-white">Nenhum lançamento encontrado</h3>
+                        <p class="text-xs text-gray-400 max-w-md mx-auto">
+                            Não há receitas ou despesas registradas para <span class="text-purple-300 font-semibold" x-text="allMonthsMode ? selectedYear : formattedSelectedMonth"></span> com os filtros atuais.
+                        </p>
+                    </div>
+                    <button @click="openModal()" class="py-2.5 px-6 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-semibold rounded-2xl shadow-lg shadow-purple-900/40 inline-flex items-center space-x-2 transition cursor-pointer">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Adicionar Lançamento</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA NOVA: VISÃO MÊS A MÊS (EVOLUÇÃO)       -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'monthly'" class="space-y-6">
+                
+                <!-- Cabeçalho e Filtro de Ano da Visão Mês a Mês -->
+                <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Evolução Financeira Mês a Mês</h3>
+                        <p class="text-xs text-gray-400">Comparativo mensal completo de receitas, despesas, balanço e saldo acumulado. Clique em qualquer mês para detalhar.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <select x-model="monthlyViewYearFilter" @change="renderMonthlyEvolutionChart()" class="bg-mobills-bg text-xs text-white px-3.5 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple font-semibold">
+                            <option value="all">Todos os Meses Importados/Cadastrados</option>
+                            <template x-for="yr in availableYears" :key="yr">
+                                <option :value="yr" x-text="'Ano ' + yr"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Gráfico Combinado (Barras Receita vs Despesa + Linha Saldo Acumulado) -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm md:text-base text-white">Curva de Evolução Mensal</h4>
+                            <p class="text-xs text-gray-400">Receitas (verde), Despesas (vermelho) e Saldo Acumulado Final (roxo)</p>
+                        </div>
+                    </div>
+                    <div class="h-72">
+                        <canvas id="monthlyEvolutionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabela Comparativa Mês a Mês -->
+                <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
+                        <h4 class="font-bold text-sm md:text-base text-white">Detalhamento Consolidado por Mês</h4>
+                        <span class="text-[11px] text-purple-300 font-medium"><i class="fa-solid fa-hand-pointer mr-1"></i> Clique em um mês para abrir suas transações</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-mobills-border text-[11px] font-semibold text-gray-400 uppercase bg-mobills-bg/60">
+                                    <th class="py-3.5 px-5">Mês / Ano</th>
+                                    <th class="py-3.5 px-4 text-center">Lançamentos</th>
+                                    <th class="py-3.5 px-4 text-right">Saldo Inicial</th>
+                                    <th class="py-3.5 px-4 text-right">Receitas</th>
+                                    <th class="py-3.5 px-4 text-right">Despesas</th>
+                                    <th class="py-3.5 px-4 text-right">Balanço Mensal</th>
+                                    <th class="py-3.5 px-4 text-right">Saldo Acumulado</th>
+                                    <th class="py-3.5 px-4 text-center">Economia</th>
+                                    <th class="py-3.5 px-4 text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-mobills-border/40 text-xs">
+                                <template x-for="row in monthlySummaryRows" :key="row.key">
+                                    <tr @click="drillDownToMonth(row.year, row.month)" class="hover:bg-mobills-cardHover/80 transition cursor-pointer group">
+                                        <td class="py-3.5 px-5 font-bold text-white flex items-center space-x-2">
+                                            <span class="w-2 h-2 rounded-full bg-mobills-purple group-hover:scale-125 transition"></span>
+                                            <span x-text="row.label"></span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-center">
+                                            <span class="px-2 py-0.5 rounded-full bg-mobills-bg border border-mobills-border text-gray-300 text-[11px]" x-text="row.count"></span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-right font-medium" :class="row.openingBalance >= 0 ? 'text-gray-300' : 'text-red-400'" x-text="formatCurrency(row.openingBalance)"></td>
+                                        <td class="py-3.5 px-4 text-right font-bold text-emerald-400" x-text="formatCurrency(row.income)"></td>
+                                        <td class="py-3.5 px-4 text-right font-bold text-red-400" x-text="formatCurrency(row.expense)"></td>
+                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.monthlyBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="(row.monthlyBalance > 0 ? '+' : '') + formatCurrency(row.monthlyBalance)"></td>
+                                        <td class="py-3.5 px-4 text-right font-extrabold" :class="row.closingBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(row.closingBalance)"></td>
+                                        <td class="py-3.5 px-4 text-center">
+                                            <span class="px-2 py-0.5 rounded-md font-bold text-[11px]"
+                                                  :class="row.savingsRate >= 0 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/15 text-red-400 border border-red-500/30'"
+                                                  x-text="row.savingsRate + '%'"></span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-center">
+                                            <span class="text-mobills-purpleLight group-hover:underline font-semibold">
+                                                Abrir <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </template>
+
+                                <tr x-show="monthlySummaryRows.length === 0">
+                                    <td colspan="9" class="py-12 text-center text-gray-500 text-xs">
+                                        Nenhum dado disponível para exibir na visão mês a mês. Importe uma planilha do Mobills ou adicione lançamentos.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 3: RELATÓRIOS E PREVISÕES              -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'reports'" class="space-y-6">
+                
+                <!-- Seletor de Tipo de Relatório por Categoria -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-mobills-border pb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
+                            <p class="text-xs text-gray-400">Distribuição detalhada em <span class="text-purple-300 font-semibold" x-text="allMonthsMode ? 'Consolidado ' + selectedYear : formattedSelectedMonth"></span></p>
+                        </div>
+
+                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
+                            <button @click="reportViewType = 'despesas'" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-4 py-1.5 rounded-lg transition cursor-pointer">
+                                Despesas por Categoria
+                            </button>
+                            <button @click="reportViewType = 'receitas'" :class="reportViewType === 'receitas' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-4 py-1.5 rounded-lg transition cursor-pointer">
+                                Receitas por Categoria
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        <!-- Gráfico Rosca -->
+                        <div class="lg:col-span-5 flex flex-col items-center justify-center">
+                            <div class="relative w-64 h-64">
+                                <canvas id="reportsDonutChart"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-xs text-gray-400">Total</span>
+                                    <span class="text-lg font-extrabold text-white" x-text="formatCurrency(reportViewType === 'despesas' ? metrics.totalDespesas : metrics.totalReceitas)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista com Barras de Progresso -->
+                        <div class="lg:col-span-7 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                            <template x-for="item in activeReportData" :key="item.name">
+                                <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border flex items-center justify-between gap-4">
+                                    <div class="flex items-center space-x-3 min-w-0">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm shrink-0" :style="`background-color: ${item.color}20; color: ${item.color}; border: 1px solid ${item.color}40`">
+                                            <i :class="getCategoryIcon(item.name)"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <h4 class="font-bold text-sm text-white truncate" x-text="item.name"></h4>
+                                            <span class="text-xs text-gray-400">Porcentagem: <strong class="text-gray-200" x-text="item.percentage + '%'"></strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <span class="font-extrabold text-sm block" :class="reportViewType === 'despesas' ? 'text-red-400' : 'text-emerald-400'" x-text="formatCurrency(item.total)"></span>
+                                        <div class="w-24 bg-gray-800 h-1.5 rounded-full mt-1.5 overflow-hidden ml-auto">
+                                            <div class="h-full rounded-full" :style="`width: ${item.percentage}%; background-color: ${item.color}`"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div x-show="activeReportData.length === 0" class="text-center py-12 text-xs text-gray-500">
+                                Sem movimentações registradas neste período para exibir no relatório.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Inferior: Comparativo do Casal + Previsão de 6 Meses -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Gráfico Comparativo Paulo vs Isabela vs Casa -->
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                        <div>
+                            <h3 class="font-bold text-base text-white">Comparativo: Paulo vs. Isabela vs. Casa</h3>
+                            <p class="text-xs text-gray-400">Receitas e despesas por responsável em <span x-text="formattedSelectedMonth"></span></p>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="coupleComparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico Previsão de Fluxo de Caixa (6 Meses) -->
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                        <div>
+                            <h3 class="font-bold text-base text-white">Previsão de Caixa (Próximos 6 Meses)</h3>
+                            <p class="text-xs text-gray-400">Projeção baseada nos lançamentos agendados e recorrências</p>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo Rápido Mês a Mês dentro de Relatórios -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-base text-white">Quer analisar o histórico completo mês a mês?</h3>
+                        <p class="text-xs text-gray-400">Veja a tabela consolidada com saldo inicial, balanço mensal, saldo acumulado e taxa de economia de todos os meses.</p>
+                    </div>
+                    <button @click="activeTab = 'monthly'" class="py-2.5 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-900/30 transition cursor-pointer">
+                        Abrir Comparativo Mês a Mês <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA 4: CONFIGURAÇÕES E BACKUP              -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'settings'" class="max-w-2xl mx-auto space-y-6">
+                
+                <!-- Card Destaque: Compartilhar com Isabela via Link -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-purple/50 space-y-4 shadow-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-share-nodes"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Compartilhar com a Isabela (Link Direto)</h3>
+                            <p class="text-xs text-gray-400">Gera um link com todos os lançamentos embutidos. Ao abrir no celular, ela vê exatamente os mesmos dados que você.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <button @click="openShareModal()" class="py-3.5 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-link text-sm"></i>
+                            <span>Gerar Link Compartilhável</span>
+                        </button>
+
+                        <button @click="downloadPreloadedHtml()" class="py-3.5 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-purple-300 border border-mobills-purple/40 text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer" title="Baixa um arquivo index.html já preenchido com seus dados para subir no Google Sites">
+                            <i class="fa-solid fa-file-code text-sm"></i>
+                            <span>Baixar HTML já Preenchido</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card Destaque: Importação Direta do Mobills (CSV / Excel) -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-emerald-500/40 space-y-4 shadow-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
+                            <p class="text-xs text-gray-400">Importe diretamente arquivos <strong class="text-gray-200">.csv, .xlsx ou .xls</strong> exportados do Mobills com detecção automática de colunas.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-1">
+                        <button @click="openImportModal()" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                            <span>Importar Mobills (CSV / Excel)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card Backup JSON -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Backup e Sincronização JSON</h3>
+                            <p class="text-xs text-gray-400">Exporte o backup completo para compartilhar entre o celular do Paulo e da Isabela.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <button @click="exportBackup()" class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-download text-emerald-400"></i>
+                            <span>Exportar Backup (JSON)</span>
+                        </button>
+
+                        <label class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-white text-xs font-semibold rounded-xl border border-mobills-border flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-upload text-blue-400"></i>
+                            <span>Restaurar Backup (JSON)</span>
+                            <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zona de Perigo: Zerar Sistema -->
+                <div class="bg-mobills-card p-6 rounded-2xl border border-red-900/40 space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Zerar Todos os Lançamentos</h3>
+                            <p class="text-xs text-gray-400">Remove permanentemente todas as receitas e despesas cadastradas neste navegador.</p>
+                        </div>
+                    </div>
+
+                    <div x-show="!confirmClearOpen">
+                        <button @click="confirmClearOpen = true" class="py-2.5 px-4 bg-red-950/50 hover:bg-red-900/50 text-red-400 text-xs font-semibold rounded-xl border border-red-800/50 transition cursor-pointer">
+                            Apagar Todos os Dados
+                        </button>
+                    </div>
+
+                    <div x-show="confirmClearOpen" class="p-4 bg-red-950/40 border border-red-800/60 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                        <span class="text-xs text-red-200 font-medium">Tem certeza? Esta ação não pode ser desfeita.</span>
+                        <div class="flex space-x-2">
+                            <button @click="confirmClearOpen = false" class="px-3 py-1.5 text-xs text-gray-300 hover:text-white cursor-pointer">Cancelar</button>
+                            <button @click="executeClearAll()" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg cursor-pointer">Sim, Apagar Tudo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- BOTÃO FLUTUANTE MOBILE (+) -->
+    <button @click="openModal()" aria-label="Novo Lançamento" class="md:hidden fixed right-5 bottom-20 z-30 w-14 h-14 bg-mobills-purple hover:bg-mobills-purpleLight text-white rounded-full shadow-2xl shadow-purple-900/70 flex items-center justify-center text-2xl active:scale-95 transition cursor-pointer">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR MOBILE -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-mobills-card border-t border-mobills-border flex justify-around items-center py-2.5 z-30">
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
+            <i class="fa-solid fa-house text-base"></i>
+            <span>Dashboard</span>
+        </button>
+        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
+            <i class="fa-solid fa-list-ul text-base"></i>
+            <span>Transações</span>
+        </button>
+        <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
+            <i class="fa-solid fa-calendar-days text-base"></i>
+            <span>Mês a Mês</span>
+        </button>
+        <button @click="activeTab = 'reports'" :class="activeTab === 'reports' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
+            <i class="fa-solid fa-chart-pie text-base"></i>
+            <span>Relatórios</span>
+        </button>
+        <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'text-mobills-purpleLight font-semibold' : 'text-gray-400'" class="flex flex-col items-center space-y-1 text-[11px] cursor-pointer">
+            <i class="fa-solid fa-gear text-base"></i>
+            <span>Backup</span>
+        </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- MODAL: GERAR LINK COMPARTILHÁVEL           -->
+    <!-- ========================================== -->
+    <div x-show="shareModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div @click.away="shareModal.open = false" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center">
+                        <i class="fa-solid fa-share-nodes"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-white">Link Compartilhável com Dados</h3>
+                </div>
+                <button @click="shareModal.open = false" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs">
+                <p class="text-gray-300 leading-relaxed">
+                    Este link contém todos os <strong class="text-white" x-text="transactions.length"></strong> lançamentos compactados. Envie pelo WhatsApp para a Isabela abrir no celular dela:
+                </p>
+
+                <!-- Campo opcional de URL base caso esteja rodando em preview/iframe -->
+                <div>
+                    <label class="block font-semibold text-gray-400 mb-1">Endereço do Site (Opcional — cole o link do Google Sites aqui se quiser):</label>
+                    <input type="url" x-model="shareModal.customBaseUrl" @input="buildShareUrl()" placeholder="Ex: https://sites.google.com/view/seu-site"
+                           class="w-full bg-mobills-bg text-white px-3.5 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                </div>
+
+                <!-- Link Gerado -->
+                <div>
+                    <label class="block font-semibold text-gray-400 mb-1">Link Pronto para Enviar:</label>
+                    <textarea id="shareLinkTextarea" readonly rows="3" x-model="shareModal.generatedUrl"
+                              class="w-full bg-mobills-bg text-purple-300 font-mono text-[11px] p-3 rounded-xl border border-mobills-border focus:outline-none select-all"></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+                    <button type="button" @click="copyShareUrl()" class="flex-1 py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 flex items-center justify-center space-x-2 transition cursor-pointer">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>Copiar Link</span>
+                    </button>
+
+                    <button type="button" @click="downloadPreloadedHtml()" class="py-3 px-4 bg-mobills-bg hover:bg-mobills-cardHover text-gray-200 border border-mobills-border font-semibold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer" title="Gera o código HTML já com todos os dados embutidos">
+                        <i class="fa-solid fa-file-code text-emerald-400"></i>
+                        <span>Baixar HTML Preenchido</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO             -->
+    <!-- ========================================== -->
+    <div x-show="deleteModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center space-x-3 text-red-400">
+                <i class="fa-solid fa-trash-can text-xl"></i>
+                <h3 class="font-bold text-base text-white">Excluir Lançamento</h3>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+                Deseja excluir <strong class="text-white" x-text="deleteModal.item?.description"></strong>?
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+                <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">
+                    Cancelar
+                </button>
+                <button @click="confirmDelete(false)" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl cursor-pointer">
+                    Excluir Somente Este
+                </button>
+                <button x-show="deleteModal.item?.groupId" @click="confirmDelete(true)" class="px-4 py-2 bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600 text-xs font-semibold rounded-xl cursor-pointer">
+                    Excluir Toda a Série
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: NOVO / EDITAR LANÇAMENTO            -->
+    <!-- ========================================== -->
+    <div x-show="isModalOpen" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="closeModal()" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
+            <!-- Cabeçalho Modal -->
+            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
+                <h3 class="font-bold text-base text-white" x-text="editingId ? 'Editar Lançamento' : 'Novo Lançamento'"></h3>
+                <button type="button" @click="closeModal()" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form @submit.prevent="saveTransaction()" class="p-6 space-y-4 text-xs">
+                <!-- Seletor Despesa vs Receita -->
+                <div class="grid grid-cols-2 gap-2 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
+                    <button type="button" @click="setFormType('expense')"
+                            :class="form.type === 'expense' ? 'bg-red-600 text-white font-bold shadow-md' : 'text-gray-400 hover:text-white'"
+                            class="py-2.5 rounded-lg transition flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-down"></i>
+                        <span>Despesa</span>
+                    </button>
+                    <button type="button" @click="setFormType('income')"
+                            :class="form.type === 'income' ? 'bg-emerald-600 text-white font-bold shadow-md' : 'text-gray-400 hover:text-white'"
+                            class="py-2.5 rounded-lg transition flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-up"></i>
+                        <span>Receita</span>
+                    </button>
+                </div>
+
+                <!-- Valor e Data -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Valor (R$) *</label>
+                        <input type="number" step="0.01" min="0.01" required x-model="form.amount" placeholder="0,00"
+                               class="w-full bg-mobills-bg text-white text-sm font-bold px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Data *</label>
+                        <input type="date" required x-model="form.date"
+                               class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                    </div>
+                </div>
+
+                <!-- Descrição -->
+                <div>
+                    <label class="block font-semibold text-gray-400 mb-1">Descrição *</label>
+                    <input type="text" required x-model="form.description" placeholder="Ex: Supermercado, Salário Paulo, Internet..."
+                           class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                </div>
+
+                <!-- Categoria e Integrante -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Categoria</label>
+                        <select x-model="form.category" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                            <template x-for="cat in categoriesList" :key="cat.name">
+                                <option :value="cat.name" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Responsável</label>
+                        <select x-model="form.user" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                            <option value="Compartilhado">Casa (Compartilhado)</option>
+                            <option value="Paulo">Paulo</option>
+                            <option value="Isabela">Isabela</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conta e Situação -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Conta / Cartão</label>
+                        <input type="text" list="accountOptions" x-model="form.account" placeholder="Carteira"
+                               class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                        <datalist id="accountOptions">
+                            <option value="Carteira">
+                            <option value="Conta Corrente">
+                            <option value="Cartão de Crédito">
+                            <option value="Poupança">
+                            <option value="VR / VA">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-400 mb-1">Situação</label>
+                        <select x-model="form.status" class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                            <option value="completed" x-text="form.type === 'income' ? 'Recebido (Concluído)' : 'Pago (Concluído)'"></option>
+                            <option value="pending">Pendente (Agendado)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Recorrência (apenas para novos lançamentos) -->
+                <div x-show="!editingId" class="bg-mobills-bg/70 p-3.5 rounded-xl border border-mobills-border space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <div>
+                            <label class="block font-semibold text-gray-400 mb-1">Repetição / Recorrência</label>
+                            <select x-model="form.recurrence" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                                <option value="nenhuma">Não repetir (Único)</option>
+                                <option value="diaria">Diária</option>
+                                <option value="semanal">Semanal</option>
+                                <option value="mensal">Mensal</option>
+                            </select>
+                        </div>
+                        <div x-show="form.recurrence !== 'nenhuma'">
+                            <label class="block font-semibold text-gray-400 mb-1">Quantidade de vezes</label>
+                            <input type="number" min="2" max="60" x-model="form.repeatCount"
+                                   class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                        </div>
+                    </div>
+                    <p x-show="form.recurrence !== 'nenhuma'" class="text-[11px] text-purple-300">
+                        <i class="fa-solid fa-repeat mr-1"></i> Serão gerados <strong x-text="form.repeatCount"></strong> lançamentos automaticamente (o 1º com a situação escolhida e os demais como pendentes).
+                    </p>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex justify-end space-x-3 pt-2 border-t border-mobills-border">
+                    <button type="button" @click="closeModal()" class="px-4 py-2.5 text-gray-400 hover:text-white font-semibold cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transition cursor-pointer">
+                        <span x-text="editingId ? 'Salvar Alterações' : 'Confirmar Lançamento'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: IMPORTAR PLANILHA DO MOBILLS        -->
+    <!-- ========================================== -->
+    <div x-show="importModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="closeImportModal()" class="bg-mobills-card w-full max-w-4xl rounded-2xl border border-mobills-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Cabeçalho -->
+            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50 shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
+                        <p class="text-[11px] text-gray-400">Lê todas as abas e meses da planilha exportada automaticamente</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeImportModal()" class="text-gray-400 hover:text-white p-1.5 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Corpo Rolável -->
+            <div class="p-6 space-y-5 overflow-y-auto text-xs">
+                <!-- Área de Upload / Drag & Drop -->
+                <div @dragover.prevent="importModal.isDragging = true"
+                     @dragleave.prevent="importModal.isDragging = false"
+                     @drop.prevent="handleMobillsDrop($event)"
+                     :class="importModal.isDragging ? 'border-emerald-400 bg-emerald-950/20' : 'border-mobills-border bg-mobills-bg/60 hover:border-emerald-500/60'"
+                     class="border-2 border-dashed rounded-2xl p-6 text-center transition space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto text-xl">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-white" x-text="importModal.fileName ? 'Arquivo selecionado: ' + importModal.fileName : 'Arraste sua planilha .xlsx, .xls ou .csv aqui'"></p>
+                        <p class="text-gray-400 mt-0.5">Exportação padrão do Mobills Web ou App (Receitas, Despesas ou Extrato Completo)</p>
+                    </div>
+                    <div>
+                        <label class="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 transition cursor-pointer">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <span>Escolher Arquivo no Dispositivo</span>
+                            <input type="file" accept=".csv,.xlsx,.xls" @change="handleMobillsFileSelect($event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Alerta de Erro -->
+                <div x-show="importModal.error" class="p-4 rounded-xl bg-red-950/50 border border-red-700 text-red-200 flex items-center space-x-3">
+                    <i class="fa-solid fa-circle-exclamation text-red-400 text-base"></i>
+                    <span x-text="importModal.error"></span>
+                </div>
+
+                <!-- Pré-visualização dos Dados Lidos -->
+                <div x-show="importModal.parsedRows.length > 0" class="space-y-4">
+                    <!-- Resumo Numérico -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                            <span class="text-gray-400 block text-[11px]">Lançamentos Lidos</span>
+                            <strong class="text-base font-extrabold text-white" x-text="importModal.parsedRows.length"></strong>
+                            <span class="text-[10px] text-gray-500 block" x-text="importModal.sheetsRead + ' aba(s) lida(s)'"></span>
+                        </div>
+                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                            <span class="text-gray-400 block text-[11px]">Meses Detectados</span>
+                            <strong class="text-base font-extrabold text-purple-400" x-text="importPreviewMonthsBreakdown.length + ' mês(es)'"></strong>
+                        </div>
+                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                            <span class="text-gray-400 block text-[11px]">Total Receitas</span>
+                            <strong class="text-base font-extrabold text-emerald-400" x-text="formatCurrency(importPreviewTotals.income)"></strong>
+                        </div>
+                        <div class="bg-mobills-bg p-3.5 rounded-xl border border-mobills-border">
+                            <span class="text-gray-400 block text-[11px]">Total Despesas</span>
+                            <strong class="text-base font-extrabold text-red-400" x-text="formatCurrency(importPreviewTotals.expense)"></strong>
+                        </div>
+                    </div>
+
+                    <!-- Pílulas dos Meses Detectados -->
+                    <div class="bg-mobills-bg/70 p-3 rounded-xl border border-mobills-border flex flex-wrap items-center gap-1.5">
+                        <span class="text-[11px] font-semibold text-gray-400 mr-1">Períodos encontrados:</span>
+                        <template x-for="mItem in importPreviewMonthsBreakdown" :key="mItem.key">
+                            <span class="px-2.5 py-0.5 rounded-full bg-mobills-card border border-mobills-border text-[11px] text-gray-200">
+                                <strong x-text="mItem.label"></strong> (<span x-text="mItem.count"></span>)
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Opções do Lote -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-mobills-bg/70 p-3.5 rounded-xl border border-mobills-border">
+                        <div>
+                            <label class="block font-semibold text-gray-400 mb-1">Responsável padrão (quando não identificado no texto):</label>
+                            <select x-model="importModal.defaultUser" @change="reapplyImportDefaults()" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                                <option value="Compartilhado">Casa (Compartilhado)</option>
+                                <option value="Paulo">Paulo</option>
+                                <option value="Isabela">Isabela</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-400 mb-1">Modo de importação:</label>
+                            <select x-model="importModal.mode" class="w-full bg-mobills-card text-white px-3 py-2 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple">
+                                <option value="merge">Mesclar (Adicionar aos lançamentos atuais)</option>
+                                <option value="replace">Substituir Tudo (Limpar base antes de importar)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Prévia -->
+                    <div class="border border-mobills-border rounded-xl overflow-hidden">
+                        <div class="bg-mobills-bg px-4 py-2 border-b border-mobills-border flex justify-between items-center">
+                            <span class="font-bold text-gray-300">Pré-visualização dos Lançamentos</span>
+                            <span class="text-[11px] text-gray-400">Mostrando até 50 primeiros registros</span>
+                        </div>
+                        <div class="max-h-56 overflow-y-auto">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead class="bg-mobills-bg/80 text-gray-400 uppercase sticky top-0">
+                                    <tr>
+                                        <th class="py-2 px-3">Data</th>
+                                        <th class="py-2 px-3">Descrição</th>
+                                        <th class="py-2 px-3">Categoria</th>
+                                        <th class="py-2 px-3">Responsável</th>
+                                        <th class="py-2 px-3">Situação</th>
+                                        <th class="py-2 px-3 text-right">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-mobills-border/40">
+                                    <template x-for="(row, idx) in importModal.parsedRows.slice(0, 50)" :key="idx">
+                                        <tr class="hover:bg-mobills-cardHover/50">
+                                            <td class="py-2 px-3 text-gray-300" x-text="formatDateShort(row.date)"></td>
+                                            <td class="py-2 px-3 font-semibold text-white" x-text="row.description"></td>
+                                            <td class="py-2 px-3 text-gray-300" x-text="row.category"></td>
+                                            <td class="py-2 px-3">
+                                                <select x-model="row.user" class="bg-mobills-bg text-gray-200 px-2 py-0.5 rounded border border-mobills-border text-[10px]">
+                                                    <option value="Compartilhado">Casa</option>
+                                                    <option value="Paulo">Paulo</option>
+                                                    <option value="Isabela">Isabela</option>
+                                                </select>
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <span :class="row.status === 'completed' ? 'text-emerald-400' : 'text-red-400'" x-text="row.status === 'completed' ? 'Concluído' : 'Pendente'"></span>
+                                            </td>
+                                            <td class="py-2 px-3 text-right font-bold" :class="row.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(row.type === 'income' ? '' : '-') + formatCurrency(row.amount)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="px-6 py-4 border-t border-mobills-border bg-mobills-bg/50 flex justify-end space-x-3 shrink-0">
+                <button type="button" @click="closeImportModal()" class="px-4 py-2 text-xs text-gray-400 hover:text-white font-semibold cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" x-show="importModal.parsedRows.length > 0" @click="confirmMobillsImport()"
+                        class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center space-x-2 transition cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span x-text="'Confirmar Importação (' + importModal.parsedRows.length + ')'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Captura snapshot limpo do HTML antes do Alpine renderizar loops dinâmicos -->
+    <script>
+        window.__INITIAL_CLEAN_HTML__ = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    </script>
+
+    <!-- LÓGICA DA APLICAÇÃO -->
+    <script>
+        function financeApp() {
+            return {
+                activeTab: 'dashboard',
+                transactionViewMode: 'daily',
+                selectedYear: new Date().getFullYear(),
+                selectedMonth: new Date().getMonth(),
+                selectedUserFilter: 'Todos',
+                allMonthsMode: false,
+                monthPickerOpen: false,
+                monthlyViewYearFilter: 'all',
+
+                shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+
+                // Filtros da tela de Transações
+                searchQuery: '',
+                filterType: 'todos',
+                filterStatus: 'todos',
+                filterCategory: 'todas',
+
+                // Aba Relatórios
+                reportViewType: 'despesas',
+
+                // Configurações / Backup
+                confirmClearOpen: false,
+
+                // Toast Notification
+                toast: { visible: false, message: '', type: 'success' },
+
+                // Categorias com Ícones e Cores no padrão Mobills
+                categoriesList: [
+                    { name: 'Casa', icon: 'fa-solid fa-house', color: '#06b6d4' },
+                    { name: 'Alimentação', icon: 'fa-solid fa-utensils', color: '#ef4444' },
+                    { name: 'Educação', icon: 'fa-solid fa-graduation-cap', color: '#a855f7' },
+                    { name: 'Transporte', icon: 'fa-solid fa-car', color: '#3b82f6' },
+                    { name: 'Compras', icon: 'fa-solid fa-bag-shopping', color: '#8b5cf6' },
+                    { name: 'Saúde', icon: 'fa-solid fa-heart-pulse', color: '#10b981' },
+                    { name: 'Assinatura', icon: 'fa-solid fa-tv', color: '#ec4899' },
+                    { name: 'Salário', icon: 'fa-solid fa-money-bill-wave', color: '#10b981' },
+                    { name: 'Renda extra', icon: 'fa-solid fa-coins', color: '#84cc16' },
+                    { name: 'Reajuste', icon: 'fa-solid fa-sliders', color: '#f59e0b' },
+                    { name: 'Outros', icon: 'fa-solid fa-ellipsis', color: '#6b7280' }
+                ],
+
+                // Estado Inicial ZERADO conforme solicitado
+                transactions: [],
+
+                // Estado do Modal de Lançamento
+                isModalOpen: false,
+                editingId: null,
+                form: {
+                    type: 'expense',
+                    description: '',
+                    amount: '',
+                    date: new Date().toISOString().split('T')[0],
+                    category: 'Casa',
+                    user: 'Compartilhado',
+                    account: 'Carteira',
+                    status: 'completed',
+                    recurrence: 'nenhuma',
+                    repeatCount: 12
+                },
+
+                // Modal de Exclusão
+                deleteModal: {
+                    open: false,
+                    item: null
+                },
+
+                // Modal de Importação Mobills (CSV / Excel)
+                importModal: {
+                    open: false,
+                    isDragging: false,
+                    fileName: '',
+                    defaultUser: 'Compartilhado',
+                    mode: 'merge',
+                    parsedRows: [],
+                    sheetsRead: 0,
+                    error: ''
+                },
+
+                // Modal de Compartilhamento por Link
+                shareModal: {
+                    open: false,
+                    customBaseUrl: '',
+                    generatedUrl: ''
+                },
+
+                initApp() {
+                    // 1. Verifica primeiro se há dados embutidos no próprio HTML ou no Hash (#data=...) do Link Compartilhável
+                    const loadedFromLink = this.tryLoadFromShareHash();
+
+                    if (!loadedFromLink) {
+                        try {
+                            const saved = localStorage.getItem('paulo_isabela_financas_v2');
+                            if (saved) {
+                                const parsed = JSON.parse(saved);
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    this.transactions = parsed;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Erro ao carregar dados locais:', e);
+                            this.transactions = [];
+                        }
+                    }
+
+                    // Se houver lançamentos, posiciona automaticamente no mês mais recente caso o mês atual esteja vazio
+                    if (this.transactions.length > 0) {
+                        const now = new Date();
+                        const hasCur = this.transactions.some(t => {
+                            const [y, m] = t.date.split('-').map(Number);
+                            return y === now.getFullYear() && (m - 1) === now.getMonth();
+                        });
+                        if (!hasCur) {
+                            const latestDate = this.transactions.map(t => t.date).sort().reverse()[0];
+                            const [ly, lm] = latestDate.split('-').map(Number);
+                            if (ly && lm) {
+                                this.selectedYear = ly;
+                                this.selectedMonth = lm - 1;
+                            }
+                        }
+                    }
+
+                    this.$watch('selectedMonth', () => this.renderAllCharts());
+                    this.$watch('selectedYear', () => this.renderAllCharts());
+                    this.$watch('allMonthsMode', () => this.renderAllCharts());
+                    this.$watch('selectedUserFilter', () => this.renderAllCharts());
+                    this.$watch('reportViewType', () => this.renderAllCharts());
+                    this.$watch('activeTab', () => {
+                        this.$nextTick(() => this.renderAllCharts());
+                    });
+
+                    this.$nextTick(() => this.renderAllCharts());
+                },
+
+                tryLoadFromShareHash() {
+                    try {
+                        // Verifica dados embutidos diretamente no HTML exportado (window.__PRELOADED_TRANSACTIONS__)
+                        if (Array.isArray(window.__PRELOADED_TRANSACTIONS__) && window.__PRELOADED_TRANSACTIONS__.length > 0) {
+                            const existingRaw = localStorage.getItem('paulo_isabela_financas_v2');
+                            if (!existingRaw || JSON.parse(existingRaw).length === 0) {
+                                this.transactions = window.__PRELOADED_TRANSACTIONS__;
+                                this.saveToStorage();
+                                return true;
+                            }
+                        }
+
+                        // Verifica hash #data=... na URL atual ou na janela pai
+                        let hashStr = window.location.hash || '';
+                        if (!hashStr.includes('data=') && window.parent && window.parent !== window) {
+                            try {
+                                hashStr = window.parent.location.hash || '';
+                            } catch (e) {
+                                // Ignora bloqueio cross-origin do iframe
+                            }
+                        }
+
+                        const match = hashStr.match(/data=([^&]+)/);
+                        if (match && match[1] && typeof LZString !== 'undefined') {
+                            const decompressed = LZString.decompressFromEncodedURIComponent(match[1]);
+                            if (decompressed) {
+                                const compactList = JSON.parse(decompressed);
+                                if (Array.isArray(compactList) && compactList.length > 0) {
+                                    this.transactions = compactList.map((c, idx) => ({
+                                        id: 'shr_' + Date.now() + '_' + idx,
+                                        type: c[0] === 1 ? 'income' : 'expense',
+                                        date: c[1],
+                                        description: c[2],
+                                        amount: Number(c[3]),
+                                        category: c[4] || 'Outros',
+                                        user: c[5] === 'P' ? 'Paulo' : (c[5] === 'I' ? 'Isabela' : 'Compartilhado'),
+                                        account: c[6] || 'Carteira',
+                                        status: c[7] === 1 ? 'completed' : 'pending',
+                                        recurrence: 'nenhuma',
+                                        groupId: null
+                                    }));
+                                    this.saveToStorage();
+                                    setTimeout(() => {
+                                        this.showToast(`${this.transactions.length} lançamento(s) carregado(s) do link compartilhado!`);
+                                    }, 400);
+                                    return true;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Erro ao ler dados do link compartilhado:', err);
+                    }
+                    return false;
+                },
+
+                openShareModal() {
+                    if (this.transactions.length === 0) {
+                        this.showToast('Importe ou cadastre lançamentos antes de gerar o link.', 'error');
+                        return;
+                    }
+                    this.shareModal.open = true;
+                    this.buildShareUrl();
+                },
+
+                buildShareUrl() {
+                    if (typeof LZString === 'undefined') {
+                        this.shareModal.generatedUrl = 'Aguarde o carregamento do compactador...';
+                        return;
+                    }
+
+                    // Compacta cada transação em formato enxuto para caber perfeitamente na URL
+                    const compactPayload = this.transactions.map(t => [
+                        t.type === 'income' ? 1 : 0,
+                        t.date,
+                        t.description,
+                        Number(t.amount),
+                        t.category,
+                        t.user === 'Paulo' ? 'P' : (t.user === 'Isabela' ? 'I' : 'C'),
+                        t.account || 'Carteira',
+                        t.status === 'completed' ? 1 : 0
+                    ]);
+
+                    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(compactPayload));
+                    let baseUrl = (this.shareModal.customBaseUrl || '').trim();
+
+                    if (!baseUrl) {
+                        baseUrl = window.location.href.split('#')[0];
+                    } else {
+                        baseUrl = baseUrl.split('#')[0];
+                    }
+
+                    this.shareModal.generatedUrl = `${baseUrl}#data=${compressed}`;
+                },
+
+                copyShareUrl() {
+                    const textarea = document.getElementById('shareLinkTextarea');
+                    if (textarea) {
+                        textarea.select();
+                        textarea.setSelectionRange(0, 99999);
+                        try {
+                            document.execCommand('copy');
+                            this.showToast('Link copiado! Agora é só colar e enviar para a Isabela.');
+                        } catch (e) {
+                            this.showToast('Selecione o texto do link e copie manualmente.', 'error');
+                        }
+                    }
+                },
+
+                downloadPreloadedHtml() {
+                    if (this.transactions.length === 0) {
+                        this.showToast('Importe ou cadastre lançamentos antes de baixar o HTML.', 'error');
+                        return;
+                    }
+                    const baseHtml = window.__INITIAL_CLEAN_HTML__ || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+                    const preloadScript = `<script>window.__PRELOADED_TRANSACTIONS__ = ${JSON.stringify(this.transactions)};<\/script>`;
+                    const finalHtml = baseHtml.replace('<head>', `<head>\n    ${preloadScript}`);
+
+                    const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `financas_paulo_isabela_preenchido.html`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    this.showToast('Arquivo HTML preenchido baixado com sucesso!');
+                },
+
+                saveToStorage() {
+                    try {
+                        localStorage.setItem('paulo_isabela_financas_v2', JSON.stringify(this.transactions));
+                    } catch (e) {
+                        this.showToast('Erro ao salvar no navegador.', 'error');
+                    }
+                },
+
+                showToast(message, type = 'success') {
+                    this.toast = { visible: true, message, type };
+                    setTimeout(() => {
+                        this.toast.visible = false;
+                    }, 3500);
+                },
+
+                get pageTitle() {
+                    const titles = {
+                        dashboard: 'Dashboard',
+                        transactions: 'Transações',
+                        monthly: 'Visão Mês a Mês',
+                        reports: 'Relatórios & Previsões',
+                        settings: 'Configurações & Backup'
+                    };
+                    return titles[this.activeTab] || 'Dashboard';
+                },
+
+                changeMonth(delta) {
+                    if (this.allMonthsMode) {
+                        this.selectedYear += delta;
+                        return;
+                    }
+                    let m = this.selectedMonth + delta;
+                    if (m < 0) {
+                        this.selectedMonth = 11;
+                        this.selectedYear--;
+                    } else if (m > 11) {
+                        this.selectedMonth = 0;
+                        this.selectedYear++;
+                    } else {
+                        this.selectedMonth = m;
+                    }
+                },
+
+                selectMonthYear(year, month) {
+                    this.selectedYear = year;
+                    this.selectedMonth = month;
+                    this.allMonthsMode = false;
+                    this.monthPickerOpen = false;
+                },
+
+                goToCurrentMonth() {
+                    const now = new Date();
+                    this.selectMonthYear(now.getFullYear(), now.getMonth());
+                },
+
+                toggleAllMonthsMode() {
+                    this.allMonthsMode = !this.allMonthsMode;
+                },
+
+                drillDownToMonth(year, month) {
+                    this.selectedYear = year;
+                    this.selectedMonth = month;
+                    this.allMonthsMode = false;
+                    this.activeTab = 'transactions';
+                },
+
+                hasTransactionsInMonth(year, month) {
+                    return this.countTransactionsInMonth(year, month) > 0;
+                },
+
+                countTransactionsInMonth(year, month) {
+                    return this.transactions.filter(t => {
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return false;
+                        const [y, m] = t.date.split('-').map(Number);
+                        return y === year && (m - 1) === month;
+                    }).length;
+                },
+
+                get availableMonthPills() {
+                    const map = {};
+                    this.transactions.forEach(t => {
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
+                        const [y, m] = t.date.split('-').map(Number);
+                        if (!y || !m) return;
+                        const key = `${y}-${String(m).padStart(2, '0')}`;
+                        if (!map[key]) {
+                            map[key] = {
+                                key,
+                                year: y,
+                                month: m - 1,
+                                label: `${this.shortMonthNames[m - 1]}/${y}`,
+                                count: 0
+                            };
+                        }
+                        map[key].count++;
+                    });
+                    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+                },
+
+                get availableYears() {
+                    const years = new Set(this.transactions.map(t => Number(t.date.split('-')[0])).filter(Boolean));
+                    years.add(this.selectedYear);
+                    return Array.from(years).sort((a, b) => b - a);
+                },
+
+                get formattedSelectedMonth() {
+                    const date = new Date(this.selectedYear, this.selectedMonth, 1);
+                    const str = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                    return str.charAt(0).toUpperCase() + str.slice(1);
+                },
+
+                setFormType(type) {
+                    this.form.type = type;
+                    if (type === 'income' && this.form.category === 'Casa') {
+                        this.form.category = 'Salário';
+                    } else if (type === 'expense' && this.form.category === 'Salário') {
+                        this.form.category = 'Casa';
+                    }
+                },
+
+                openModal(item = null) {
+                    if (item) {
+                        this.editingId = item.id;
+                        this.form = {
+                            type: item.type,
+                            description: item.description,
+                            amount: item.amount,
+                            date: item.date,
+                            category: item.category,
+                            user: item.user,
+                            account: item.account || 'Carteira',
+                            status: item.status,
+                            recurrence: 'nenhuma',
+                            repeatCount: 12
+                        };
+                    } else {
+                        this.editingId = null;
+                        const now = new Date();
+                        let defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                        
+                        if (now.getMonth() !== this.selectedMonth || now.getFullYear() !== this.selectedYear) {
+                            defaultDate = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+                        }
+
+                        this.form = {
+                            type: 'expense',
+                            description: '',
+                            amount: '',
+                            date: defaultDate,
+                            category: 'Casa',
+                            user: this.selectedUserFilter !== 'Todos' ? this.selectedUserFilter : 'Compartilhado',
+                            account: 'Carteira',
+                            status: 'completed',
+                            recurrence: 'nenhuma',
+                            repeatCount: 12
+                        };
+                    }
+                    this.isModalOpen = true;
+                },
+
+                closeModal() {
+                    this.isModalOpen = false;
+                },
+
+                saveTransaction() {
+                    const val = parseFloat(this.form.amount);
+                    if (!this.form.description.trim() || isNaN(val) || val <= 0 || !this.form.date) {
+                        this.showToast('Preencha descrição, valor válido e data.', 'error');
+                        return;
+                    }
+
+                    if (this.editingId) {
+                        const index = this.transactions.findIndex(t => t.id === this.editingId);
+                        if (index !== -1) {
+                            this.transactions[index] = {
+                                ...this.transactions[index],
+                                type: this.form.type,
+                                description: this.form.description.trim(),
+                                amount: val,
+                                date: this.form.date,
+                                category: this.form.category,
+                                user: this.form.user,
+                                account: this.form.account,
+                                status: this.form.status
+                            };
+                            this.showToast('Lançamento atualizado!');
+                        }
+                    } else {
+                        const recurrence = this.form.recurrence;
+                        const repeatCount = recurrence !== 'nenhuma' 
+                            ? Math.min(Math.max(parseInt(this.form.repeatCount) || 2, 2), 60) 
+                            : 1;
+                        const groupId = repeatCount > 1 ? 'grp_' + Date.now() : null;
+
+                        for (let i = 0; i < repeatCount; i++) {
+                            const [y, m, d] = this.form.date.split('-').map(Number);
+                            let dt = new Date(y, m - 1, d);
+
+                            if (i > 0) {
+                                if (recurrence === 'diaria') {
+                                    dt.setDate(dt.getDate() + i);
+                                } else if (recurrence === 'semanal') {
+                                    dt.setDate(dt.getDate() + (i * 7));
+                                } else if (recurrence === 'mensal') {
+                                    const targetMonth = (m - 1) + i;
+                                    dt = new Date(y, targetMonth, 1);
+                                    const maxDaysInMonth = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+                                    dt.setDate(Math.min(d, maxDaysInMonth));
+                                }
+                            }
+
+                            const formattedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                            const desc = repeatCount > 1 
+                                ? `${this.form.description.trim()} (${i + 1}/${repeatCount})`
+                                : this.form.description.trim();
+
+                            this.transactions.push({
+                                id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                                type: this.form.type,
+                                description: desc,
+                                amount: val,
+                                date: formattedDate,
+                                category: this.form.category,
+                                user: this.form.user,
+                                account: this.form.account,
+                                status: i === 0 ? this.form.status : 'pending',
+                                recurrence: recurrence,
+                                groupId: groupId
+                            });
+                        }
+
+                        this.showToast(repeatCount > 1 ? `${repeatCount} lançamentos gerados!` : 'Lançamento adicionado!');
+                    }
+
+                    this.saveToStorage();
+                    this.closeModal();
+                    this.renderAllCharts();
+                },
+
+                toggleStatus(id) {
+                    const tx = this.transactions.find(t => t.id === id);
+                    if (tx) {
+                        tx.status = tx.status === 'completed' ? 'pending' : 'completed';
+                        this.saveToStorage();
+                        this.renderAllCharts();
+                    }
+                },
+
+                promptDelete(item) {
+                    this.deleteModal = { open: true, item };
+                },
+
+                confirmDelete(deleteSeries = false) {
+                    const item = this.deleteModal.item;
+                    if (!item) return;
+
+                    if (deleteSeries && item.groupId) {
+                        this.transactions = this.transactions.filter(t => t.groupId !== item.groupId);
+                        this.showToast('Série de lançamentos excluída.');
+                    } else {
+                        this.transactions = this.transactions.filter(t => t.id !== item.id);
+                        this.showToast('Lançamento excluído.');
+                    }
+
+                    this.deleteModal = { open: false, item: null };
+                    this.saveToStorage();
+                    this.renderAllCharts();
+                },
+
+                // =========================================================
+                // CÁLCULO CORRIGIDO DE SALDO ACUMULADO, RECEITAS E DESPESAS
+                // =========================================================
+                get metrics() {
+                    const periodEndStr = this.allMonthsMode
+                        ? `${this.selectedYear}-12-31`
+                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-31`;
+
+                    let saldoAtualAcumulado = 0;
+                    let saldoPrevistoAcumulado = 0;
+                    let totalReceitas = 0;
+                    let receitasConcluidas = 0;
+                    let totalDespesas = 0;
+                    let despesasConcluidas = 0;
+
+                    this.transactions.forEach(t => {
+                        // Respeita filtro de integrante (Todos / Paulo / Isabela / Compartilhado)
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) {
+                            return;
+                        }
+
+                        const signedValue = t.type === 'income' ? Number(t.amount) : -Number(t.amount);
+
+                        // 1. Saldo Acumulado até o fim do período selecionado
+                        if (t.date <= periodEndStr) {
+                            saldoPrevistoAcumulado += signedValue;
+                            if (t.status === 'completed') {
+                                saldoAtualAcumulado += signedValue;
+                            }
+                        }
+
+                        // 2. Indicadores específicos do mês ou ano selecionado
+                        const [y, m] = t.date.split('-').map(Number);
+                        const matchPeriod = this.allMonthsMode
+                            ? (y === this.selectedYear)
+                            : (y === this.selectedYear && (m - 1) === this.selectedMonth);
+
+                        if (matchPeriod) {
+                            if (t.type === 'income') {
+                                totalReceitas += Number(t.amount);
+                                if (t.status === 'completed') receitasConcluidas += Number(t.amount);
+                            } else {
+                                totalDespesas += Number(t.amount);
+                                if (t.status === 'completed') despesasConcluidas += Number(t.amount);
+                            }
+                        }
+                    });
+
+                    return {
+                        saldoAtual: saldoAtualAcumulado,
+                        saldoPrevistoMes: saldoPrevistoAcumulado,
+                        totalReceitas,
+                        receitasConcluidas,
+                        totalDespesas,
+                        despesasConcluidas,
+                        balancoMensal: totalReceitas - totalDespesas
+                    };
+                },
+
+                get monthFilteredTransactions() {
+                    return this.transactions
+                        .filter(t => {
+                            const [y, m] = t.date.split('-').map(Number);
+                            const matchMonth = this.allMonthsMode
+                                ? (y === this.selectedYear)
+                                : (y === this.selectedYear && (m - 1) === this.selectedMonth);
+                            const matchUser = this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter;
+                            return matchMonth && matchUser;
+                        })
+                        .sort((a, b) => b.date.localeCompare(a.date));
+                },
+
+                get flatFilteredTransactions() {
+                    return this.monthFilteredTransactions.filter(t => {
+                        const matchesSearch = !this.searchQuery || 
+                            t.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                            t.category.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                            (t.account && t.account.toLowerCase().includes(this.searchQuery.toLowerCase()));
+                        const matchesType = this.filterType === 'todos' || t.type === this.filterType;
+                        const matchesStatus = this.filterStatus === 'todos' || t.status === this.filterStatus;
+                        const matchesCategory = this.filterCategory === 'todas' || t.category === this.filterCategory;
+                        return matchesSearch && matchesType && matchesStatus && matchesCategory;
+                    });
+                },
+
+                // Agrupamento Diário com Saldo Previsto Acumulado desde o início
+                get groupedDailyTransactions() {
+                    const list = [...this.flatFilteredTransactions].sort((a, b) => a.date.localeCompare(b.date));
+                    if (list.length === 0) return [];
+
+                    const groupsMap = {};
+                    list.forEach(item => {
+                        if (!groupsMap[item.date]) {
+                            groupsMap[item.date] = [];
+                        }
+                        groupsMap[item.date].push(item);
+                    });
+
+                    // Saldo acumulado de TODOS os períodos anteriores ao período selecionado
+                    const firstDayOfPeriod = this.allMonthsMode
+                        ? `${this.selectedYear}-01-01`
+                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+
+                    let runningBalance = this.transactions
+                        .filter(t => {
+                            const matchUser = this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter;
+                            return t.date < firstDayOfPeriod && matchUser;
+                        })
+                        .reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
+
+                    const sortedDates = Object.keys(groupsMap).sort();
+                    const groups = sortedDates.map(date => {
+                        const items = groupsMap[date];
+                        const daySubtotal = items.reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
+                        runningBalance += daySubtotal;
+
+                        return {
+                            date,
+                            items,
+                            daySubtotal,
+                            runningBalance
+                        };
+                    });
+
+                    // Ordem cronológica reversa (mais recente no topo, como no Mobills)
+                    return groups.reverse();
+                },
+
+                // =========================================================
+                // CONSOLIDADO MÊS A MÊS (TABELA E GRÁFICO DE EVOLUÇÃO)
+                // =========================================================
+                get monthlySummaryRows() {
+                    const filteredByUser = this.transactions.filter(t => 
+                        this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter
+                    );
+                    if (filteredByUser.length === 0) return [];
+
+                    const monthsMap = {};
+                    filteredByUser.forEach(t => {
+                        const [y, m] = t.date.split('-').map(Number);
+                        if (!y || !m) return;
+                        const key = `${y}-${String(m).padStart(2, '0')}`;
+                        if (!monthsMap[key]) {
+                            monthsMap[key] = {
+                                key,
+                                year: y,
+                                month: m - 1,
+                                label: `${this.shortMonthNames[m - 1]}/${y}`,
+                                count: 0,
+                                income: 0,
+                                expense: 0
+                            };
+                        }
+                        monthsMap[key].count++;
+                        if (t.type === 'income') monthsMap[key].income += Number(t.amount);
+                        else monthsMap[key].expense += Number(t.amount);
+                    });
+
+                    const sortedKeys = Object.keys(monthsMap).sort();
+                    let runningAccumulated = 0;
+
+                    const allRows = sortedKeys.map(k => {
+                        const item = monthsMap[k];
+                        const openingBalance = runningAccumulated;
+                        const monthlyBalance = item.income - item.expense;
+                        const closingBalance = openingBalance + monthlyBalance;
+                        runningAccumulated = closingBalance;
+
+                        const savingsRate = item.income > 0
+                            ? (((item.income - item.expense) / item.income) * 100).toFixed(1)
+                            : (item.expense > 0 ? '-100.0' : '0.0');
+
+                        return {
+                            ...item,
+                            openingBalance,
+                            monthlyBalance,
+                            closingBalance,
+                            savingsRate: Number(savingsRate)
+                        };
+                    });
+
+                    if (this.monthlyViewYearFilter !== 'all') {
+                        const targetYear = Number(this.monthlyViewYearFilter);
+                        return allRows.filter(r => r.year === targetYear);
+                    }
+
+                    return allRows;
+                },
+
+                get userMetrics() {
+                    const monthTxs = this.transactions.filter(t => {
+                        const [y, m] = t.date.split('-').map(Number);
+                        return this.allMonthsMode
+                            ? (y === this.selectedYear)
+                            : (y === this.selectedYear && (m - 1) === this.selectedMonth);
+                    });
+
+                    const calc = (u) => {
+                        const list = monthTxs.filter(t => t.user === u);
+                        return {
+                            receitas: list.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0),
+                            despesas: list.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0)
+                        };
+                    };
+
+                    const paulo = calc('Paulo');
+                    const isabela = calc('Isabela');
+                    const compartilhado = calc('Compartilhado');
+                    const totalDesp = paulo.despesas + isabela.despesas + compartilhado.despesas;
+
+                    return {
+                        paulo: { ...paulo, percentage: totalDesp > 0 ? ((paulo.despesas / totalDesp) * 100).toFixed(1) : '0.0' },
+                        isabela: { ...isabela, percentage: totalDesp > 0 ? ((isabela.despesas / totalDesp) * 100).toFixed(1) : '0.0' },
+                        compartilhado: { ...compartilhado, percentage: totalDesp > 0 ? ((compartilhado.despesas / totalDesp) * 100).toFixed(1) : '0.0' }
+                    };
+                },
+
+                getCategoryBreakdown(type) {
+                    const list = this.monthFilteredTransactions.filter(t => t.type === type);
+                    const total = list.reduce((acc, t) => acc + Number(t.amount), 0);
+                    const map = {};
+
+                    list.forEach(t => {
+                        map[t.category] = (map[t.category] || 0) + Number(t.amount);
+                    });
+
+                    return Object.keys(map).map(catName => ({
+                        name: catName,
+                        total: map[catName],
+                        percentage: total > 0 ? ((map[catName] / total) * 100).toFixed(2) : '0.00',
+                        color: this.getCategoryColor(catName)
+                    })).sort((a, b) => b.total - a.total);
+                },
+
+                get expenseBreakdown() {
+                    return this.getCategoryBreakdown('expense');
+                },
+
+                get incomeBreakdown() {
+                    return this.getCategoryBreakdown('income');
+                },
+
+                get activeReportData() {
+                    return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
+                },
+
+                getCategoryColor(name) {
+                    const found = this.categoriesList.find(c => c.name === name);
+                    return found ? found.color : '#6b7280';
+                },
+
+                getCategoryIcon(name) {
+                    const found = this.categoriesList.find(c => c.name === name);
+                    return found ? found.icon : 'fa-solid fa-tag';
+                },
+
+                formatCurrency(val) {
+                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+                },
+
+                formatDateShort(dateStr) {
+                    if (!dateStr) return '';
+                    const [y, m, d] = dateStr.split('-');
+                    return `${d}/${m}/${y}`;
+                },
+
+                formatDateHeader(dateStr) {
+                    if (!dateStr) return '';
+                    const [y, m, d] = dateStr.split('-').map(Number);
+                    const dt = new Date(y, m - 1, d);
+                    const now = new Date();
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const formatted = dt.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const capitalized = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                    return dateStr === todayStr ? `Hoje • ${capitalized}` : capitalized;
+                },
+
+                // =========================================================
+                // RENDERIZAÇÃO DOS GRÁFICOS (CHART.JS)
+                // =========================================================
+                renderAllCharts() {
+                    this.renderDonut('dashExpenseChart', this.expenseBreakdown, 'dashExp');
+                    this.renderDonut('dashIncomeChart', this.incomeBreakdown, 'dashInc');
+                    this.renderDonut('reportsDonutChart', this.activeReportData, 'repDonut');
+                    this.renderComparisonChart();
+                    this.renderForecastChart();
+                    this.renderMonthlyEvolutionChart();
+                },
+
+                renderDonut(canvasId, dataList, chartKey) {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+
+                    window._charts = window._charts || {};
+                    if (window._charts[chartKey]) {
+                        window._charts[chartKey].destroy();
+                    }
+
+                    const hasData = dataList && dataList.length > 0;
+                    const labels = hasData ? dataList.map(d => d.name) : ['Sem dados'];
+                    const values = hasData ? dataList.map(d => d.total) : [1];
+                    const colors = hasData ? dataList.map(d => d.color) : ['#2c2c38'];
+
+                    window._charts[chartKey] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: colors,
+                                borderWidth: 0,
+                                hoverOffset: hasData ? 6 : 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '72%',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    enabled: hasData,
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.label}: ${this.formatCurrency(ctx.raw)}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                renderComparisonChart() {
+                    const canvas = document.getElementById('coupleComparisonChart');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+
+                    window._charts = window._charts || {};
+                    if (window._charts.comparison) {
+                        window._charts.comparison.destroy();
+                    }
+
+                    const um = this.userMetrics;
+                    window._charts.comparison = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Paulo', 'Isabela', 'Compartilhado (Casa)'],
+                            datasets: [
+                                {
+                                    label: 'Receitas',
+                                    data: [um.paulo.receitas, um.isabela.receitas, um.compartilhado.receitas],
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 6
+                                },
+                                {
+                                    label: 'Despesas',
+                                    data: [um.paulo.despesas, um.isabela.despesas, um.compartilhado.despesas],
+                                    backgroundColor: '#ef4444',
+                                    borderRadius: 6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
+                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
+                            },
+                            plugins: {
+                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                renderMonthlyEvolutionChart() {
+                    const canvas = document.getElementById('monthlyEvolutionChart');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+
+                    window._charts = window._charts || {};
+                    if (window._charts.monthlyEvolution) {
+                        window._charts.monthlyEvolution.destroy();
+                    }
+
+                    const rows = this.monthlySummaryRows;
+                    window._charts.monthlyEvolution = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: rows.map(r => r.label),
+                            datasets: [
+                                {
+                                    type: 'line',
+                                    label: 'Saldo Acumulado Final',
+                                    data: rows.map(r => r.closingBalance),
+                                    borderColor: '#8b5cf6',
+                                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                    borderWidth: 3,
+                                    tension: 0.3,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    type: 'bar',
+                                    label: 'Receitas',
+                                    data: rows.map(r => r.income),
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 6,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    type: 'bar',
+                                    label: 'Despesas',
+                                    data: rows.map(r => r.expense),
+                                    backgroundColor: '#ef4444',
+                                    borderRadius: 6,
+                                    yAxisID: 'y'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
+                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
+                            },
+                            plugins: {
+                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                renderForecastChart() {
+                    const canvas = document.getElementById('forecastChart');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+
+                    window._charts = window._charts || {};
+                    if (window._charts.forecast) {
+                        window._charts.forecast.destroy();
+                    }
+
+                    const labels = [];
+                    const incomes = [];
+                    const expenses = [];
+                    const projectedBalances = [];
+
+                    for (let i = 0; i < 6; i++) {
+                        const dt = new Date(this.selectedYear, this.selectedMonth + i, 1);
+                        const y = dt.getFullYear();
+                        const m = dt.getMonth();
+                        const monthEndStr = `${y}-${String(m + 1).padStart(2, '0')}-31`;
+
+                        labels.push(dt.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+
+                        let mInc = 0;
+                        let mExp = 0;
+                        let cumBal = 0;
+
+                        this.transactions.forEach(t => {
+                            if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
+
+                            const [ty, tm] = t.date.split('-').map(Number);
+                            if (ty === y && (tm - 1) === m) {
+                                if (t.type === 'income') mInc += Number(t.amount);
+                                else mExp += Number(t.amount);
+                            }
+
+                            if (t.date <= monthEndStr) {
+                                cumBal += (t.type === 'income' ? Number(t.amount) : -Number(t.amount));
+                            }
+                        });
+
+                        incomes.push(mInc);
+                        expenses.push(mExp);
+                        projectedBalances.push(cumBal);
+                    }
+
+                    window._charts.forecast = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [
+                                {
+                                    label: 'Saldo Acumulado Projetado',
+                                    data: projectedBalances,
+                                    borderColor: '#8b5cf6',
+                                    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 3
+                                },
+                                {
+                                    label: 'Receitas Previstas',
+                                    data: incomes,
+                                    borderColor: '#10b981',
+                                    borderDash: [4, 4],
+                                    tension: 0.3,
+                                    borderWidth: 2
+                                },
+                                {
+                                    label: 'Despesas Previstas',
+                                    data: expenses,
+                                    borderColor: '#ef4444',
+                                    borderDash: [4, 4],
+                                    tension: 0.3,
+                                    borderWidth: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
+                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
+                            },
+                            plugins: {
+                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                // =========================================================
+                // EXPORTAR / IMPORTAR BACKUP JSON E LIMPEZA TOTAL
+                // =========================================================
+                exportBackup() {
+                    const dataStr = JSON.stringify(this.transactions, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `financas_paulo_isabela_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    this.showToast('Backup exportado com sucesso!');
+                },
+
+                importBackup(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (Array.isArray(imported)) {
+                                this.transactions = imported;
+                                this.saveToStorage();
+                                this.renderAllCharts();
+                                this.showToast(`${imported.length} lançamento(s) importado(s)!`);
+                            } else {
+                                this.showToast('Arquivo de backup inválido.', 'error');
+                            }
+                        } catch (err) {
+                            this.showToast('Erro ao ler o arquivo JSON.', 'error');
+                        }
+                        event.target.value = '';
+                    };
+                    reader.readAsText(file);
+                },
+
+                executeClearAll() {
+                    this.transactions = [];
+                    this.saveToStorage();
+                    this.confirmClearOpen = false;
+                    this.renderAllCharts();
+                    this.showToast('Todos os lançamentos foram apagados.');
+                },
+
+                // =========================================================
+                // IMPORTAÇÃO DE PLANILHAS CSV E EXCEL EXPORTADAS DO MOBILLS
+                // =========================================================
+                openImportModal() {
+                    this.importModal = {
+                        open: true,
+                        isDragging: false,
+                        fileName: '',
+                        defaultUser: this.selectedUserFilter !== 'Todos' ? this.selectedUserFilter : 'Compartilhado',
+                        mode: 'merge',
+                        parsedRows: [],
+                        sheetsRead: 0,
+                        error: ''
+                    };
+                },
+
+                closeImportModal() {
+                    this.importModal.open = false;
+                },
+
+                handleMobillsDrop(event) {
+                    this.importModal.isDragging = false;
+                    const file = event.dataTransfer?.files?.[0];
+                    if (file) {
+                        this.processMobillsFile(file);
+                    }
+                },
+
+                handleMobillsFileSelect(event) {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                        this.processMobillsFile(file);
+                    }
+                    event.target.value = '';
+                },
+
+                processMobillsFile(file) {
+                    this.importModal.error = '';
+                    this.importModal.parsedRows = [];
+                    this.importModal.sheetsRead = 0;
+                    this.importModal.fileName = file.name;
+
+                    if (typeof XLSX === 'undefined') {
+                        this.importModal.error = 'Biblioteca de leitura Excel/CSV ainda está carregando. Tente novamente em alguns segundos.';
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    const isCsv = file.name.toLowerCase().endsWith('.csv');
+
+                    reader.onload = (e) => {
+                        try {
+                            let workbook;
+                            if (isCsv) {
+                                const buffer = e.target.result;
+                                let text = new TextDecoder('utf-8').decode(buffer);
+                                if (text.includes('\uFFFD')) {
+                                    text = new TextDecoder('iso-8859-1').decode(buffer);
+                                }
+                                workbook = XLSX.read(text, { type: 'string', raw: false });
+                            } else {
+                                const data = new Uint8Array(e.target.result);
+                                workbook = XLSX.read(data, { type: 'array', cellDates: false });
+                            }
+
+                            const allParsed = [];
+                            let validSheetsCount = 0;
+
+                            // Lê TODAS as abas (sheets) presentes na planilha exportada do Mobills
+                            for (const sheetName of workbook.SheetNames) {
+                                const worksheet = workbook.Sheets[sheetName];
+                                if (!worksheet) continue;
+
+                                const rawMatrix = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                                if (!rawMatrix || rawMatrix.length < 2) continue;
+
+                                // Localizar a linha de cabeçalho nas primeiras 15 linhas
+                                let headerRowIdx = -1;
+                                for (let r = 0; r < Math.min(rawMatrix.length, 15); r++) {
+                                    const rowNormalized = rawMatrix[r].map(c => this.normalizeHeaderStr(c));
+                                    const hasDate = rowNormalized.some(c => c.includes('data') || c.includes('vencimento') || c === 'date');
+                                    const hasAmount = rowNormalized.some(c => c.includes('valor') || c.includes('quantia') || c === 'amount' || c === 'value');
+                                    if (hasDate && hasAmount) {
+                                        headerRowIdx = r;
+                                        break;
+                                    }
+                                }
+
+                                if (headerRowIdx === -1) continue;
+                                validSheetsCount++;
+
+                                // Infere tipo padrão pela aba caso a aba seja nomeada "Receitas" ou "Despesas"
+                                const normSheet = this.normalizeHeaderStr(sheetName);
+                                const sheetDefaultType = normSheet.includes('receita') ? 'income' : (normSheet.includes('despesa') ? 'expense' : '');
+
+                                const headers = rawMatrix[headerRowIdx].map(h => this.normalizeHeaderStr(h));
+                                const colMap = {
+                                    date: headers.findIndex(h => h.includes('data') || h.includes('vencimento') || h === 'date'),
+                                    description: headers.findIndex(h => h.includes('descri') || h.includes('titulo') || h.includes('historico') || h === 'description'),
+                                    category: headers.findIndex(h => h.includes('categ') || h === 'category'),
+                                    account: headers.findIndex(h => h.includes('conta') || h.includes('cartao') || h === 'account'),
+                                    amount: headers.findIndex(h => h.includes('valor') || h.includes('quantia') || h === 'amount' || h === 'value'),
+                                    status: headers.findIndex(h => h.includes('situac') || h.includes('status') || h.includes('pago') || h.includes('efetivado')),
+                                    type: headers.findIndex(h => h === 'tipo' || h.includes('natureza') || h === 'type')
+                                };
+
+                                for (let i = headerRowIdx + 1; i < rawMatrix.length; i++) {
+                                    const row = rawMatrix[i];
+                                    if (!row || row.every(cell => String(cell).trim() === '')) continue;
+
+                                    const parsedDate = this.parseMobillsDate(row[colMap.date]);
+                                    const rawAmount = row[colMap.amount];
+                                    const rowTypeHint = colMap.type !== -1 ? row[colMap.type] : sheetDefaultType;
+                                    const parsedAmountInfo = this.parseMobillsAmount(rawAmount, rowTypeHint);
+
+                                    if (!parsedDate || parsedAmountInfo.amount <= 0) continue;
+
+                                    const desc = colMap.description !== -1 && String(row[colMap.description]).trim()
+                                        ? String(row[colMap.description]).trim()
+                                        : 'Lançamento Importado';
+
+                                    const rawCat = colMap.category !== -1 ? String(row[colMap.category]).trim() : '';
+                                    const mappedCategory = this.mapMobillsCategory(rawCat, parsedAmountInfo.type);
+
+                                    const account = colMap.account !== -1 && String(row[colMap.account]).trim()
+                                        ? String(row[colMap.account]).trim()
+                                        : 'Carteira';
+
+                                    const rawStatus = colMap.status !== -1 ? String(row[colMap.status]).trim() : 'Pago';
+                                    const status = this.parseMobillsStatus(rawStatus);
+
+                                    const detectedUser = this.detectMobillsUser(desc, account, this.importModal.defaultUser);
+
+                                    allParsed.push({
+                                        type: parsedAmountInfo.type,
+                                        description: desc,
+                                        amount: parsedAmountInfo.amount,
+                                        date: parsedDate,
+                                        category: mappedCategory,
+                                        user: detectedUser,
+                                        account: account,
+                                        status: status
+                                    });
+                                }
+                            }
+
+                            if (allParsed.length === 0) {
+                                this.importModal.error = 'Não foi possível encontrar lançamentos válidos com colunas de Data e Valor nas abas da planilha.';
+                                return;
+                            }
+
+                            this.importModal.sheetsRead = validSheetsCount;
+                            this.importModal.parsedRows = allParsed.sort((a, b) => b.date.localeCompare(a.date));
+                        } catch (err) {
+                            console.error('Erro ao ler planilha:', err);
+                            this.importModal.error = 'Falha ao ler o arquivo. Certifique-se de que não está corrompido ou protegido por senha.';
+                        }
+                    };
+
+                    reader.readAsArrayBuffer(file);
+                },
+
+                get importPreviewMonthsBreakdown() {
+                    const map = {};
+                    this.importModal.parsedRows.forEach(r => {
+                        const [y, m] = r.date.split('-').map(Number);
+                        if (!y || !m) return;
+                        const key = `${y}-${String(m).padStart(2, '0')}`;
+                        if (!map[key]) {
+                            map[key] = {
+                                key,
+                                label: `${this.shortMonthNames[m - 1]}/${y}`,
+                                count: 0
+                            };
+                        }
+                        map[key].count++;
+                    });
+                    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+                },
+
+                reapplyImportDefaults() {
+                    this.importModal.parsedRows.forEach(row => {
+                        row.user = this.detectMobillsUser(row.description, row.account, this.importModal.defaultUser);
+                    });
+                },
+
+                get importPreviewTotals() {
+                    return this.importModal.parsedRows.reduce((acc, r) => {
+                        if (r.type === 'income') acc.income += r.amount;
+                        else acc.expense += r.amount;
+                        return acc;
+                    }, { income: 0, expense: 0 });
+                },
+
+                confirmMobillsImport() {
+                    if (this.importModal.parsedRows.length === 0) return;
+
+                    const monthsImportedCount = this.importPreviewMonthsBreakdown.length;
+                    const newItems = this.importModal.parsedRows.map((r, index) => ({
+                        id: 'imp_' + Date.now() + '_' + index + '_' + Math.random().toString(36).substring(2, 6),
+                        type: r.type,
+                        description: r.description,
+                        amount: r.amount,
+                        date: r.date,
+                        category: r.category,
+                        user: r.user,
+                        account: r.account,
+                        status: r.status,
+                        recurrence: 'nenhuma',
+                        groupId: null
+                    }));
+
+                    if (this.importModal.mode === 'replace') {
+                        this.transactions = newItems;
+                    } else {
+                        this.transactions = [...this.transactions, ...newItems];
+                    }
+
+                    // Posiciona no mês atual se houver lançamentos nele, ou no mês mais recente importado
+                    const now = new Date();
+                    const curY = now.getFullYear();
+                    const curM = now.getMonth();
+                    const hasCurrentMonthData = newItems.some(i => {
+                        const [iy, im] = i.date.split('-').map(Number);
+                        return iy === curY && (im - 1) === curM;
+                    });
+
+                    if (hasCurrentMonthData) {
+                        this.selectedYear = curY;
+                        this.selectedMonth = curM;
+                    } else if (newItems.length > 0) {
+                        const latestDate = newItems.map(i => i.date).sort().reverse()[0];
+                        const [ly, lm] = latestDate.split('-').map(Number);
+                        if (ly && lm) {
+                            this.selectedYear = ly;
+                            this.selectedMonth = lm - 1;
+                        }
+                    }
+
+                    this.allMonthsMode = false;
+                    this.saveToStorage();
+                    this.renderAllCharts();
+                    this.closeImportModal();
+                    this.showToast(`${newItems.length} lançamento(s) importado(s) em ${monthsImportedCount} mês(es)!`);
+                },
+
+                normalizeHeaderStr(val) {
+                    return String(val || '')
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .trim();
+                },
+
+                parseMobillsDate(raw) {
+                    if (raw === null || raw === undefined || raw === '') return null;
+
+                    // Número serial de data do Excel (ex: 46332) sem deslocamento de fuso horário
+                    if (typeof raw === 'number' && raw > 20000 && raw < 80000) {
+                        const utcDays = Math.floor(raw - 25569);
+                        const dt = new Date(utcDays * 86400 * 1000);
+                        const y = dt.getUTCFullYear();
+                        const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+                        const d = String(dt.getUTCDate()).padStart(2, '0');
+                        return `${y}-${m}-${d}`;
+                    }
+
+                    // Objeto Date nativo caso exista
+                    if (raw instanceof Date && !isNaN(raw.getTime())) {
+                        const y = raw.getFullYear();
+                        const m = String(raw.getMonth() + 1).padStart(2, '0');
+                        const d = String(raw.getDate()).padStart(2, '0');
+                        return `${y}-${m}-${d}`;
+                    }
+
+                    const str = String(raw).trim().split(' ')[0];
+
+                    // Formato DD/MM/AAAA ou DD-MM-AAAA
+                    const brMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+                    if (brMatch) {
+                        const day = brMatch[1].padStart(2, '0');
+                        const month = brMatch[2].padStart(2, '0');
+                        let year = brMatch[3];
+                        if (year.length === 2) year = '20' + year;
+                        return `${year}-${month}-${day}`;
+                    }
+
+                    // Formato ISO AAAA-MM-DD ou AAAA/MM/DD
+                    const isoMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+                    if (isoMatch) {
+                        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+                    }
+
+                    // Formato com mês por extenso em português (ex: "06 de novembro de 2026" ou "06/nov/2026")
+                    const textNorm = this.normalizeHeaderStr(String(raw));
+                    const monthsMap = {
+                        jan: '01', janeiro: '01',
+                        fev: '02', fevereiro: '02',
+                        mar: '03', marco: '03',
+                        abr: '04', abril: '04',
+                        mai: '05', maio: '05',
+                        jun: '06', junho: '06',
+                        jul: '07', julho: '07',
+                        ago: '08', agosto: '08',
+                        set: '09', setembro: '09',
+                        out: '10', outubro: '10',
+                        nov: '11', novembro: '11',
+                        dez: '12', dezembro: '12'
+                    };
+                    const textDateMatch = textNorm.match(/(\d{1,2})\s*(?:de|\/|\-|\s)\s*([a-z]+)\s*(?:de|\/|\-|\s)\s*(\d{2,4})/);
+                    if (textDateMatch && monthsMap[textDateMatch[2]]) {
+                        const day = textDateMatch[1].padStart(2, '0');
+                        const month = monthsMap[textDateMatch[2]];
+                        let year = textDateMatch[3];
+                        if (year.length === 2) year = '20' + year;
+                        return `${year}-${month}-${day}`;
+                    }
+
+                    return null;
+                },
+
+                parseMobillsAmount(rawVal, rawType = '') {
+                    const typeNorm = this.normalizeHeaderStr(rawType);
+                    let explicitType = null;
+                    if (typeNorm.includes('receita') || typeNorm.includes('entrada') || typeNorm === 'income') {
+                        explicitType = 'income';
+                    } else if (typeNorm.includes('despesa') || typeNorm.includes('saida') || typeNorm === 'expense') {
+                        explicitType = 'expense';
+                    }
+
+                    if (typeof rawVal === 'number') {
+                        const isNegative = rawVal < 0;
+                        return {
+                            amount: Math.abs(rawVal),
+                            type: explicitType || (isNegative ? 'expense' : 'income')
+                        };
+                    }
+
+                    let str = String(rawVal || '').trim();
+                    const isNegative = str.includes('-') || (str.startsWith('(') && str.endsWith(')'));
+
+                    // Remove R$, espaços e parênteses
+                    str = str.replace(/[R$\s\(\)\+\-]/g, '');
+
+                    // Trata formato brasileiro (1.234,56) vs americano (1,234.56)
+                    if (str.includes(',') && str.includes('.')) {
+                        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                            str = str.replace(/\./g, '').replace(',', '.');
+                        } else {
+                            str = str.replace(/,/g, '');
+                        }
+                    } else if (str.includes(',')) {
+                        str = str.replace(',', '.');
+                    }
+
+                    const num = parseFloat(str);
+                    if (isNaN(num)) return { amount: 0, type: 'expense' };
+
+                    return {
+                        amount: Math.abs(num),
+                        type: explicitType || (isNegative ? 'expense' : 'income')
+                    };
+                },
+
+                parseMobillsStatus(rawStatus) {
+                    const s = this.normalizeHeaderStr(rawStatus);
+                    if (!s) return 'completed';
+                    if (s.includes('pend') || s.includes('nao') || s.includes('aberto') || s.includes('agend')) {
+                        return 'pending';
+                    }
+                    return 'completed';
+                },
+
+                detectMobillsUser(description, account, fallbackUser) {
+                    const text = this.normalizeHeaderStr(`${description} ${account}`);
+                    if (text.includes('paulo')) return 'Paulo';
+                    if (text.includes('isabela') || text.includes('isabella')) return 'Isabela';
+                    return fallbackUser;
+                },
+
+                mapMobillsCategory(rawCat, type) {
+                    if (!rawCat) return type === 'income' ? 'Salário' : 'Outros';
+                    const norm = this.normalizeHeaderStr(rawCat);
+
+                    const exactMatch = this.categoriesList.find(c => this.normalizeHeaderStr(c.name) === norm);
+                    if (exactMatch) return exactMatch.name;
+
+                    if (norm.includes('casa') || norm.includes('moradia') || norm.includes('aluguel') || norm.includes('internet') || norm.includes('energia') || norm.includes('agua')) return 'Casa';
+                    if (norm.includes('aliment') || norm.includes('mercado') || norm.includes('supermercado') || norm.includes('restaurante') || norm.includes('bar') || norm.includes('lanche')) return 'Alimentação';
+                    if (norm.includes('educa') || norm.includes('escola') || norm.includes('faculdade') || norm.includes('curso') || norm.includes('matricula')) return 'Educação';
+                    if (norm.includes('transp') || norm.includes('combust') || norm.includes('abastec') || norm.includes('uber') || norm.includes('carro') || norm.includes('manutenc')) return 'Transporte';
+                    if (norm.includes('compra') || norm.includes('vestuario') || norm.includes('roupa') || norm.includes('loja')) return 'Compras';
+                    if (norm.includes('saude') || norm.includes('farmacia') || norm.includes('medico') || norm.includes('exame')) return 'Saúde';
+                    if (norm.includes('assinat') || norm.includes('stream') || norm.includes('netflix') || norm.includes('spotify')) return 'Assinatura';
+                    if (norm.includes('salar') || norm.includes('pagament')) return 'Salário';
+                    if (norm.includes('extra') || norm.includes('freela') || norm.includes('bonus')) return 'Renda extra';
+                    if (norm.includes('reajust')) return 'Reajuste';
+
+                    return 'Outros';
+                }
+            };
+        }
+    </script>
+</body>
+</html>
