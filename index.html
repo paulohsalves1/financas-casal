@@ -285,8 +285,15 @@
                         <span class="sm:hidden">Importar</span>
                     </button>
 
+                    <!-- Status de Sincronização em Tempo Real -->
+                    <button @click="activeTab = 'settings'" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
+                            :class="syncConfig.connected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-mobills-bg border-mobills-border text-gray-400 hover:text-white'"
+                            :title="syncConfig.connected ? 'Sincronização em tempo real ativa' : 'Clique para ativar sincronização automática entre aparelhos'">
+                        <span class="w-2 h-2 rounded-full" :class="syncConfig.connected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'"></span>
+                        <span class="hidden md:inline" x-text="syncConfig.connected ? 'Sincronizado' : 'Offline'"></span>
+                    </button>
+
                     <div class="hidden lg:flex items-center space-x-2 text-xs text-gray-400">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                         <span x-text="transactions.length + ' lançamento(s)'"></span>
                     </div>
                 </div>
@@ -998,6 +1005,80 @@
             <!-- ========================================== -->
             <div x-show="activeTab === 'settings'" class="max-w-2xl mx-auto space-y-6">
                 
+                <!-- Card 0: Sincronização Automática em Tempo Real (Paulo <-> Isabela) -->
+                <div class="bg-mobills-card p-6 rounded-2xl border space-y-4 shadow-lg"
+                     :class="syncConfig.connected ? 'border-emerald-500/50' : 'border-mobills-purple/50'">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                                 :class="syncConfig.connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-mobills-purple/20 text-mobills-purpleLight'">
+                                <i class="fa-solid fa-cloud-bolt"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="font-bold text-base text-white">Sincronização Automática em Tempo Real</h3>
+                                    <span x-show="syncConfig.connected" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ATIVO</span>
+                                </div>
+                                <p class="text-xs text-gray-400">Conecta o aparelho do Paulo e da Isabela na mesma base gratuita. Tudo o que um lançar aparece na hora para o outro.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Conexão -->
+                    <div class="space-y-3 pt-1 text-xs">
+                        <div>
+                            <label class="block font-semibold text-gray-300 mb-1">1. URL do Banco Firebase (Realtime Database)</label>
+                            <input type="url" x-model="syncConfig.dbUrl" :disabled="syncConfig.connected"
+                                   placeholder="Ex: https://financas-casal-default-rtdb.firebaseio.com"
+                                   class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple disabled:opacity-60">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-gray-300 mb-1">2. Código Secreto do Casal (Senha da Sala)</label>
+                            <input type="text" x-model="syncConfig.roomCode" :disabled="syncConfig.connected"
+                                   placeholder="Ex: paulo-isabela-2026"
+                                   class="w-full bg-mobills-bg text-white px-3.5 py-2.5 rounded-xl border border-mobills-border focus:outline-none focus:border-mobills-purple disabled:opacity-60">
+                        </div>
+
+                        <div x-show="syncConfig.lastSync" class="text-[11px] text-emerald-400 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Última sincronização: <strong x-text="syncConfig.lastSync"></strong></span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2.5 pt-1">
+                            <button x-show="!syncConfig.connected" @click="connectCloudSync(true)"
+                                    class="flex-1 py-3 px-4 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                                <i class="fa-solid fa-plug"></i>
+                                <span>Conectar e Sincronizar</span>
+                            </button>
+
+                            <button x-show="syncConfig.connected" @click="copyAutoPairLink()"
+                                    class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                                <i class="fa-solid fa-link"></i>
+                                <span>Copiar Link de Pareamento p/ Isabela</span>
+                            </button>
+
+                            <button x-show="syncConfig.connected" @click="disconnectCloudSync()"
+                                    class="py-3 px-4 bg-mobills-bg hover:bg-red-950/50 text-red-400 border border-red-800/50 font-semibold rounded-xl transition cursor-pointer">
+                                Desconectar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mini Tutorial Colapsável -->
+                    <details class="bg-mobills-bg/80 rounded-xl border border-mobills-border p-3.5 text-xs text-gray-300">
+                        <summary class="font-semibold text-purple-300 cursor-pointer select-none">
+                            <i class="fa-solid fa-circle-question mr-1"></i> Como criar o banco gratuito no Firebase em 2 minutos?
+                        </summary>
+                        <ol class="list-decimal list-inside space-y-1.5 mt-2.5 text-[11px] text-gray-400 leading-relaxed">
+                            <li>Acesse <strong class="text-gray-200">console.firebase.google.com</strong> com sua conta Google e clique em <strong class="text-gray-200">Criar um projeto</strong>.</li>
+                            <li>No menu lateral esquerdo, clique em <strong class="text-gray-200">Criação &rarr; Realtime Database</strong> e depois em <strong class="text-gray-200">Criar banco de dados</strong>.</li>
+                            <li>Escolha <strong class="text-gray-200">Iniciar no modo de teste</strong> e clique em <strong class="text-gray-200">Ativar</strong>.</li>
+                            <li>Copie o link que aparece no topo (termina em <code class="text-purple-300">.firebaseio.com</code>), cole no campo acima, crie um código secreto e clique em <strong class="text-gray-200">Conectar</strong>!</li>
+                        </ol>
+                    </details>
+                </div>
+
                 <!-- Card Destaque: Compartilhar com Isabela via Link -->
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-purple/50 space-y-4 shadow-lg">
                     <div class="flex items-center space-x-3">
@@ -1066,33 +1147,6 @@
                             <span>Restaurar Backup (JSON)</span>
                             <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
                         </label>
-                    </div>
-                </div>
-
-                <!-- Zona de Perigo: Zerar Sistema -->
-                <div class="bg-mobills-card p-6 rounded-2xl border border-red-900/40 space-y-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-white">Zerar Todos os Lançamentos</h3>
-                            <p class="text-xs text-gray-400">Remove permanentemente todas as receitas e despesas cadastradas neste navegador.</p>
-                        </div>
-                    </div>
-
-                    <div x-show="!confirmClearOpen">
-                        <button @click="confirmClearOpen = true" class="py-2.5 px-4 bg-red-950/50 hover:bg-red-900/50 text-red-400 text-xs font-semibold rounded-xl border border-red-800/50 transition cursor-pointer">
-                            Apagar Todos os Dados
-                        </button>
-                    </div>
-
-                    <div x-show="confirmClearOpen" class="p-4 bg-red-950/40 border border-red-800/60 rounded-xl flex flex-wrap items-center justify-between gap-3">
-                        <span class="text-xs text-red-200 font-medium">Tem certeza? Esta ação não pode ser desfeita.</span>
-                        <div class="flex space-x-2">
-                            <button @click="confirmClearOpen = false" class="px-3 py-1.5 text-xs text-gray-300 hover:text-white cursor-pointer">Cancelar</button>
-                            <button @click="executeClearAll()" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg cursor-pointer">Sim, Apagar Tudo</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1527,251 +1581,145 @@
                 // Aba Relatórios
                 reportViewType: 'despesas',
 
-                // Configurações / Backup
-                confirmClearOpen: false,
-
                 // Toast Notification
                 toast: { visible: false, message: '', type: 'success' },
 
-                // Categorias com Ícones e Cores no padrão Mobills
-                categoriesList: [
-                    { name: 'Casa', icon: 'fa-solid fa-house', color: '#06b6d4' },
-                    { name: 'Alimentação', icon: 'fa-solid fa-utensils', color: '#ef4444' },
-                    { name: 'Educação', icon: 'fa-solid fa-graduation-cap', color: '#a855f7' },
-                    { name: 'Transporte', icon: 'fa-solid fa-car', color: '#3b82f6' },
-                    { name: 'Compras', icon: 'fa-solid fa-bag-shopping', color: '#8b5cf6' },
-                    { name: 'Saúde', icon: 'fa-solid fa-heart-pulse', color: '#10b981' },
-                    { name: 'Assinatura', icon: 'fa-solid fa-tv', color: '#ec4899' },
-                    { name: 'Salário', icon: 'fa-solid fa-money-bill-wave', color: '#10b981' },
-                    { name: 'Renda extra', icon: 'fa-solid fa-coins', color: '#84cc16' },
-                    { name: 'Reajuste', icon: 'fa-solid fa-sliders', color: '#f59e0b' },
-                    { name: 'Outros', icon: 'fa-solid fa-ellipsis', color: '#6b7280' }
-                ],
+                // Sincronização Automática em Nuvem (Firebase Realtime Database REST + SSE)
+                syncConfig: {
+                    dbUrl: '',
+                    roomCode: '',
+                    connected: false,
+                    lastSync: ''
+                },
+                _syncEventSource: null,
+                _isApplyingRemoteSync: false,
+                _syncPushTimer: null,
 
-                // Estado Inicial ZERADO conforme solicitado
+                // Base de Lançamentos (inicia zerada)
                 transactions: [],
 
-                // Estado do Modal de Lançamento
+                // Categorias Padrão (Estilo Mobills)
+                categoriesList: [
+                    { name: 'Casa', color: '#06b6d4', icon: 'fa-solid fa-house' },
+                    { name: 'Alimentação', color: '#ef4444', icon: 'fa-solid fa-utensils' },
+                    { name: 'Educação', color: '#8b5cf6', icon: 'fa-solid fa-graduation-cap' },
+                    { name: 'Transporte', color: '#3b82f6', icon: 'fa-solid fa-car' },
+                    { name: 'Saúde', color: '#10b981', icon: 'fa-solid fa-heart-pulse' },
+                    { name: 'Compras', color: '#ec4899', icon: 'fa-solid fa-bag-shopping' },
+                    { name: 'Assinatura', color: '#a855f7', icon: 'fa-solid fa-rotate' },
+                    { name: 'Lazer', color: '#f59e0b', icon: 'fa-solid fa-umbrella-beach' },
+                    { name: 'Salário', color: '#10b981', icon: 'fa-solid fa-money-bill-wave' },
+                    { name: 'Renda extra', color: '#22c55e', icon: 'fa-solid fa-coins' },
+                    { name: 'Reajuste', color: '#f97316', icon: 'fa-solid fa-sliders' },
+                    { name: 'Outros', color: '#6b7280', icon: 'fa-solid fa-ellipsis' }
+                ],
+
+                // Estado dos Modais
                 isModalOpen: false,
                 editingId: null,
                 form: {
                     type: 'expense',
-                    description: '',
                     amount: '',
                     date: new Date().toISOString().split('T')[0],
-                    category: 'Casa',
+                    description: '',
+                    category: 'Outros',
                     user: 'Compartilhado',
                     account: 'Carteira',
                     status: 'completed',
                     recurrence: 'nenhuma',
-                    repeatCount: 12
+                    repeatCount: 2
                 },
 
-                // Modal de Exclusão
                 deleteModal: {
                     open: false,
                     item: null
                 },
 
-                // Modal de Importação Mobills (CSV / Excel)
-                importModal: {
-                    open: false,
-                    isDragging: false,
-                    fileName: '',
-                    defaultUser: 'Compartilhado',
-                    mode: 'merge',
-                    parsedRows: [],
-                    sheetsRead: 0,
-                    error: ''
-                },
-
-                // Modal de Compartilhamento por Link
                 shareModal: {
                     open: false,
                     customBaseUrl: '',
                     generatedUrl: ''
                 },
 
+                importModal: {
+                    open: false,
+                    isDragging: false,
+                    fileName: '',
+                    error: '',
+                    parsedRows: [],
+                    rawRows: [],
+                    sheetsRead: 0,
+                    defaultUser: 'Compartilhado',
+                    mode: 'merge'
+                },
+
+                _charts: {},
+
+                // =========================================================
+                // INICIALIZAÇÃO
+                // =========================================================
                 initApp() {
-                    // 1. Verifica primeiro se há dados embutidos no próprio HTML ou no Hash (#data=...) do Link Compartilhável
-                    const loadedFromLink = this.tryLoadFromShareHash();
-
-                    if (!loadedFromLink) {
-                        try {
-                            const saved = localStorage.getItem('paulo_isabela_financas_v2');
-                            if (saved) {
-                                const parsed = JSON.parse(saved);
-                                if (Array.isArray(parsed) && parsed.length > 0) {
+                    // 1. Verifica se há dados pré-carregados no HTML exportado ou na URL (#data=...)
+                    if (Array.isArray(window.__PRELOADED_TRANSACTIONS__)) {
+                        this.transactions = window.__PRELOADED_TRANSACTIONS__;
+                        this.saveToStorage();
+                    } else {
+                        const hash = window.location.hash || '';
+                        if (hash.includes('data=') && window.LZString) {
+                            try {
+                                const compressed = hash.split('data=')[1].split('&')[0];
+                                const jsonStr = LZString.decompressFromEncodedURIComponent(compressed);
+                                const parsed = JSON.parse(jsonStr);
+                                if (Array.isArray(parsed)) {
                                     this.transactions = parsed;
+                                    this.saveToStorage();
+                                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                                    this.showToast('Dados compartilhados carregados com sucesso!');
                                 }
+                            } catch (e) {
+                                console.warn('Erro ao ler dados compartilhados da URL:', e);
                             }
-                        } catch (e) {
-                            console.error('Erro ao carregar dados locais:', e);
-                            this.transactions = [];
-                        }
-                    }
-
-                    // Se houver lançamentos, posiciona automaticamente no mês mais recente caso o mês atual esteja vazio
-                    if (this.transactions.length > 0) {
-                        const now = new Date();
-                        const hasCur = this.transactions.some(t => {
-                            const [y, m] = t.date.split('-').map(Number);
-                            return y === now.getFullYear() && (m - 1) === now.getMonth();
-                        });
-                        if (!hasCur) {
-                            const latestDate = this.transactions.map(t => t.date).sort().reverse()[0];
-                            const [ly, lm] = latestDate.split('-').map(Number);
-                            if (ly && lm) {
-                                this.selectedYear = ly;
-                                this.selectedMonth = lm - 1;
+                        } else {
+                            try {
+                                const saved = JSON.parse(localStorage.getItem('paulo_isabela_transactions_v1') || '[]');
+                                if (Array.isArray(saved)) {
+                                    this.transactions = saved;
+                                }
+                            } catch (e) {
+                                this.transactions = [];
                             }
                         }
                     }
 
-                    this.$watch('selectedMonth', () => this.renderAllCharts());
-                    this.$watch('selectedYear', () => this.renderAllCharts());
-                    this.$watch('allMonthsMode', () => this.renderAllCharts());
-                    this.$watch('selectedUserFilter', () => this.renderAllCharts());
-                    this.$watch('reportViewType', () => this.renderAllCharts());
-                    this.$watch('activeTab', () => {
-                        this.$nextTick(() => this.renderAllCharts());
-                    });
+                    // Se houver lançamentos, posiciona no mês mais recente disponível se o mês atual estiver vazio
+                    if (this.transactions.length > 0 && !this.hasTransactionsInMonth(this.selectedYear, this.selectedMonth)) {
+                        const sorted = [...this.transactions].sort((a, b) => b.date.localeCompare(a.date));
+                        const [y, m] = sorted[0].date.split('-').map(Number);
+                        if (y && m) {
+                            this.selectedYear = y;
+                            this.selectedMonth = m - 1;
+                        }
+                    }
+
+                    // Inicia sincronização automática em nuvem (se configurada)
+                    this.initCloudSync();
+
+                    // Observa mudanças para atualizar gráficos
+                    this.$watch('activeTab', () => this.$nextTick(() => this.renderAllCharts()));
+                    this.$watch('selectedMonth', () => this.$nextTick(() => this.renderAllCharts()));
+                    this.$watch('selectedYear', () => this.$nextTick(() => this.renderAllCharts()));
+                    this.$watch('selectedUserFilter', () => this.$nextTick(() => this.renderAllCharts()));
+                    this.$watch('allMonthsMode', () => this.$nextTick(() => this.renderAllCharts()));
+                    this.$watch('reportViewType', () => this.$nextTick(() => this.renderAllCharts()));
 
                     this.$nextTick(() => this.renderAllCharts());
                 },
 
-                tryLoadFromShareHash() {
-                    try {
-                        // Verifica dados embutidos diretamente no HTML exportado (window.__PRELOADED_TRANSACTIONS__)
-                        if (Array.isArray(window.__PRELOADED_TRANSACTIONS__) && window.__PRELOADED_TRANSACTIONS__.length > 0) {
-                            const existingRaw = localStorage.getItem('paulo_isabela_financas_v2');
-                            if (!existingRaw || JSON.parse(existingRaw).length === 0) {
-                                this.transactions = window.__PRELOADED_TRANSACTIONS__;
-                                this.saveToStorage();
-                                return true;
-                            }
-                        }
-
-                        // Verifica hash #data=... na URL atual ou na janela pai
-                        let hashStr = window.location.hash || '';
-                        if (!hashStr.includes('data=') && window.parent && window.parent !== window) {
-                            try {
-                                hashStr = window.parent.location.hash || '';
-                            } catch (e) {
-                                // Ignora bloqueio cross-origin do iframe
-                            }
-                        }
-
-                        const match = hashStr.match(/data=([^&]+)/);
-                        if (match && match[1] && typeof LZString !== 'undefined') {
-                            const decompressed = LZString.decompressFromEncodedURIComponent(match[1]);
-                            if (decompressed) {
-                                const compactList = JSON.parse(decompressed);
-                                if (Array.isArray(compactList) && compactList.length > 0) {
-                                    this.transactions = compactList.map((c, idx) => ({
-                                        id: 'shr_' + Date.now() + '_' + idx,
-                                        type: c[0] === 1 ? 'income' : 'expense',
-                                        date: c[1],
-                                        description: c[2],
-                                        amount: Number(c[3]),
-                                        category: c[4] || 'Outros',
-                                        user: c[5] === 'P' ? 'Paulo' : (c[5] === 'I' ? 'Isabela' : 'Compartilhado'),
-                                        account: c[6] || 'Carteira',
-                                        status: c[7] === 1 ? 'completed' : 'pending',
-                                        recurrence: 'nenhuma',
-                                        groupId: null
-                                    }));
-                                    this.saveToStorage();
-                                    setTimeout(() => {
-                                        this.showToast(`${this.transactions.length} lançamento(s) carregado(s) do link compartilhado!`);
-                                    }, 400);
-                                    return true;
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error('Erro ao ler dados do link compartilhado:', err);
-                    }
-                    return false;
-                },
-
-                openShareModal() {
-                    if (this.transactions.length === 0) {
-                        this.showToast('Importe ou cadastre lançamentos antes de gerar o link.', 'error');
-                        return;
-                    }
-                    this.shareModal.open = true;
-                    this.buildShareUrl();
-                },
-
-                buildShareUrl() {
-                    if (typeof LZString === 'undefined') {
-                        this.shareModal.generatedUrl = 'Aguarde o carregamento do compactador...';
-                        return;
-                    }
-
-                    // Compacta cada transação em formato enxuto para caber perfeitamente na URL
-                    const compactPayload = this.transactions.map(t => [
-                        t.type === 'income' ? 1 : 0,
-                        t.date,
-                        t.description,
-                        Number(t.amount),
-                        t.category,
-                        t.user === 'Paulo' ? 'P' : (t.user === 'Isabela' ? 'I' : 'C'),
-                        t.account || 'Carteira',
-                        t.status === 'completed' ? 1 : 0
-                    ]);
-
-                    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(compactPayload));
-                    let baseUrl = (this.shareModal.customBaseUrl || '').trim();
-
-                    if (!baseUrl) {
-                        baseUrl = window.location.href.split('#')[0];
-                    } else {
-                        baseUrl = baseUrl.split('#')[0];
-                    }
-
-                    this.shareModal.generatedUrl = `${baseUrl}#data=${compressed}`;
-                },
-
-                copyShareUrl() {
-                    const textarea = document.getElementById('shareLinkTextarea');
-                    if (textarea) {
-                        textarea.select();
-                        textarea.setSelectionRange(0, 99999);
-                        try {
-                            document.execCommand('copy');
-                            this.showToast('Link copiado! Agora é só colar e enviar para a Isabela.');
-                        } catch (e) {
-                            this.showToast('Selecione o texto do link e copie manualmente.', 'error');
-                        }
-                    }
-                },
-
-                downloadPreloadedHtml() {
-                    if (this.transactions.length === 0) {
-                        this.showToast('Importe ou cadastre lançamentos antes de baixar o HTML.', 'error');
-                        return;
-                    }
-                    const baseHtml = window.__INITIAL_CLEAN_HTML__ || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
-                    const preloadScript = `<script>window.__PRELOADED_TRANSACTIONS__ = ${JSON.stringify(this.transactions)};<\/script>`;
-                    const finalHtml = baseHtml.replace('<head>', `<head>\n    ${preloadScript}`);
-
-                    const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `financas_paulo_isabela_preenchido.html`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    this.showToast('Arquivo HTML preenchido baixado com sucesso!');
-                },
-
                 saveToStorage() {
                     try {
-                        localStorage.setItem('paulo_isabela_financas_v2', JSON.stringify(this.transactions));
+                        localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                     } catch (e) {
-                        this.showToast('Erro ao salvar no navegador.', 'error');
+                        console.error('Erro ao salvar no localStorage:', e);
                     }
                 },
 
@@ -1782,6 +1730,9 @@
                     }, 3500);
                 },
 
+                // =========================================================
+                // PROPRIEDADES COMPUTADAS (GETTERS)
+                // =========================================================
                 get pageTitle() {
                     const titles = {
                         dashboard: 'Dashboard',
@@ -1793,1239 +1744,6 @@
                     return titles[this.activeTab] || 'Dashboard';
                 },
 
-                changeMonth(delta) {
-                    if (this.allMonthsMode) {
-                        this.selectedYear += delta;
-                        return;
-                    }
-                    let m = this.selectedMonth + delta;
-                    if (m < 0) {
-                        this.selectedMonth = 11;
-                        this.selectedYear--;
-                    } else if (m > 11) {
-                        this.selectedMonth = 0;
-                        this.selectedYear++;
-                    } else {
-                        this.selectedMonth = m;
-                    }
-                },
-
-                selectMonthYear(year, month) {
-                    this.selectedYear = year;
-                    this.selectedMonth = month;
-                    this.allMonthsMode = false;
-                    this.monthPickerOpen = false;
-                },
-
-                goToCurrentMonth() {
-                    const now = new Date();
-                    this.selectMonthYear(now.getFullYear(), now.getMonth());
-                },
-
-                toggleAllMonthsMode() {
-                    this.allMonthsMode = !this.allMonthsMode;
-                },
-
-                drillDownToMonth(year, month) {
-                    this.selectedYear = year;
-                    this.selectedMonth = month;
-                    this.allMonthsMode = false;
-                    this.activeTab = 'transactions';
-                },
-
-                hasTransactionsInMonth(year, month) {
-                    return this.countTransactionsInMonth(year, month) > 0;
-                },
-
-                countTransactionsInMonth(year, month) {
-                    return this.transactions.filter(t => {
-                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return false;
-                        const [y, m] = t.date.split('-').map(Number);
-                        return y === year && (m - 1) === month;
-                    }).length;
-                },
-
-                get availableMonthPills() {
-                    const map = {};
-                    this.transactions.forEach(t => {
-                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
-                        const [y, m] = t.date.split('-').map(Number);
-                        if (!y || !m) return;
-                        const key = `${y}-${String(m).padStart(2, '0')}`;
-                        if (!map[key]) {
-                            map[key] = {
-                                key,
-                                year: y,
-                                month: m - 1,
-                                label: `${this.shortMonthNames[m - 1]}/${y}`,
-                                count: 0
-                            };
-                        }
-                        map[key].count++;
-                    });
-                    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
-                },
-
-                get availableYears() {
-                    const years = new Set(this.transactions.map(t => Number(t.date.split('-')[0])).filter(Boolean));
-                    years.add(this.selectedYear);
-                    return Array.from(years).sort((a, b) => b - a);
-                },
-
                 get formattedSelectedMonth() {
-                    const date = new Date(this.selectedYear, this.selectedMonth, 1);
-                    const str = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                    return str.charAt(0).toUpperCase() + str.slice(1);
-                },
-
-                setFormType(type) {
-                    this.form.type = type;
-                    if (type === 'income' && this.form.category === 'Casa') {
-                        this.form.category = 'Salário';
-                    } else if (type === 'expense' && this.form.category === 'Salário') {
-                        this.form.category = 'Casa';
-                    }
-                },
-
-                openModal(item = null) {
-                    if (item) {
-                        this.editingId = item.id;
-                        this.form = {
-                            type: item.type,
-                            description: item.description,
-                            amount: item.amount,
-                            date: item.date,
-                            category: item.category,
-                            user: item.user,
-                            account: item.account || 'Carteira',
-                            status: item.status,
-                            recurrence: 'nenhuma',
-                            repeatCount: 12
-                        };
-                    } else {
-                        this.editingId = null;
-                        const now = new Date();
-                        let defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                        
-                        if (now.getMonth() !== this.selectedMonth || now.getFullYear() !== this.selectedYear) {
-                            defaultDate = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
-                        }
-
-                        this.form = {
-                            type: 'expense',
-                            description: '',
-                            amount: '',
-                            date: defaultDate,
-                            category: 'Casa',
-                            user: this.selectedUserFilter !== 'Todos' ? this.selectedUserFilter : 'Compartilhado',
-                            account: 'Carteira',
-                            status: 'completed',
-                            recurrence: 'nenhuma',
-                            repeatCount: 12
-                        };
-                    }
-                    this.isModalOpen = true;
-                },
-
-                closeModal() {
-                    this.isModalOpen = false;
-                },
-
-                saveTransaction() {
-                    const val = parseFloat(this.form.amount);
-                    if (!this.form.description.trim() || isNaN(val) || val <= 0 || !this.form.date) {
-                        this.showToast('Preencha descrição, valor válido e data.', 'error');
-                        return;
-                    }
-
-                    if (this.editingId) {
-                        const index = this.transactions.findIndex(t => t.id === this.editingId);
-                        if (index !== -1) {
-                            this.transactions[index] = {
-                                ...this.transactions[index],
-                                type: this.form.type,
-                                description: this.form.description.trim(),
-                                amount: val,
-                                date: this.form.date,
-                                category: this.form.category,
-                                user: this.form.user,
-                                account: this.form.account,
-                                status: this.form.status
-                            };
-                            this.showToast('Lançamento atualizado!');
-                        }
-                    } else {
-                        const recurrence = this.form.recurrence;
-                        const repeatCount = recurrence !== 'nenhuma' 
-                            ? Math.min(Math.max(parseInt(this.form.repeatCount) || 2, 2), 60) 
-                            : 1;
-                        const groupId = repeatCount > 1 ? 'grp_' + Date.now() : null;
-
-                        for (let i = 0; i < repeatCount; i++) {
-                            const [y, m, d] = this.form.date.split('-').map(Number);
-                            let dt = new Date(y, m - 1, d);
-
-                            if (i > 0) {
-                                if (recurrence === 'diaria') {
-                                    dt.setDate(dt.getDate() + i);
-                                } else if (recurrence === 'semanal') {
-                                    dt.setDate(dt.getDate() + (i * 7));
-                                } else if (recurrence === 'mensal') {
-                                    const targetMonth = (m - 1) + i;
-                                    dt = new Date(y, targetMonth, 1);
-                                    const maxDaysInMonth = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
-                                    dt.setDate(Math.min(d, maxDaysInMonth));
-                                }
-                            }
-
-                            const formattedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-                            const desc = repeatCount > 1 
-                                ? `${this.form.description.trim()} (${i + 1}/${repeatCount})`
-                                : this.form.description.trim();
-
-                            this.transactions.push({
-                                id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                                type: this.form.type,
-                                description: desc,
-                                amount: val,
-                                date: formattedDate,
-                                category: this.form.category,
-                                user: this.form.user,
-                                account: this.form.account,
-                                status: i === 0 ? this.form.status : 'pending',
-                                recurrence: recurrence,
-                                groupId: groupId
-                            });
-                        }
-
-                        this.showToast(repeatCount > 1 ? `${repeatCount} lançamentos gerados!` : 'Lançamento adicionado!');
-                    }
-
-                    this.saveToStorage();
-                    this.closeModal();
-                    this.renderAllCharts();
-                },
-
-                toggleStatus(id) {
-                    const tx = this.transactions.find(t => t.id === id);
-                    if (tx) {
-                        tx.status = tx.status === 'completed' ? 'pending' : 'completed';
-                        this.saveToStorage();
-                        this.renderAllCharts();
-                    }
-                },
-
-                promptDelete(item) {
-                    this.deleteModal = { open: true, item };
-                },
-
-                confirmDelete(deleteSeries = false) {
-                    const item = this.deleteModal.item;
-                    if (!item) return;
-
-                    if (deleteSeries && item.groupId) {
-                        this.transactions = this.transactions.filter(t => t.groupId !== item.groupId);
-                        this.showToast('Série de lançamentos excluída.');
-                    } else {
-                        this.transactions = this.transactions.filter(t => t.id !== item.id);
-                        this.showToast('Lançamento excluído.');
-                    }
-
-                    this.deleteModal = { open: false, item: null };
-                    this.saveToStorage();
-                    this.renderAllCharts();
-                },
-
-                // =========================================================
-                // CÁLCULO CORRIGIDO DE SALDO ACUMULADO, RECEITAS E DESPESAS
-                // =========================================================
-                get metrics() {
-                    const periodEndStr = this.allMonthsMode
-                        ? `${this.selectedYear}-12-31`
-                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-31`;
-
-                    let saldoAtualAcumulado = 0;
-                    let saldoPrevistoAcumulado = 0;
-                    let totalReceitas = 0;
-                    let receitasConcluidas = 0;
-                    let totalDespesas = 0;
-                    let despesasConcluidas = 0;
-
-                    this.transactions.forEach(t => {
-                        // Respeita filtro de integrante (Todos / Paulo / Isabela / Compartilhado)
-                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) {
-                            return;
-                        }
-
-                        const signedValue = t.type === 'income' ? Number(t.amount) : -Number(t.amount);
-
-                        // 1. Saldo Acumulado até o fim do período selecionado
-                        if (t.date <= periodEndStr) {
-                            saldoPrevistoAcumulado += signedValue;
-                            if (t.status === 'completed') {
-                                saldoAtualAcumulado += signedValue;
-                            }
-                        }
-
-                        // 2. Indicadores específicos do mês ou ano selecionado
-                        const [y, m] = t.date.split('-').map(Number);
-                        const matchPeriod = this.allMonthsMode
-                            ? (y === this.selectedYear)
-                            : (y === this.selectedYear && (m - 1) === this.selectedMonth);
-
-                        if (matchPeriod) {
-                            if (t.type === 'income') {
-                                totalReceitas += Number(t.amount);
-                                if (t.status === 'completed') receitasConcluidas += Number(t.amount);
-                            } else {
-                                totalDespesas += Number(t.amount);
-                                if (t.status === 'completed') despesasConcluidas += Number(t.amount);
-                            }
-                        }
-                    });
-
-                    return {
-                        saldoAtual: saldoAtualAcumulado,
-                        saldoPrevistoMes: saldoPrevistoAcumulado,
-                        totalReceitas,
-                        receitasConcluidas,
-                        totalDespesas,
-                        despesasConcluidas,
-                        balancoMensal: totalReceitas - totalDespesas
-                    };
-                },
-
-                get monthFilteredTransactions() {
-                    return this.transactions
-                        .filter(t => {
-                            const [y, m] = t.date.split('-').map(Number);
-                            const matchMonth = this.allMonthsMode
-                                ? (y === this.selectedYear)
-                                : (y === this.selectedYear && (m - 1) === this.selectedMonth);
-                            const matchUser = this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter;
-                            return matchMonth && matchUser;
-                        })
-                        .sort((a, b) => b.date.localeCompare(a.date));
-                },
-
-                get flatFilteredTransactions() {
-                    return this.monthFilteredTransactions.filter(t => {
-                        const matchesSearch = !this.searchQuery || 
-                            t.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            t.category.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            (t.account && t.account.toLowerCase().includes(this.searchQuery.toLowerCase()));
-                        const matchesType = this.filterType === 'todos' || t.type === this.filterType;
-                        const matchesStatus = this.filterStatus === 'todos' || t.status === this.filterStatus;
-                        const matchesCategory = this.filterCategory === 'todas' || t.category === this.filterCategory;
-                        return matchesSearch && matchesType && matchesStatus && matchesCategory;
-                    });
-                },
-
-                // Agrupamento Diário com Saldo Previsto Acumulado desde o início
-                get groupedDailyTransactions() {
-                    const list = [...this.flatFilteredTransactions].sort((a, b) => a.date.localeCompare(b.date));
-                    if (list.length === 0) return [];
-
-                    const groupsMap = {};
-                    list.forEach(item => {
-                        if (!groupsMap[item.date]) {
-                            groupsMap[item.date] = [];
-                        }
-                        groupsMap[item.date].push(item);
-                    });
-
-                    // Saldo acumulado de TODOS os períodos anteriores ao período selecionado
-                    const firstDayOfPeriod = this.allMonthsMode
-                        ? `${this.selectedYear}-01-01`
-                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
-
-                    let runningBalance = this.transactions
-                        .filter(t => {
-                            const matchUser = this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter;
-                            return t.date < firstDayOfPeriod && matchUser;
-                        })
-                        .reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
-
-                    const sortedDates = Object.keys(groupsMap).sort();
-                    const groups = sortedDates.map(date => {
-                        const items = groupsMap[date];
-                        const daySubtotal = items.reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
-                        runningBalance += daySubtotal;
-
-                        return {
-                            date,
-                            items,
-                            daySubtotal,
-                            runningBalance
-                        };
-                    });
-
-                    // Ordem cronológica reversa (mais recente no topo, como no Mobills)
-                    return groups.reverse();
-                },
-
-                // =========================================================
-                // CONSOLIDADO MÊS A MÊS (TABELA E GRÁFICO DE EVOLUÇÃO)
-                // =========================================================
-                get monthlySummaryRows() {
-                    const filteredByUser = this.transactions.filter(t => 
-                        this.selectedUserFilter === 'Todos' || t.user === this.selectedUserFilter
-                    );
-                    if (filteredByUser.length === 0) return [];
-
-                    const monthsMap = {};
-                    filteredByUser.forEach(t => {
-                        const [y, m] = t.date.split('-').map(Number);
-                        if (!y || !m) return;
-                        const key = `${y}-${String(m).padStart(2, '0')}`;
-                        if (!monthsMap[key]) {
-                            monthsMap[key] = {
-                                key,
-                                year: y,
-                                month: m - 1,
-                                label: `${this.shortMonthNames[m - 1]}/${y}`,
-                                count: 0,
-                                income: 0,
-                                expense: 0
-                            };
-                        }
-                        monthsMap[key].count++;
-                        if (t.type === 'income') monthsMap[key].income += Number(t.amount);
-                        else monthsMap[key].expense += Number(t.amount);
-                    });
-
-                    const sortedKeys = Object.keys(monthsMap).sort();
-                    let runningAccumulated = 0;
-
-                    const allRows = sortedKeys.map(k => {
-                        const item = monthsMap[k];
-                        const openingBalance = runningAccumulated;
-                        const monthlyBalance = item.income - item.expense;
-                        const closingBalance = openingBalance + monthlyBalance;
-                        runningAccumulated = closingBalance;
-
-                        const savingsRate = item.income > 0
-                            ? (((item.income - item.expense) / item.income) * 100).toFixed(1)
-                            : (item.expense > 0 ? '-100.0' : '0.0');
-
-                        return {
-                            ...item,
-                            openingBalance,
-                            monthlyBalance,
-                            closingBalance,
-                            savingsRate: Number(savingsRate)
-                        };
-                    });
-
-                    if (this.monthlyViewYearFilter !== 'all') {
-                        const targetYear = Number(this.monthlyViewYearFilter);
-                        return allRows.filter(r => r.year === targetYear);
-                    }
-
-                    return allRows;
-                },
-
-                get userMetrics() {
-                    const monthTxs = this.transactions.filter(t => {
-                        const [y, m] = t.date.split('-').map(Number);
-                        return this.allMonthsMode
-                            ? (y === this.selectedYear)
-                            : (y === this.selectedYear && (m - 1) === this.selectedMonth);
-                    });
-
-                    const calc = (u) => {
-                        const list = monthTxs.filter(t => t.user === u);
-                        return {
-                            receitas: list.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0),
-                            despesas: list.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0)
-                        };
-                    };
-
-                    const paulo = calc('Paulo');
-                    const isabela = calc('Isabela');
-                    const compartilhado = calc('Compartilhado');
-                    const totalDesp = paulo.despesas + isabela.despesas + compartilhado.despesas;
-
-                    return {
-                        paulo: { ...paulo, percentage: totalDesp > 0 ? ((paulo.despesas / totalDesp) * 100).toFixed(1) : '0.0' },
-                        isabela: { ...isabela, percentage: totalDesp > 0 ? ((isabela.despesas / totalDesp) * 100).toFixed(1) : '0.0' },
-                        compartilhado: { ...compartilhado, percentage: totalDesp > 0 ? ((compartilhado.despesas / totalDesp) * 100).toFixed(1) : '0.0' }
-                    };
-                },
-
-                getCategoryBreakdown(type) {
-                    const list = this.monthFilteredTransactions.filter(t => t.type === type);
-                    const total = list.reduce((acc, t) => acc + Number(t.amount), 0);
-                    const map = {};
-
-                    list.forEach(t => {
-                        map[t.category] = (map[t.category] || 0) + Number(t.amount);
-                    });
-
-                    return Object.keys(map).map(catName => ({
-                        name: catName,
-                        total: map[catName],
-                        percentage: total > 0 ? ((map[catName] / total) * 100).toFixed(2) : '0.00',
-                        color: this.getCategoryColor(catName)
-                    })).sort((a, b) => b.total - a.total);
-                },
-
-                get expenseBreakdown() {
-                    return this.getCategoryBreakdown('expense');
-                },
-
-                get incomeBreakdown() {
-                    return this.getCategoryBreakdown('income');
-                },
-
-                get activeReportData() {
-                    return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
-                },
-
-                getCategoryColor(name) {
-                    const found = this.categoriesList.find(c => c.name === name);
-                    return found ? found.color : '#6b7280';
-                },
-
-                getCategoryIcon(name) {
-                    const found = this.categoriesList.find(c => c.name === name);
-                    return found ? found.icon : 'fa-solid fa-tag';
-                },
-
-                formatCurrency(val) {
-                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
-                },
-
-                formatDateShort(dateStr) {
-                    if (!dateStr) return '';
-                    const [y, m, d] = dateStr.split('-');
-                    return `${d}/${m}/${y}`;
-                },
-
-                formatDateHeader(dateStr) {
-                    if (!dateStr) return '';
-                    const [y, m, d] = dateStr.split('-').map(Number);
-                    const dt = new Date(y, m - 1, d);
-                    const now = new Date();
-                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                    const formatted = dt.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const capitalized = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-                    return dateStr === todayStr ? `Hoje • ${capitalized}` : capitalized;
-                },
-
-                // =========================================================
-                // RENDERIZAÇÃO DOS GRÁFICOS (CHART.JS)
-                // =========================================================
-                renderAllCharts() {
-                    this.renderDonut('dashExpenseChart', this.expenseBreakdown, 'dashExp');
-                    this.renderDonut('dashIncomeChart', this.incomeBreakdown, 'dashInc');
-                    this.renderDonut('reportsDonutChart', this.activeReportData, 'repDonut');
-                    this.renderComparisonChart();
-                    this.renderForecastChart();
-                    this.renderMonthlyEvolutionChart();
-                },
-
-                renderDonut(canvasId, dataList, chartKey) {
-                    const canvas = document.getElementById(canvasId);
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-
-                    window._charts = window._charts || {};
-                    if (window._charts[chartKey]) {
-                        window._charts[chartKey].destroy();
-                    }
-
-                    const hasData = dataList && dataList.length > 0;
-                    const labels = hasData ? dataList.map(d => d.name) : ['Sem dados'];
-                    const values = hasData ? dataList.map(d => d.total) : [1];
-                    const colors = hasData ? dataList.map(d => d.color) : ['#2c2c38'];
-
-                    window._charts[chartKey] = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                data: values,
-                                backgroundColor: colors,
-                                borderWidth: 0,
-                                hoverOffset: hasData ? 6 : 0
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '72%',
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    enabled: hasData,
-                                    callbacks: {
-                                        label: (ctx) => ` ${ctx.label}: ${this.formatCurrency(ctx.raw)}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                },
-
-                renderComparisonChart() {
-                    const canvas = document.getElementById('coupleComparisonChart');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-
-                    window._charts = window._charts || {};
-                    if (window._charts.comparison) {
-                        window._charts.comparison.destroy();
-                    }
-
-                    const um = this.userMetrics;
-                    window._charts.comparison = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Paulo', 'Isabela', 'Compartilhado (Casa)'],
-                            datasets: [
-                                {
-                                    label: 'Receitas',
-                                    data: [um.paulo.receitas, um.isabela.receitas, um.compartilhado.receitas],
-                                    backgroundColor: '#10b981',
-                                    borderRadius: 6
-                                },
-                                {
-                                    label: 'Despesas',
-                                    data: [um.paulo.despesas, um.isabela.despesas, um.compartilhado.despesas],
-                                    backgroundColor: '#ef4444',
-                                    borderRadius: 6
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
-                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
-                            },
-                            plugins: {
-                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                },
-
-                renderMonthlyEvolutionChart() {
-                    const canvas = document.getElementById('monthlyEvolutionChart');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-
-                    window._charts = window._charts || {};
-                    if (window._charts.monthlyEvolution) {
-                        window._charts.monthlyEvolution.destroy();
-                    }
-
-                    const rows = this.monthlySummaryRows;
-                    window._charts.monthlyEvolution = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: rows.map(r => r.label),
-                            datasets: [
-                                {
-                                    type: 'line',
-                                    label: 'Saldo Acumulado Final',
-                                    data: rows.map(r => r.closingBalance),
-                                    borderColor: '#8b5cf6',
-                                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                                    borderWidth: 3,
-                                    tension: 0.3,
-                                    yAxisID: 'y'
-                                },
-                                {
-                                    type: 'bar',
-                                    label: 'Receitas',
-                                    data: rows.map(r => r.income),
-                                    backgroundColor: '#10b981',
-                                    borderRadius: 6,
-                                    yAxisID: 'y'
-                                },
-                                {
-                                    type: 'bar',
-                                    label: 'Despesas',
-                                    data: rows.map(r => r.expense),
-                                    backgroundColor: '#ef4444',
-                                    borderRadius: 6,
-                                    yAxisID: 'y'
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
-                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
-                            },
-                            plugins: {
-                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                },
-
-                renderForecastChart() {
-                    const canvas = document.getElementById('forecastChart');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-
-                    window._charts = window._charts || {};
-                    if (window._charts.forecast) {
-                        window._charts.forecast.destroy();
-                    }
-
-                    const labels = [];
-                    const incomes = [];
-                    const expenses = [];
-                    const projectedBalances = [];
-
-                    for (let i = 0; i < 6; i++) {
-                        const dt = new Date(this.selectedYear, this.selectedMonth + i, 1);
-                        const y = dt.getFullYear();
-                        const m = dt.getMonth();
-                        const monthEndStr = `${y}-${String(m + 1).padStart(2, '0')}-31`;
-
-                        labels.push(dt.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-
-                        let mInc = 0;
-                        let mExp = 0;
-                        let cumBal = 0;
-
-                        this.transactions.forEach(t => {
-                            if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
-
-                            const [ty, tm] = t.date.split('-').map(Number);
-                            if (ty === y && (tm - 1) === m) {
-                                if (t.type === 'income') mInc += Number(t.amount);
-                                else mExp += Number(t.amount);
-                            }
-
-                            if (t.date <= monthEndStr) {
-                                cumBal += (t.type === 'income' ? Number(t.amount) : -Number(t.amount));
-                            }
-                        });
-
-                        incomes.push(mInc);
-                        expenses.push(mExp);
-                        projectedBalances.push(cumBal);
-                    }
-
-                    window._charts.forecast = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels,
-                            datasets: [
-                                {
-                                    label: 'Saldo Acumulado Projetado',
-                                    data: projectedBalances,
-                                    borderColor: '#8b5cf6',
-                                    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                                    fill: true,
-                                    tension: 0.35,
-                                    borderWidth: 3
-                                },
-                                {
-                                    label: 'Receitas Previstas',
-                                    data: incomes,
-                                    borderColor: '#10b981',
-                                    borderDash: [4, 4],
-                                    tension: 0.3,
-                                    borderWidth: 2
-                                },
-                                {
-                                    label: 'Despesas Previstas',
-                                    data: expenses,
-                                    borderColor: '#ef4444',
-                                    borderDash: [4, 4],
-                                    tension: 0.3,
-                                    borderWidth: 2
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
-                                y: { ticks: { color: '#9ca3af' }, grid: { color: '#2c2c38' } }
-                            },
-                            plugins: {
-                                legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.raw)}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                },
-
-                // =========================================================
-                // EXPORTAR / IMPORTAR BACKUP JSON E LIMPEZA TOTAL
-                // =========================================================
-                exportBackup() {
-                    const dataStr = JSON.stringify(this.transactions, null, 2);
-                    const blob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `financas_paulo_isabela_${new Date().toISOString().split('T')[0]}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    this.showToast('Backup exportado com sucesso!');
-                },
-
-                importBackup(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const imported = JSON.parse(e.target.result);
-                            if (Array.isArray(imported)) {
-                                this.transactions = imported;
-                                this.saveToStorage();
-                                this.renderAllCharts();
-                                this.showToast(`${imported.length} lançamento(s) importado(s)!`);
-                            } else {
-                                this.showToast('Arquivo de backup inválido.', 'error');
-                            }
-                        } catch (err) {
-                            this.showToast('Erro ao ler o arquivo JSON.', 'error');
-                        }
-                        event.target.value = '';
-                    };
-                    reader.readAsText(file);
-                },
-
-                executeClearAll() {
-                    this.transactions = [];
-                    this.saveToStorage();
-                    this.confirmClearOpen = false;
-                    this.renderAllCharts();
-                    this.showToast('Todos os lançamentos foram apagados.');
-                },
-
-                // =========================================================
-                // IMPORTAÇÃO DE PLANILHAS CSV E EXCEL EXPORTADAS DO MOBILLS
-                // =========================================================
-                openImportModal() {
-                    this.importModal = {
-                        open: true,
-                        isDragging: false,
-                        fileName: '',
-                        defaultUser: this.selectedUserFilter !== 'Todos' ? this.selectedUserFilter : 'Compartilhado',
-                        mode: 'merge',
-                        parsedRows: [],
-                        sheetsRead: 0,
-                        error: ''
-                    };
-                },
-
-                closeImportModal() {
-                    this.importModal.open = false;
-                },
-
-                handleMobillsDrop(event) {
-                    this.importModal.isDragging = false;
-                    const file = event.dataTransfer?.files?.[0];
-                    if (file) {
-                        this.processMobillsFile(file);
-                    }
-                },
-
-                handleMobillsFileSelect(event) {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                        this.processMobillsFile(file);
-                    }
-                    event.target.value = '';
-                },
-
-                processMobillsFile(file) {
-                    this.importModal.error = '';
-                    this.importModal.parsedRows = [];
-                    this.importModal.sheetsRead = 0;
-                    this.importModal.fileName = file.name;
-
-                    if (typeof XLSX === 'undefined') {
-                        this.importModal.error = 'Biblioteca de leitura Excel/CSV ainda está carregando. Tente novamente em alguns segundos.';
-                        return;
-                    }
-
-                    const reader = new FileReader();
-                    const isCsv = file.name.toLowerCase().endsWith('.csv');
-
-                    reader.onload = (e) => {
-                        try {
-                            let workbook;
-                            if (isCsv) {
-                                const buffer = e.target.result;
-                                let text = new TextDecoder('utf-8').decode(buffer);
-                                if (text.includes('\uFFFD')) {
-                                    text = new TextDecoder('iso-8859-1').decode(buffer);
-                                }
-                                workbook = XLSX.read(text, { type: 'string', raw: false });
-                            } else {
-                                const data = new Uint8Array(e.target.result);
-                                workbook = XLSX.read(data, { type: 'array', cellDates: false });
-                            }
-
-                            const allParsed = [];
-                            let validSheetsCount = 0;
-
-                            // Lê TODAS as abas (sheets) presentes na planilha exportada do Mobills
-                            for (const sheetName of workbook.SheetNames) {
-                                const worksheet = workbook.Sheets[sheetName];
-                                if (!worksheet) continue;
-
-                                const rawMatrix = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-                                if (!rawMatrix || rawMatrix.length < 2) continue;
-
-                                // Localizar a linha de cabeçalho nas primeiras 15 linhas
-                                let headerRowIdx = -1;
-                                for (let r = 0; r < Math.min(rawMatrix.length, 15); r++) {
-                                    const rowNormalized = rawMatrix[r].map(c => this.normalizeHeaderStr(c));
-                                    const hasDate = rowNormalized.some(c => c.includes('data') || c.includes('vencimento') || c === 'date');
-                                    const hasAmount = rowNormalized.some(c => c.includes('valor') || c.includes('quantia') || c === 'amount' || c === 'value');
-                                    if (hasDate && hasAmount) {
-                                        headerRowIdx = r;
-                                        break;
-                                    }
-                                }
-
-                                if (headerRowIdx === -1) continue;
-                                validSheetsCount++;
-
-                                // Infere tipo padrão pela aba caso a aba seja nomeada "Receitas" ou "Despesas"
-                                const normSheet = this.normalizeHeaderStr(sheetName);
-                                const sheetDefaultType = normSheet.includes('receita') ? 'income' : (normSheet.includes('despesa') ? 'expense' : '');
-
-                                const headers = rawMatrix[headerRowIdx].map(h => this.normalizeHeaderStr(h));
-                                const colMap = {
-                                    date: headers.findIndex(h => h.includes('data') || h.includes('vencimento') || h === 'date'),
-                                    description: headers.findIndex(h => h.includes('descri') || h.includes('titulo') || h.includes('historico') || h === 'description'),
-                                    category: headers.findIndex(h => h.includes('categ') || h === 'category'),
-                                    account: headers.findIndex(h => h.includes('conta') || h.includes('cartao') || h === 'account'),
-                                    amount: headers.findIndex(h => h.includes('valor') || h.includes('quantia') || h === 'amount' || h === 'value'),
-                                    status: headers.findIndex(h => h.includes('situac') || h.includes('status') || h.includes('pago') || h.includes('efetivado')),
-                                    type: headers.findIndex(h => h === 'tipo' || h.includes('natureza') || h === 'type')
-                                };
-
-                                for (let i = headerRowIdx + 1; i < rawMatrix.length; i++) {
-                                    const row = rawMatrix[i];
-                                    if (!row || row.every(cell => String(cell).trim() === '')) continue;
-
-                                    const parsedDate = this.parseMobillsDate(row[colMap.date]);
-                                    const rawAmount = row[colMap.amount];
-                                    const rowTypeHint = colMap.type !== -1 ? row[colMap.type] : sheetDefaultType;
-                                    const parsedAmountInfo = this.parseMobillsAmount(rawAmount, rowTypeHint);
-
-                                    if (!parsedDate || parsedAmountInfo.amount <= 0) continue;
-
-                                    const desc = colMap.description !== -1 && String(row[colMap.description]).trim()
-                                        ? String(row[colMap.description]).trim()
-                                        : 'Lançamento Importado';
-
-                                    const rawCat = colMap.category !== -1 ? String(row[colMap.category]).trim() : '';
-                                    const mappedCategory = this.mapMobillsCategory(rawCat, parsedAmountInfo.type);
-
-                                    const account = colMap.account !== -1 && String(row[colMap.account]).trim()
-                                        ? String(row[colMap.account]).trim()
-                                        : 'Carteira';
-
-                                    const rawStatus = colMap.status !== -1 ? String(row[colMap.status]).trim() : 'Pago';
-                                    const status = this.parseMobillsStatus(rawStatus);
-
-                                    const detectedUser = this.detectMobillsUser(desc, account, this.importModal.defaultUser);
-
-                                    allParsed.push({
-                                        type: parsedAmountInfo.type,
-                                        description: desc,
-                                        amount: parsedAmountInfo.amount,
-                                        date: parsedDate,
-                                        category: mappedCategory,
-                                        user: detectedUser,
-                                        account: account,
-                                        status: status
-                                    });
-                                }
-                            }
-
-                            if (allParsed.length === 0) {
-                                this.importModal.error = 'Não foi possível encontrar lançamentos válidos com colunas de Data e Valor nas abas da planilha.';
-                                return;
-                            }
-
-                            this.importModal.sheetsRead = validSheetsCount;
-                            this.importModal.parsedRows = allParsed.sort((a, b) => b.date.localeCompare(a.date));
-                        } catch (err) {
-                            console.error('Erro ao ler planilha:', err);
-                            this.importModal.error = 'Falha ao ler o arquivo. Certifique-se de que não está corrompido ou protegido por senha.';
-                        }
-                    };
-
-                    reader.readAsArrayBuffer(file);
-                },
-
-                get importPreviewMonthsBreakdown() {
-                    const map = {};
-                    this.importModal.parsedRows.forEach(r => {
-                        const [y, m] = r.date.split('-').map(Number);
-                        if (!y || !m) return;
-                        const key = `${y}-${String(m).padStart(2, '0')}`;
-                        if (!map[key]) {
-                            map[key] = {
-                                key,
-                                label: `${this.shortMonthNames[m - 1]}/${y}`,
-                                count: 0
-                            };
-                        }
-                        map[key].count++;
-                    });
-                    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
-                },
-
-                reapplyImportDefaults() {
-                    this.importModal.parsedRows.forEach(row => {
-                        row.user = this.detectMobillsUser(row.description, row.account, this.importModal.defaultUser);
-                    });
-                },
-
-                get importPreviewTotals() {
-                    return this.importModal.parsedRows.reduce((acc, r) => {
-                        if (r.type === 'income') acc.income += r.amount;
-                        else acc.expense += r.amount;
-                        return acc;
-                    }, { income: 0, expense: 0 });
-                },
-
-                confirmMobillsImport() {
-                    if (this.importModal.parsedRows.length === 0) return;
-
-                    const monthsImportedCount = this.importPreviewMonthsBreakdown.length;
-                    const newItems = this.importModal.parsedRows.map((r, index) => ({
-                        id: 'imp_' + Date.now() + '_' + index + '_' + Math.random().toString(36).substring(2, 6),
-                        type: r.type,
-                        description: r.description,
-                        amount: r.amount,
-                        date: r.date,
-                        category: r.category,
-                        user: r.user,
-                        account: r.account,
-                        status: r.status,
-                        recurrence: 'nenhuma',
-                        groupId: null
-                    }));
-
-                    if (this.importModal.mode === 'replace') {
-                        this.transactions = newItems;
-                    } else {
-                        this.transactions = [...this.transactions, ...newItems];
-                    }
-
-                    // Posiciona no mês atual se houver lançamentos nele, ou no mês mais recente importado
-                    const now = new Date();
-                    const curY = now.getFullYear();
-                    const curM = now.getMonth();
-                    const hasCurrentMonthData = newItems.some(i => {
-                        const [iy, im] = i.date.split('-').map(Number);
-                        return iy === curY && (im - 1) === curM;
-                    });
-
-                    if (hasCurrentMonthData) {
-                        this.selectedYear = curY;
-                        this.selectedMonth = curM;
-                    } else if (newItems.length > 0) {
-                        const latestDate = newItems.map(i => i.date).sort().reverse()[0];
-                        const [ly, lm] = latestDate.split('-').map(Number);
-                        if (ly && lm) {
-                            this.selectedYear = ly;
-                            this.selectedMonth = lm - 1;
-                        }
-                    }
-
-                    this.allMonthsMode = false;
-                    this.saveToStorage();
-                    this.renderAllCharts();
-                    this.closeImportModal();
-                    this.showToast(`${newItems.length} lançamento(s) importado(s) em ${monthsImportedCount} mês(es)!`);
-                },
-
-                normalizeHeaderStr(val) {
-                    return String(val || '')
-                        .toLowerCase()
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .trim();
-                },
-
-                parseMobillsDate(raw) {
-                    if (raw === null || raw === undefined || raw === '') return null;
-
-                    // Número serial de data do Excel (ex: 46332) sem deslocamento de fuso horário
-                    if (typeof raw === 'number' && raw > 20000 && raw < 80000) {
-                        const utcDays = Math.floor(raw - 25569);
-                        const dt = new Date(utcDays * 86400 * 1000);
-                        const y = dt.getUTCFullYear();
-                        const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
-                        const d = String(dt.getUTCDate()).padStart(2, '0');
-                        return `${y}-${m}-${d}`;
-                    }
-
-                    // Objeto Date nativo caso exista
-                    if (raw instanceof Date && !isNaN(raw.getTime())) {
-                        const y = raw.getFullYear();
-                        const m = String(raw.getMonth() + 1).padStart(2, '0');
-                        const d = String(raw.getDate()).padStart(2, '0');
-                        return `${y}-${m}-${d}`;
-                    }
-
-                    const str = String(raw).trim().split(' ')[0];
-
-                    // Formato DD/MM/AAAA ou DD-MM-AAAA
-                    const brMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-                    if (brMatch) {
-                        const day = brMatch[1].padStart(2, '0');
-                        const month = brMatch[2].padStart(2, '0');
-                        let year = brMatch[3];
-                        if (year.length === 2) year = '20' + year;
-                        return `${year}-${month}-${day}`;
-                    }
-
-                    // Formato ISO AAAA-MM-DD ou AAAA/MM/DD
-                    const isoMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-                    if (isoMatch) {
-                        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
-                    }
-
-                    // Formato com mês por extenso em português (ex: "06 de novembro de 2026" ou "06/nov/2026")
-                    const textNorm = this.normalizeHeaderStr(String(raw));
-                    const monthsMap = {
-                        jan: '01', janeiro: '01',
-                        fev: '02', fevereiro: '02',
-                        mar: '03', marco: '03',
-                        abr: '04', abril: '04',
-                        mai: '05', maio: '05',
-                        jun: '06', junho: '06',
-                        jul: '07', julho: '07',
-                        ago: '08', agosto: '08',
-                        set: '09', setembro: '09',
-                        out: '10', outubro: '10',
-                        nov: '11', novembro: '11',
-                        dez: '12', dezembro: '12'
-                    };
-                    const textDateMatch = textNorm.match(/(\d{1,2})\s*(?:de|\/|\-|\s)\s*([a-z]+)\s*(?:de|\/|\-|\s)\s*(\d{2,4})/);
-                    if (textDateMatch && monthsMap[textDateMatch[2]]) {
-                        const day = textDateMatch[1].padStart(2, '0');
-                        const month = monthsMap[textDateMatch[2]];
-                        let year = textDateMatch[3];
-                        if (year.length === 2) year = '20' + year;
-                        return `${year}-${month}-${day}`;
-                    }
-
-                    return null;
-                },
-
-                parseMobillsAmount(rawVal, rawType = '') {
-                    const typeNorm = this.normalizeHeaderStr(rawType);
-                    let explicitType = null;
-                    if (typeNorm.includes('receita') || typeNorm.includes('entrada') || typeNorm === 'income') {
-                        explicitType = 'income';
-                    } else if (typeNorm.includes('despesa') || typeNorm.includes('saida') || typeNorm === 'expense') {
-                        explicitType = 'expense';
-                    }
-
-                    if (typeof rawVal === 'number') {
-                        const isNegative = rawVal < 0;
-                        return {
-                            amount: Math.abs(rawVal),
-                            type: explicitType || (isNegative ? 'expense' : 'income')
-                        };
-                    }
-
-                    let str = String(rawVal || '').trim();
-                    const isNegative = str.includes('-') || (str.startsWith('(') && str.endsWith(')'));
-
-                    // Remove R$, espaços e parênteses
-                    str = str.replace(/[R$\s\(\)\+\-]/g, '');
-
-                    // Trata formato brasileiro (1.234,56) vs americano (1,234.56)
-                    if (str.includes(',') && str.includes('.')) {
-                        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
-                            str = str.replace(/\./g, '').replace(',', '.');
-                        } else {
-                            str = str.replace(/,/g, '');
-                        }
-                    } else if (str.includes(',')) {
-                        str = str.replace(',', '.');
-                    }
-
-                    const num = parseFloat(str);
-                    if (isNaN(num)) return { amount: 0, type: 'expense' };
-
-                    return {
-                        amount: Math.abs(num),
-                        type: explicitType || (isNegative ? 'expense' : 'income')
-                    };
-                },
-
-                parseMobillsStatus(rawStatus) {
-                    const s = this.normalizeHeaderStr(rawStatus);
-                    if (!s) return 'completed';
-                    if (s.includes('pend') || s.includes('nao') || s.includes('aberto') || s.includes('agend')) {
-                        return 'pending';
-                    }
-                    return 'completed';
-                },
-
-                detectMobillsUser(description, account, fallbackUser) {
-                    const text = this.normalizeHeaderStr(`${description} ${account}`);
-                    if (text.includes('paulo')) return 'Paulo';
-                    if (text.includes('isabela') || text.includes('isabella')) return 'Isabela';
-                    return fallbackUser;
-                },
-
-                mapMobillsCategory(rawCat, type) {
-                    if (!rawCat) return type === 'income' ? 'Salário' : 'Outros';
-                    const norm = this.normalizeHeaderStr(rawCat);
-
-                    const exactMatch = this.categoriesList.find(c => this.normalizeHeaderStr(c.name) === norm);
-                    if (exactMatch) return exactMatch.name;
-
-                    if (norm.includes('casa') || norm.includes('moradia') || norm.includes('aluguel') || norm.includes('internet') || norm.includes('energia') || norm.includes('agua')) return 'Casa';
-                    if (norm.includes('aliment') || norm.includes('mercado') || norm.includes('supermercado') || norm.includes('restaurante') || norm.includes('bar') || norm.includes('lanche')) return 'Alimentação';
-                    if (norm.includes('educa') || norm.includes('escola') || norm.includes('faculdade') || norm.includes('curso') || norm.includes('matricula')) return 'Educação';
-                    if (norm.includes('transp') || norm.includes('combust') || norm.includes('abastec') || norm.includes('uber') || norm.includes('carro') || norm.includes('manutenc')) return 'Transporte';
-                    if (norm.includes('compra') || norm.includes('vestuario') || norm.includes('roupa') || norm.includes('loja')) return 'Compras';
-                    if (norm.includes('saude') || norm.includes('farmacia') || norm.includes('medico') || norm.includes('exame')) return 'Saúde';
-                    if (norm.includes('assinat') || norm.includes('stream') || norm.includes('netflix') || norm.includes('spotify')) return 'Assinatura';
-                    if (norm.includes('salar') || norm.includes('pagament')) return 'Salário';
-                    if (norm.includes('extra') || norm.includes('freela') || norm.includes('bonus')) return 'Renda extra';
-                    if (norm.includes('reajust')) return 'Reajuste';
-
-                    return 'Outros';
-                }
-            };
-        }
-    </script>
-</body>
-</html>
+                    const months = [
+                        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Ma
