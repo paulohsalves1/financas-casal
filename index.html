@@ -472,11 +472,54 @@
                             <input type="file" accept=".json" @change="importBackup($event)" class="hidden">
                         </label>
                     </div>
+                    <div class="pt-3 border-t border-mobills-border">
+                        <button @click="deleteModal = { open: true, item: null, clearAll: true }" class="w-full py-2.5 bg-red-950/50 hover:bg-red-900/60 text-red-400 text-xs font-semibold rounded-xl border border-red-800/50 cursor-pointer">
+                            <i class="fa-solid fa-trash-can mr-1.5"></i> Limpar Todos os Lançamentos (Zerar Base)
+                        </button>
+                    </div>
                 </div>
             </div>
 
         </div>
     </main>
+
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-mobills-card/95 backdrop-blur-md border-t border-mobills-border z-30 flex items-center justify-around px-2 py-2">
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-house text-base"></i>
+            <span class="text-[10px] font-semibold">Início</span>
+        </button>
+        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-list-ul text-base"></i>
+            <span class="text-[10px] font-semibold">Extrato</span>
+        </button>
+        <button @click="openModal()" aria-label="Novo Lançamento" class="w-12 h-12 -mt-6 rounded-2xl bg-mobills-purple hover:bg-mobills-purpleLight text-white shadow-lg shadow-purple-900/50 flex items-center justify-center text-lg cursor-pointer">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <button @click="activeTab = 'reports'" :class="activeTab === 'reports' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-chart-pie text-base"></i>
+            <span class="text-[10px] font-semibold">Gráficos</span>
+        </button>
+        <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-gear text-base"></i>
+            <span class="text-[10px] font-semibold">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+    <div x-show="deleteModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-sm rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center space-x-3 text-red-400">
+                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : 'Excluir lançamento?'"></h3>
+            </div>
+            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : `Deseja realmente excluir '${deleteModal.item?.description}'?`"></p>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
+                <button @click="confirmDeleteAction()" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl cursor-pointer">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL NOVO / EDITAR COM RECORRÊNCIA -->
     <div x-show="isModalOpen" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
@@ -546,17 +589,39 @@
 
     <!-- MODAL IMPORTAÇÃO MOBILLS -->
     <div x-show="importModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-        <div @click.away="closeImportModal()" class="bg-mobills-card w-full max-w-4xl rounded-2xl border border-mobills-border shadow-2xl p-6 space-y-4">
-            <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
-            <div class="border-2 border-dashed border-mobills-border rounded-2xl p-6 text-center">
-                <label class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer">
+        <div @click.away="closeImportModal()" class="bg-mobills-card w-full max-w-4xl rounded-2xl border border-mobills-border shadow-2xl p-6 space-y-4 my-auto">
+            <div class="flex items-center justify-between border-b border-mobills-border pb-3">
+                <h3 class="font-bold text-base text-white">Importar Planilha do Mobills (CSV / Excel)</h3>
+                <button @click="closeImportModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="border-2 border-dashed border-mobills-border rounded-2xl p-6 text-center space-y-3">
+                <p class="text-xs text-gray-400">Selecione o arquivo exportado do Mobills (.xlsx, .xls ou .csv)</p>
+                <label class="inline-block px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl cursor-pointer">
                     <span>Selecionar Arquivo</span>
                     <input type="file" accept=".csv,.xlsx,.xls" @change="handleMobillsFileSelect($event)" class="hidden">
                 </label>
             </div>
             <div x-show="importModal.parsedRows.length > 0" class="space-y-4">
-                <p class="text-xs text-gray-300"><strong x-text="importModal.parsedRows.length"></strong> lançamentos lidos com sucesso.</p>
-                <button @click="confirmMobillsImport()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer">Confirmar Importação</button>
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-mobills-bg p-3 rounded-xl border border-mobills-border text-xs">
+                    <span class="text-gray-300"><strong class="text-white" x-text="importModal.parsedRows.length"></strong> lançamentos válidos encontrados.</span>
+                    <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                        <input type="checkbox" x-model="importModal.replaceExisting" class="rounded accent-mobills-purple">
+                        <span>Substituir lançamentos atuais (evita duplicados)</span>
+                    </label>
+                </div>
+                <div class="max-h-48 overflow-y-auto border border-mobills-border rounded-xl divide-y divide-mobills-border/40 text-xs">
+                    <template x-for="row in importModal.parsedRows.slice(0, 15)" :key="row.id">
+                        <div class="px-3 py-2 flex items-center justify-between gap-2">
+                            <div class="truncate">
+                                <span class="text-gray-400 mr-2" x-text="formatDateHeader(row.date)"></span>
+                                <span class="text-white font-medium" x-text="row.description"></span>
+                                <span class="text-gray-500 ml-1" x-text="`(${row.category})`"></span>
+                            </div>
+                            <span class="font-bold shrink-0" :class="row.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(row.amount)"></span>
+                        </div>
+                    </template>
+                </div>
+                <button @click="confirmMobillsImport()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl cursor-pointer">Confirmar Importação</button>
             </div>
         </div>
     </div>
@@ -598,7 +663,8 @@
                 isModalOpen: false,
                 editingId: null,
                 form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12 },
-                importModal: { open: false, parsedRows: [] },
+                importModal: { open: false, parsedRows: [], replaceExisting: true },
+                deleteModal: { open: false, item: null, clearAll: false },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
                 initApp() {
@@ -867,15 +933,58 @@
                     }
                 },
                 promptDelete(item) {
-                    if (confirm(`Deseja excluir "${item.description}"?`)) {
-                        this.transactions = this.transactions.filter(t => t.id !== item.id);
+                    this.deleteModal = { open: true, item: item, clearAll: false };
+                },
+                confirmDeleteAction() {
+                    if (this.deleteModal.clearAll) {
+                        this.transactions = [];
+                        this.saveToStorage();
+                        this.showToast('Base de lançamentos limpa com sucesso.');
+                    } else if (this.deleteModal.item) {
+                        this.transactions = this.transactions.filter(t => t.id !== this.deleteModal.item.id);
                         this.saveToStorage();
                         this.showToast('Lançamento excluído.');
-                        this.renderAllCharts();
                     }
+                    this.deleteModal.open = false;
+                    this.renderAllCharts();
                 },
                 openImportModal() { this.importModal.open = true; this.importModal.parsedRows = []; },
                 closeImportModal() { this.importModal.open = false; },
+                parseMobillsDate(rawVal) {
+                    if (!rawVal) return new Date().toISOString().split('T')[0];
+                    if (typeof rawVal === 'number') {
+                        const utcDays = Math.floor(rawVal - 25569);
+                        const d = new Date(utcDays * 86400 * 1000);
+                        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+                    }
+                    const str = String(rawVal).trim();
+                    const brMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+                    if (brMatch) {
+                        const day = brMatch[1].padStart(2, '0');
+                        const month = brMatch[2].padStart(2, '0');
+                        const year = brMatch[3].length === 2 ? '20' + brMatch[3] : brMatch[3];
+                        return `${year}-${month}-${day}`;
+                    }
+                    const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+                    return new Date().toISOString().split('T')[0];
+                },
+                parseMobillsAmount(rawVal) {
+                    if (typeof rawVal === 'number') return rawVal;
+                    let str = String(rawVal || '0').replace(/R\$/gi, '').replace(/\s/g, '').trim();
+                    if (!str) return 0;
+                    if (str.includes(',') && str.includes('.')) {
+                        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                            str = str.replace(/\./g, '').replace(',', '.');
+                        } else {
+                            str = str.replace(/,/g, '');
+                        }
+                    } else if (str.includes(',')) {
+                        str = str.replace(',', '.');
+                    }
+                    const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+                    return isNaN(num) ? 0 : num;
+                },
                 handleMobillsFileSelect(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -884,35 +993,108 @@
                         try {
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
-                            let allRows = [];
+                            const parsed = [];
+
                             workbook.SheetNames.forEach(sheetName => {
-                                const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-                                json.forEach(row => { if (row.length > 0) allRows.push(row); });
+                                const sheet = workbook.Sheets[sheetName];
+                                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                                if (rows.length < 2) return;
+
+                                // Localiza a linha de cabeçalho do Mobills
+                                let headerIdx = rows.findIndex(r =>
+                                    r.some(cell => /descri|valor|data|categoria/i.test(String(cell)))
+                                );
+                                if (headerIdx === -1) headerIdx = 0;
+
+                                const headers = rows[headerIdx].map(h => String(h).toLowerCase().trim());
+                                const colIdx = {
+                                    date: headers.findIndex(h => h.includes('data')),
+                                    desc: headers.findIndex(h => h.includes('descri')),
+                                    cat: headers.findIndex(h => h.includes('categ')),
+                                    acc: headers.findIndex(h => h.includes('conta') || h.includes('cart')),
+                                    val: headers.findIndex(h => h.includes('valor')),
+                                    status: headers.findIndex(h => h.includes('situa') || h.includes('status') || h.includes('pago')),
+                                    type: headers.findIndex(h => h.includes('tipo'))
+                                };
+
+                                const sheetIsIncome = /receita/i.test(sheetName);
+
+                                for (let i = headerIdx + 1; i < rows.length; i++) {
+                                    const r = rows[i];
+                                    if (!r || r.every(c => String(c).trim() === '')) continue;
+
+                                    const rawVal = colIdx.val !== -1 ? r[colIdx.val] : r.find(c => /^-?\s*(R\$)?\s*\d+[.,]\d{2}$/.test(String(c).trim()));
+                                    const numericVal = this.parseMobillsAmount(rawVal);
+                                    if (numericVal === 0) continue;
+
+                                    const desc = String((colIdx.desc !== -1 ? r[colIdx.desc] : r[1] || r[0]) || '').trim();
+                                    if (!desc || /^total/i.test(desc)) continue;
+
+                                    const dateStr = this.parseMobillsDate(colIdx.date !== -1 ? r[colIdx.date] : r[0]);
+                                    const cat = String((colIdx.cat !== -1 ? r[colIdx.cat] : 'Outros') || 'Outros').trim();
+                                    const acc = String((colIdx.acc !== -1 ? r[colIdx.acc] : 'Carteira') || 'Carteira').trim();
+                                    const statusRaw = colIdx.status !== -1 ? String(r[colIdx.status]).toLowerCase() : '';
+                                    const typeRaw = colIdx.type !== -1 ? String(r[colIdx.type]).toLowerCase() : '';
+
+                                    let txType = 'expense';
+                                    if (sheetIsIncome || typeRaw.includes('receita') || numericVal > 0 && typeRaw === '' && !sheetName.toLowerCase().includes('despesa') && colIdx.type === -1 && String(rawVal).includes('+')) {
+                                        txType = 'income';
+                                    } else if (typeRaw.includes('despesa') || numericVal < 0) {
+                                        txType = 'expense';
+                                    } else if (numericVal > 0 && /sal[aá]rio|renda|receb|pix recebido|reembolso/i.test(cat + ' ' + desc)) {
+                                        txType = 'income';
+                                    }
+
+                                    const isPending = /pend|n[aã]o|aberto|atrasad/i.test(statusRaw);
+                                    let userOwner = 'Compartilhado';
+                                    if (/paulo/i.test(desc + ' ' + acc)) userOwner = 'Paulo';
+                                    else if (/isabela/i.test(desc + ' ' + acc)) userOwner = 'Isabela';
+
+                                    parsed.push({
+                                        id: 'mob_' + i + '_' + Date.now() + Math.random().toString(36).substring(2, 5),
+                                        description: desc,
+                                        amount: Math.abs(numericVal),
+                                        type: txType,
+                                        date: dateStr,
+                                        category: cat || 'Outros',
+                                        user: userOwner,
+                                        account: acc || 'Carteira',
+                                        status: isPending ? 'pending' : 'completed'
+                                    });
+                                }
                             });
-                            this.importModal.parsedRows = allRows.map((r, i) => ({
-                                id: 'mob_' + i + '_' + Date.now(),
-                                description: String(r[1] || r[0] || 'Mobills'),
-                                amount: Math.abs(Number(String(r[3] || r[2] || 10).replace(/[^\d.,]/g, '').replace(',', '.')) || 10),
-                                type: 'expense',
-                                date: new Date().toISOString().split('T')[0],
-                                category: 'Outros',
-                                user: 'Compartilhado',
-                                account: 'Carteira',
-                                status: 'completed'
-                            }));
-                            this.showToast(`${this.importModal.parsedRows.length} linhas lidas.`);
+
+                            this.importModal.parsedRows = parsed;
+                            if (parsed.length > 0) {
+                                this.showToast(`${parsed.length} lançamentos válidos identificados!`);
+                            } else {
+                                this.showToast('Nenhum lançamento com valor válido encontrado.', 'error');
+                            }
                         } catch(err) {
-                            this.showToast('Erro ao ler arquivo', 'error');
+                            this.showToast('Erro ao ler arquivo do Mobills', 'error');
                         }
                     };
                     reader.readAsArrayBuffer(file);
                 },
                 confirmMobillsImport() {
                     if (this.importModal.parsedRows.length === 0) return;
-                    this.transactions.push(...this.importModal.parsedRows);
+                    if (this.importModal.replaceExisting) {
+                        this.transactions = [...this.importModal.parsedRows];
+                    } else {
+                        this.transactions.push(...this.importModal.parsedRows);
+                    }
+                    // Ajusta o mês selecionado para o mês mais recente importado
+                    const firstDate = this.importModal.parsedRows[0]?.date;
+                    if (firstDate) {
+                        const [y, m] = firstDate.split('-').map(Number);
+                        if (y && m) {
+                            this.selectedYear = y;
+                            this.selectedMonth = m - 1;
+                        }
+                    }
                     this.saveToStorage();
                     this.closeImportModal();
-                    this.showToast('Importação concluída com sucesso!');
+                    this.showToast('Importação concluída e sincronizada!');
                     this.renderAllCharts();
                 },
                 exportBackup() {
