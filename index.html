@@ -100,6 +100,10 @@
                     <i class="fa-solid fa-list-ul w-5 text-center"></i>
                     <span>Transações</span>
                 </button>
+                <button @click="switchTab('accounts')" :class="activeTab === 'accounts' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-building-columns w-5 text-center"></i>
+                    <span>Contas & Reservas</span>
+                </button>
                 <button @click="switchTab('cards')" :class="activeTab === 'cards' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-credit-card w-5 text-center"></i>
                     <span>Cartões de Crédito</span>
@@ -383,6 +387,7 @@
                             <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg cursor-pointer">Todas</button>
                             <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg cursor-pointer">Receitas</button>
                             <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg cursor-pointer">Despesas</button>
+                            <button @click="filterType = 'transfer'" :class="filterType === 'transfer' ? 'bg-cyan-600 text-white font-semibold' : 'text-gray-400'" class="px-3 py-1 rounded-lg cursor-pointer">Transferências</button>
                         </div>
                     </div>
                 </div>
@@ -423,12 +428,17 @@
                                         <div class="flex items-center space-x-3.5 min-w-0">
                                             <input type="checkbox" :checked="selectedTxIds.includes(item.id)" @change="toggleSelectTx(item.id)" aria-label="Selecionar transação" class="w-4 h-4 rounded accent-mobills-purple shrink-0 cursor-pointer">
                                             <button @click="toggleStatus(item.id)" title="Alternar entre efetivado e pendente" class="shrink-0 cursor-pointer">
-                                                <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
-                                                <div x-show="item.status === 'pending'" class="w-7 h-7 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-exclamation"></i></div>
+                                                <div x-show="item.status === 'completed' && item.type !== 'transfer'" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
+                                                <div x-show="item.status === 'pending' && item.type !== 'transfer'" class="w-7 h-7 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-exclamation"></i></div>
+                                                <div x-show="item.type === 'transfer'" class="w-7 h-7 rounded-full flex items-center justify-center text-xs" :class="item.status === 'completed' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-amber-500/20 text-amber-400'"><i class="fa-solid fa-right-left"></i></div>
                                             </button>
                                             <div class="min-w-0">
                                                 <div class="flex items-center space-x-2">
                                                     <span class="font-semibold text-sm text-white truncate" x-text="item.description"></span>
+                                                    <span x-show="item.type === 'transfer'" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0 flex items-center space-x-1">
+                                                        <i class="fa-solid fa-right-left text-[9px]"></i>
+                                                        <span x-text="`${getAccountName(item.fromAccountId)} → ${getAccountName(item.toAccountId)}`"></span>
+                                                    </span>
                                                     <span x-show="item.cardId" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 flex items-center space-x-1">
                                                         <i class="fa-solid fa-credit-card text-[9px]"></i>
                                                         <span x-text="getCardName(item.cardId)"></span>
@@ -436,12 +446,16 @@
                                                     <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0" :class="{'bg-blue-950/75 text-blue-400 border-blue-800': item.user === 'Paulo', 'bg-pink-950/75 text-pink-400 border-pink-800': item.user === 'Isabela', 'bg-purple-950/75 text-purple-400 border-purple-800': item.user === 'Compartilhado'}" x-text="item.user"></span>
                                                 </div>
                                                 <div class="flex items-center space-x-2 mt-1 text-xs text-gray-400">
-                                                    <span x-text="item.category"></span><span>•</span><span x-text="item.cardId ? `Cartão: ${getCardName(item.cardId)}` : (item.account || 'Carteira')"></span>
+                                                    <span x-text="item.type === 'transfer' ? 'Transferência entre contas' : item.category"></span>
+                                                    <span>•</span>
+                                                    <span x-text="item.type === 'transfer' ? (item.status === 'completed' ? 'Efetivada' : 'Agendada') : (item.cardId ? `Cartão: ${getCardName(item.cardId)}` : (item.account || 'Carteira'))"></span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="flex items-center space-x-4 shrink-0">
-                                            <span class="font-bold text-sm md:text-base" :class="item.type === 'income' ? 'text-emerald-400' : 'text-red-400'" x-text="(item.type === 'income' ? '' : '-') + formatCurrency(item.amount)"></span>
+                                            <span class="font-bold text-sm md:text-base"
+                                                  :class="item.type === 'transfer' ? (getTransferWalletEffect(item) >= 0 ? 'text-cyan-400' : 'text-amber-400') : (item.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
+                                                  x-text="item.type === 'transfer' ? ((getTransferWalletEffect(item) >= 0 ? '+' : '-') + formatCurrency(item.amount)) : ((item.type === 'income' ? '' : '-') + formatCurrency(item.amount))"></span>
                                             <div class="flex items-center space-x-1">
                                                 <button @click="openModal(item)" class="p-2 text-gray-400 hover:text-mobills-purpleLight cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
                                                 <button @click="promptDelete(item)" class="p-2 text-gray-400 hover:text-red-400 cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -454,6 +468,172 @@
                                 <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2">
                                     <span>Saldo Previsto Final do Dia</span>
                                     <strong class="text-sm font-extrabold" :class="group.runningBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA CONTAS & RESERVAS (INVESTIMENTOS)      -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'accounts'" class="space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Contas, Reservas & Investimentos</h3>
+                        <p class="text-xs text-gray-400">Separe o saldo livre do dia a dia (Carteira) das reservas de emergência e investimentos sem distorcer seus gastos.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button @click="openTransferModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-lg shadow-cyan-950/50 transition cursor-pointer">
+                            <i class="fa-solid fa-right-left"></i>
+                            <span>Nova Transferência</span>
+                        </button>
+                        <button @click="openAccountModal()" class="px-4 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-lg shadow-purple-900/40 transition cursor-pointer">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nova Conta / Reserva</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumo Patrimonial Consolidado -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-gray-400">Carteira (Saldo Livre Período)</span>
+                            <h4 class="text-xl font-extrabold" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h4>
+                            <p class="text-[11px] text-gray-500">Após descontar aportes transferidos</p>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg"><i class="fa-solid fa-wallet"></i></div>
+                    </div>
+
+                    <div class="bg-mobills-card p-5 rounded-2xl border border-cyan-500/30 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-cyan-300">Total Guardado / Investido</span>
+                            <h4 class="text-xl font-extrabold text-cyan-400" x-text="formatCurrency(totalReservesBalance)"></h4>
+                            <p class="text-[11px] text-gray-400" x-text="`${filteredAccountsSummary.length} conta(s) de reserva/investimento`"></p>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-lg"><i class="fa-solid fa-piggy-bank"></i></div>
+                    </div>
+
+                    <div class="bg-mobills-card p-5 rounded-2xl border border-emerald-500/30 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-emerald-300">Aportes no Período Selecionado</span>
+                            <h4 class="text-xl font-extrabold text-emerald-400" x-text="formatCurrency(periodNetTransfersToReserves)"></h4>
+                            <p class="text-[11px] text-gray-400">Transferências líquidas no mês/ano</p>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                    </div>
+                </div>
+
+                <!-- Grid de Contas de Reserva / Investimento -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Card Fixo da Conta Principal: Carteira -->
+                    <div class="bg-mobills-card rounded-2xl border border-blue-500/40 overflow-hidden shadow-lg flex flex-col justify-between">
+                        <div class="p-5 bg-gradient-to-br from-blue-900/50 to-mobills-card border-b border-mobills-border flex items-start justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center text-lg shrink-0">
+                                    <i class="fa-solid fa-wallet"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="font-extrabold text-base text-white">Carteira (Dia a Dia)</h4>
+                                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40">Conta Principal</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Soma unificada das contas correntes de Paulo & Isabela</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-xs text-gray-400">Saldo Atual do Período:</span>
+                                <span class="text-2xl font-extrabold" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-mobills-bg/70 border border-mobills-border text-xs text-gray-400 flex items-center justify-between">
+                                <span>Saldo Previsto (inclui agendamentos):</span>
+                                <strong class="text-gray-200" x-text="formatCurrency(metrics.saldoPrevistoMes)"></strong>
+                            </div>
+                            <button @click="openTransferModal('wallet', '')" class="w-full py-2.5 px-4 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition cursor-pointer">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Transferir da Carteira para Reserva / Investimento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards das Contas Cadastradas (Reservas / Investimentos) -->
+                    <template x-for="acc in filteredAccountsSummary" :key="acc.id">
+                        <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-lg flex flex-col justify-between">
+                            <div class="p-5 text-white relative overflow-hidden" :style="`background: linear-gradient(135deg, ${getBankInfo(acc.bank).color}ee 0%, #1c1c22 100%)`">
+                                <div class="flex items-start justify-between relative z-10">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner shrink-0">
+                                            <span class="font-black text-xs tracking-tighter" x-text="getBankInfo(acc.bank).short"></span>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="font-extrabold text-base" x-text="acc.name"></h4>
+                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-black/30 text-white" x-text="acc.user === 'Compartilhado' ? 'Casa' : acc.user"></span>
+                                            </div>
+                                            <p class="text-[11px] text-white/85 mt-0.5" x-text="`${getBankInfo(acc.bank).name} • ${acc.categoryType || 'Reserva / Investimento'}`"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <button @click="openAccountModal(acc)" title="Editar conta" class="p-2 rounded-lg bg-black/25 hover:bg-black/45 text-white/90 transition cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
+                                        <button @click="promptDeleteAccount(acc)" title="Excluir conta" class="p-2 rounded-lg bg-black/25 hover:bg-red-600/80 text-white/90 transition cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-5 pt-4 border-t border-white/15 flex items-end justify-between relative z-10">
+                                    <div>
+                                        <span class="text-[11px] uppercase tracking-wider text-white/75 font-semibold block">Saldo Acumulado Atual</span>
+                                        <span class="text-2xl font-extrabold tracking-tight" x-text="formatCurrency(acc.currentBalance)"></span>
+                                    </div>
+                                    <div class="text-right text-[11px] text-white/80" x-show="acc.projectedBalance !== acc.currentBalance">
+                                        <span>Previsto: <strong x-text="formatCurrency(acc.projectedBalance)"></strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-5 space-y-4 bg-mobills-card">
+                                <!-- Meta opcional -->
+                                <div x-show="acc.goal > 0" class="space-y-1.5">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-gray-400">Progresso da Meta: <strong class="text-cyan-400" x-text="`${acc.goalPercent.toFixed(0)}%`"></strong></span>
+                                        <span class="text-gray-400">Objetivo: <strong class="text-white" x-text="formatCurrency(acc.goal)"></strong></span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-mobills-bg rounded-full overflow-hidden border border-mobills-border">
+                                        <div class="h-full rounded-full bg-cyan-500 transition-all duration-500" :style="`width: ${Math.min(100, Math.max(0, acc.goalPercent))}%`"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Últimas movimentações desta conta -->
+                                <div class="space-y-2">
+                                    <span class="text-xs font-bold text-gray-300 block" x-text="`Movimentações no período (${acc.periodTransfers.length})`"></span>
+                                    <div x-show="acc.periodTransfers.length === 0" class="p-3 rounded-xl bg-mobills-bg/60 border border-mobills-border/50 text-center text-xs text-gray-500">
+                                        Nenhuma transferência neste período.
+                                    </div>
+                                    <div x-show="acc.periodTransfers.length > 0" class="max-h-36 overflow-y-auto divide-y divide-mobills-border/40 bg-mobills-bg/60 rounded-xl border border-mobills-border/60 px-3">
+                                        <template x-for="tr in acc.periodTransfers" :key="tr.id">
+                                            <div class="py-2 flex items-center justify-between gap-2 text-xs">
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-white truncate" x-text="tr.description"></p>
+                                                    <p class="text-[11px] text-gray-400" x-text="`${formatDateHeader(tr.date)} • ${tr.toAccountId === acc.id ? 'Entrada (+)' : 'Resgate (-)'}`"></p>
+                                                </div>
+                                                <span class="font-bold shrink-0" :class="tr.toAccountId === acc.id ? 'text-emerald-400' : 'text-amber-400'" x-text="(tr.toAccountId === acc.id ? '+' : '-') + formatCurrency(tr.amount)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="pt-1 grid grid-cols-2 gap-2">
+                                    <button @click="openTransferModal('wallet', acc.id)" class="py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                                        <i class="fa-solid fa-arrow-down"></i>
+                                        <span>Depositar / Guardar</span>
+                                    </button>
+                                    <button @click="openTransferModal(acc.id, 'wallet')" class="py-2.5 px-3 bg-mobills-bg hover:bg-mobills-cardHover text-gray-200 border border-mobills-border rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                                        <i class="fa-solid fa-arrow-up"></i>
+                                        <span>Resgatar</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -712,13 +892,13 @@
         <button @click="openModal()" aria-label="Novo Lançamento" class="w-12 h-12 -mt-6 rounded-2xl bg-mobills-purple hover:bg-mobills-purpleLight text-white shadow-lg shadow-purple-900/50 flex items-center justify-center text-lg cursor-pointer">
             <i class="fa-solid fa-plus"></i>
         </button>
+        <button @click="switchTab('accounts')" :class="activeTab === 'accounts' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-building-columns text-base"></i>
+            <span class="text-[10px] font-semibold">Contas</span>
+        </button>
         <button @click="switchTab('cards')" :class="activeTab === 'cards' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
             <i class="fa-solid fa-credit-card text-base"></i>
             <span class="text-[10px] font-semibold">Cartões</span>
-        </button>
-        <button @click="switchTab('settings')" :class="activeTab === 'settings' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
-            <i class="fa-solid fa-gear text-base"></i>
-            <span class="text-[10px] font-semibold">Ajustes</span>
         </button>
     </nav>
 
@@ -727,9 +907,9 @@
         <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-sm rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
             <div class="flex items-center space-x-3 text-red-400">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : (deleteModal.card ? 'Excluir cartão?' : 'Excluir lançamento?')"></h3>
+                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : (deleteModal.account ? 'Excluir conta?' : (deleteModal.card ? 'Excluir cartão?' : 'Excluir lançamento?'))"></h3>
             </div>
-            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : (deleteModal.card ? `Deseja excluir o cartão '${deleteModal.card?.name}'? Os lançamentos já gerados no extrato serão mantidos.` : `Deseja realmente excluir '${deleteModal.item?.description}'?`)"></p>
+            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : (deleteModal.account ? `Deseja excluir a conta '${deleteModal.account?.name}'? O histórico de transferências no extrato será mantido.` : (deleteModal.card ? `Deseja excluir o cartão '${deleteModal.card?.name}'? Os lançamentos já gerados no extrato serão mantidos.` : `Deseja realmente excluir '${deleteModal.item?.description}'?`))"></p>
             <div class="flex justify-end space-x-3 pt-2">
                 <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
                 <button @click="confirmDeleteAction()" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl cursor-pointer">Confirmar</button>
@@ -737,20 +917,20 @@
         </div>
     </div>
 
-    <!-- MODAL CADASTRO / EDIÇÃO DE CARTÃO DE CRÉDITO -->
-    <div x-show="cardModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-        <div @click.away="cardModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
+    <!-- MODAL CADASTRO / EDIÇÃO DE CONTA DE RESERVA / INVESTIMENTO -->
+    <div x-show="accountModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="accountModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
             <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
-                <h3 class="font-bold text-base text-white" x-text="cardModal.editingId ? 'Editar Cartão' : 'Novo Cartão de Crédito'"></h3>
-                <button type="button" @click="cardModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="font-bold text-base text-white" x-text="accountModal.editingId ? 'Editar Conta / Reserva' : 'Nova Conta de Reserva ou Investimento'"></h3>
+                <button type="button" @click="accountModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form @submit.prevent="saveCard()" class="p-6 space-y-4 text-xs">
+            <form @submit.prevent="saveAccount()" class="p-6 space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1.5">Banco Emissor *</label>
-                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-40 overflow-y-auto pr-1">
+                    <label class="block text-gray-400 mb-1.5">Instituição / Banco *</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto pr-1">
                         <template x-for="b in bankList" :key="b.id">
-                            <button type="button" @click="selectCardBank(b)"
-                                    :class="cardForm.bank === b.id ? 'ring-2 ring-white bg-mobills-cardHover' : 'bg-mobills-bg opacity-80 hover:opacity-100 border border-mobills-border'"
+                            <button type="button" @click="selectAccountBank(b)"
+                                    :class="accountForm.bank === b.id ? 'ring-2 ring-white bg-mobills-cardHover' : 'bg-mobills-bg opacity-80 hover:opacity-100 border border-mobills-border'"
                                     class="p-2 rounded-xl flex flex-col items-center justify-center space-y-1 transition cursor-pointer">
                                 <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-[10px] shadow" :style="`background-color: ${b.color}`" x-text="b.short"></span>
                                 <span class="text-[10px] text-gray-200 font-semibold truncate w-full text-center" x-text="b.name"></span>
@@ -759,46 +939,41 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1">Nome / Apelido do Cartão *</label>
-                    <input type="text" required placeholder="Ex: Nubank Paulo, Inter Isabela..." x-model="cardForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    <label class="block text-gray-400 mb-1">Nome da Conta / Objetivo *</label>
+                    <input type="text" required placeholder="Ex: Reserva de Emergência, Investimentos XP, Caixinha Viagem..." x-model="accountForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
+                        <label class="block text-gray-400 mb-1">Tipo</label>
+                        <select x-model="accountForm.categoryType" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <option value="Reserva de Emergência">Reserva de Emergência</option>
+                            <option value="Investimentos">Investimentos</option>
+                            <option value="Caixinha / Objetivo">Caixinha / Objetivo</option>
+                            <option value="Poupança">Poupança</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-gray-400 mb-1">Titular / Responsável</label>
-                        <select x-model="cardForm.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        <select x-model="accountForm.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                             <option value="Compartilhado">Casa</option>
                             <option value="Paulo">Paulo</option>
                             <option value="Isabela">Isabela</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Limite Total (R$)</label>
-                        <input type="number" step="0.01" min="0" placeholder="0,00" x-model="cardForm.limit" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
-                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-gray-400 mb-1">Dia de Fechamento *</label>
-                        <input type="number" min="1" max="31" required x-model="cardForm.closingDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        <label class="block text-gray-400 mb-1">Saldo Inicial Já Guardado (R$)</label>
+                        <input type="number" step="0.01" placeholder="0,00" x-model="accountForm.initialBalance" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1">Dia de Vencimento *</label>
-                        <input type="number" min="1" max="31" required x-model="cardForm.dueDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1.5">Cor do Cartão</label>
-                    <div class="flex items-center space-x-2.5">
-                        <template x-for="clr in ['#7c3aed', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4']" :key="clr">
-                            <button type="button" @click="cardForm.color = clr"
-                                    :class="cardForm.color === clr ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'"
-                                    class="w-7 h-7 rounded-full transition cursor-pointer" :style="`background-color: ${clr}`"></button>
-                        </template>
+                        <label class="block text-gray-400 mb-1">Meta / Objetivo (Opcional R$)</label>
+                        <input type="number" step="0.01" min="0" placeholder="0,00" x-model="accountForm.goal" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
-                    <button type="button" @click="cardModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Cartão</button>
+                    <button type="button" @click="accountModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Conta</button>
                 </div>
             </form>
         </div>
@@ -812,9 +987,40 @@
                 <button type="button" @click="closeModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form @submit.prevent="saveTransaction()" class="p-6 space-y-4 text-xs">
-                <div class="grid grid-cols-2 gap-2 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
+                <div class="grid grid-cols-3 gap-2 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
                     <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Despesa</button>
                     <button type="button" @click="setFormType('income')" :class="form.type === 'income' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Receita</button>
+                    <button type="button" @click="setFormType('transfer')" :class="form.type === 'transfer' ? 'bg-cyan-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Transferência</button>
+                </div>
+
+                <!-- Campos Específicos de Transferência entre Contas -->
+                <div x-show="form.type === 'transfer'" class="p-3.5 bg-cyan-950/25 border border-cyan-500/40 rounded-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-cyan-300 flex items-center space-x-1.5"><i class="fa-solid fa-right-left"></i><span>Movimentação entre Contas</span></span>
+                        <button type="button" @click="closeModal(); openAccountModal()" class="text-[11px] text-cyan-300 hover:underline font-semibold cursor-pointer">+ Nova conta</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-gray-400 mb-1">Conta de Origem (Sai) *</label>
+                            <select x-model="form.fromAccountId" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                                <option value="wallet">Carteira (Dia a Dia)</option>
+                                <template x-for="acc in accounts" :key="acc.id">
+                                    <option :value="acc.id" x-text="acc.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">Conta de Destino (Entra) *</label>
+                            <select x-model="form.toAccountId" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                                <option value="">-- Escolha o destino --</option>
+                                <option value="wallet">Carteira (Dia a Dia)</option>
+                                <template x-for="acc in accounts" :key="acc.id">
+                                    <option :value="acc.id" x-text="acc.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Transferências ajustam os saldos das contas sem inflar seus gráficos de despesas ou receitas.</p>
                 </div>
 
                 <!-- Forma de Pagamento (Carteira vs Cartão) -->
@@ -872,13 +1078,13 @@
                     <input type="text" required x-model="form.description" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
+                    <div x-show="form.type !== 'transfer'">
                         <label class="block text-gray-400 mb-1">Categoria</label>
                         <select x-model="form.category" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                             <template x-for="cat in categoriesList" :key="cat.name"><option :value="cat.name" x-text="cat.name"></option></template>
                         </select>
                     </div>
-                    <div>
+                    <div :class="form.type === 'transfer' ? 'col-span-2' : ''">
                         <label class="block text-gray-400 mb-1">Responsável</label>
                         <select x-model="form.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                             <option value="Compartilhado">Casa</option>
@@ -975,8 +1181,11 @@
                 localUpdatedAt: 0,
                 transactions: [],
                 cards: [],
+                accounts: [],
                 cardModal: { open: false, editingId: null },
                 cardForm: { bank: 'nubank', name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#820ad1' },
+                accountModal: { open: false, editingId: null },
+                accountForm: { bank: 'nubank', name: '', categoryType: 'Reserva de Emergência', user: 'Compartilhado', initialBalance: '', goal: '' },
                 bankList: [
                     { id: 'nubank', name: 'Nubank', short: 'Nu', color: '#820ad1' },
                     { id: 'itau', name: 'Itaú', short: 'Itaú', color: '#ec7000' },
@@ -1009,9 +1218,9 @@
                 ],
                 isModalOpen: false,
                 editingId: null,
-                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardId: '', installments: 1 },
+                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardId: '', installments: 1, fromAccountId: 'wallet', toAccountId: '' },
                 importModal: { open: false, parsedRows: [], replaceExisting: true },
-                deleteModal: { open: false, item: null, card: null, clearAll: false },
+                deleteModal: { open: false, item: null, card: null, account: null, clearAll: false },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
                 initApp() {
@@ -1020,10 +1229,10 @@
                         if (Array.isArray(saved)) this.transactions = saved;
                         const savedCards = JSON.parse(localStorage.getItem('paulo_isabela_cards_v1') || '[]');
                         if (Array.isArray(savedCards)) this.cards = savedCards;
+                        const savedAccounts = JSON.parse(localStorage.getItem('paulo_isabela_accounts_v1') || '[]');
+                        if (Array.isArray(savedAccounts)) this.accounts = savedAccounts;
                         this.localUpdatedAt = Number(localStorage.getItem('paulo_isabela_updated_at') || '0');
-                    } catch(e) { this.transactions = []; this.cards = []; }
-
-                    // Carrega a configuração salva ou assume a configuração padrão embutida no código
+                    } catch(e) { this.transactions = []; this.cards = []; this.accounts = []; }
                     let activeDbUrl = this.defaultFirebaseConfig.dbUrl;
                     let activeRoomCode = this.defaultFirebaseConfig.roomCode;
 
@@ -1057,6 +1266,7 @@
                     this.localUpdatedAt = Date.now();
                     localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                     localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
+                    localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                     localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                     if (syncCloud && this.syncConfig.connected) this.pushToCloud();
                 },
@@ -1065,7 +1275,7 @@
                     setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
                 get pageTitle() {
-                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', cards: 'Cartões de Crédito', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', settings: 'Configurações / Backup' };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', accounts: 'Contas & Reservas', cards: 'Cartões de Crédito', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', settings: 'Configurações / Backup' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
                 get formattedSelectedMonth() {
@@ -1220,6 +1430,7 @@
                         const items = dateMap[d];
                         const daySubtotal = items.reduce((acc, t) => {
                             const amt = Number(t.amount) || 0;
+                            if (t.type === 'transfer') return acc + this.getTransferWalletEffect(t);
                             return acc + (t.type === 'income' ? amt : -amt);
                         }, 0);
                         running += daySubtotal;
@@ -1302,9 +1513,14 @@
                 get metrics() {
                     const list = this.basePeriodTransactions;
                     let totalInc = 0, totalExp = 0, incConc = 0, expConc = 0, totalCards = 0;
+                    let transferEffectAll = 0, transferEffectCompleted = 0;
                     list.forEach(t => {
                         const amt = Number(t.amount) || 0;
-                        if (t.type === 'income') {
+                        if (t.type === 'transfer') {
+                            const eff = this.getTransferWalletEffect(t);
+                            transferEffectAll += eff;
+                            if (t.status === 'completed') transferEffectCompleted += eff;
+                        } else if (t.type === 'income') {
                             totalInc += amt;
                             if (t.status === 'completed') incConc += amt;
                         } else {
@@ -1321,9 +1537,129 @@
                         receitasConcluidas: incConc,
                         despesasConcluidas: expConc,
                         balancoMensal: bal,
-                        saldoAtual: incConc - expConc,
-                        saldoPrevistoMes: bal
+                        saldoAtual: incConc - expConc + transferEffectCompleted,
+                        saldoPrevistoMes: bal + transferEffectAll
                     };
+                },
+                getTransferWalletEffect(t) {
+                    const amt = Number(t.amount) || 0;
+                    const fromIsWallet = !t.fromAccountId || t.fromAccountId === 'wallet';
+                    const toIsWallet = t.toAccountId === 'wallet';
+                    if (fromIsWallet && !toIsWallet) return -amt;
+                    if (!fromIsWallet && toIsWallet) return amt;
+                    return 0;
+                },
+                getAccountName(accId) {
+                    if (!accId || accId === 'wallet') return 'Carteira';
+                    const found = this.accounts.find(a => a.id === accId);
+                    return found ? found.name : 'Conta';
+                },
+                selectAccountBank(bankObj) {
+                    this.accountForm.bank = bankObj.id;
+                    if (!this.accountForm.name) {
+                        this.accountForm.name = bankObj.id === 'outro' ? '' : `Reserva ${bankObj.name}`;
+                    }
+                },
+                get filteredAccountsSummary() {
+                    return this.accounts
+                        .filter(a => this.selectedUserFilter === 'Todos' || a.user === this.selectedUserFilter)
+                        .map(acc => {
+                            const initBal = Number(acc.initialBalance) || 0;
+                            let completedDelta = 0;
+                            let projectedDelta = 0;
+
+                            this.transactions.forEach(t => {
+                                if (t.type !== 'transfer') return;
+                                const amt = Number(t.amount) || 0;
+                                let delta = 0;
+                                if (t.toAccountId === acc.id) delta += amt;
+                                if (t.fromAccountId === acc.id) delta -= amt;
+                                if (delta !== 0) {
+                                    projectedDelta += delta;
+                                    if (t.status === 'completed') completedDelta += delta;
+                                }
+                            });
+
+                            const currentBalance = initBal + completedDelta;
+                            const projectedBalance = initBal + projectedDelta;
+                            const goal = Number(acc.goal) || 0;
+                            const goalPercent = goal > 0 ? (currentBalance / goal) * 100 : 0;
+
+                            const periodTransfers = this.basePeriodTransactions.filter(
+                                t => t.type === 'transfer' && (t.toAccountId === acc.id || t.fromAccountId === acc.id)
+                            );
+
+                            return {
+                                ...acc,
+                                currentBalance,
+                                projectedBalance,
+                                goal,
+                                goalPercent,
+                                periodTransfers
+                            };
+                        });
+                },
+                get totalReservesBalance() {
+                    return this.filteredAccountsSummary.reduce((sum, a) => sum + a.currentBalance, 0);
+                },
+                get periodNetTransfersToReserves() {
+                    return this.basePeriodTransactions
+                        .filter(t => t.type === 'transfer')
+                        .reduce((sum, t) => sum - this.getTransferWalletEffect(t), 0);
+                },
+                openAccountModal(acc = null) {
+                    if (acc) {
+                        this.accountModal = { open: true, editingId: acc.id };
+                        this.accountForm = { bank: 'nubank', categoryType: 'Reserva de Emergência', ...acc };
+                    } else {
+                        this.accountModal = { open: true, editingId: null };
+                        this.accountForm = { bank: 'nubank', name: '', categoryType: 'Reserva de Emergência', user: 'Compartilhado', initialBalance: '', goal: '' };
+                    }
+                },
+                saveAccount() {
+                    if (!this.accountForm.name) return;
+                    if (this.accountModal.editingId) {
+                        const idx = this.accounts.findIndex(a => a.id === this.accountModal.editingId);
+                        if (idx !== -1) {
+                            this.accounts[idx] = {
+                                ...this.accounts[idx],
+                                ...this.accountForm,
+                                initialBalance: Number(this.accountForm.initialBalance) || 0,
+                                goal: Number(this.accountForm.goal) || 0
+                            };
+                        }
+                        this.showToast('Conta atualizada!');
+                    } else {
+                        this.accounts.push({
+                            id: 'acc_' + Date.now() + Math.random().toString(36).substring(2, 5),
+                            bank: this.accountForm.bank || 'nubank',
+                            name: this.accountForm.name.trim(),
+                            categoryType: this.accountForm.categoryType || 'Reserva de Emergência',
+                            user: this.accountForm.user || 'Compartilhado',
+                            initialBalance: Number(this.accountForm.initialBalance) || 0,
+                            goal: Number(this.accountForm.goal) || 0
+                        });
+                        this.showToast('Conta de reserva/investimento criada!');
+                    }
+                    this.accountModal.open = false;
+                    this.saveToStorage();
+                },
+                promptDeleteAccount(acc) {
+                    this.deleteModal = { open: true, item: null, card: null, account: acc, clearAll: false };
+                },
+                openTransferModal(fromId = 'wallet', toId = '') {
+                    if (this.accounts.length === 0) {
+                        this.openAccountModal();
+                        this.showToast('Cadastre primeiro uma conta de reserva ou investimento!', 'error');
+                        return;
+                    }
+                    this.openModal();
+                    this.setFormType('transfer');
+                    this.form.fromAccountId = fromId || 'wallet';
+                    this.form.toAccountId = toId || this.accounts[0].id;
+                    this.form.description = this.form.fromAccountId === 'wallet'
+                        ? `Aporte para ${this.getAccountName(this.form.toAccountId)}`
+                        : `Resgate de ${this.getAccountName(this.form.fromAccountId)}`;
                 },
                 get filteredCardsSummary() {
                     return this.cards.filter(c => this.selectedUserFilter === 'Todos' || c.user === this.selectedUserFilter).map(card => {
@@ -1479,7 +1815,7 @@
                 openModal(item = null, startInCardMode = false) {
                     if (item) {
                         this.editingId = item.id;
-                        this.form = { ...item, useCreditCard: !!item.cardId, installments: 1 };
+                        this.form = { ...item, useCreditCard: !!item.cardId, installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
                     } else {
                         this.editingId = null;
                         this.form = {
@@ -1495,7 +1831,9 @@
                             repeatCount: 12,
                             useCreditCard: startInCardMode,
                             cardId: startInCardMode && this.cards.length > 0 ? this.cards[0].id : '',
-                            installments: 1
+                            installments: 1,
+                            fromAccountId: 'wallet',
+                            toAccountId: this.accounts.length > 0 ? this.accounts[0].id : ''
                         };
                     }
                     this.isModalOpen = true;
@@ -1503,14 +1841,32 @@
                 closeModal() { this.isModalOpen = false; },
                 setFormType(t) {
                     this.form.type = t;
-                    if (t === 'income') this.form.useCreditCard = false;
+                    if (t !== 'expense') this.form.useCreditCard = false;
+                    if (t === 'transfer') {
+                        if (!this.form.fromAccountId) this.form.fromAccountId = 'wallet';
+                        if (!this.form.toAccountId && this.accounts.length > 0) this.form.toAccountId = this.accounts[0].id;
+                    }
                 },
                 saveTransaction() {
                     if (!this.form.amount || !this.form.description || !this.form.date) return;
+
+                    if (this.form.type === 'transfer') {
+                        if (!this.form.fromAccountId || !this.form.toAccountId || this.form.fromAccountId === this.form.toAccountId) {
+                            this.showToast('Selecione contas de origem e destino diferentes!', 'error');
+                            return;
+                        }
+                    }
                     
                     if (this.editingId) {
                         const idx = this.transactions.findIndex(t => t.id === this.editingId);
-                        if (idx !== -1) this.transactions[idx] = { ...this.transactions[idx], ...this.form };
+                        if (idx !== -1) {
+                            this.transactions[idx] = {
+                                ...this.transactions[idx],
+                                ...this.form,
+                                amount: Number(this.form.amount),
+                                category: this.form.type === 'transfer' ? 'Transferência' : this.form.category
+                            };
+                        }
                         this.showToast('Lançamento atualizado!');
                     } else if (this.form.type === 'expense' && this.form.useCreditCard) {
                         const card = this.cards.find(c => c.id === this.form.cardId);
@@ -1562,13 +1918,15 @@
                                 amount: Number(this.form.amount),
                                 date: dString,
                                 description: desc,
-                                category: this.form.category,
+                                category: this.form.type === 'transfer' ? 'Transferência' : this.form.category,
                                 user: this.form.user,
-                                account: this.form.account,
+                                account: this.form.type === 'transfer' ? `${this.getAccountName(this.form.fromAccountId)} → ${this.getAccountName(this.form.toAccountId)}` : this.form.account,
+                                fromAccountId: this.form.type === 'transfer' ? this.form.fromAccountId : undefined,
+                                toAccountId: this.form.type === 'transfer' ? this.form.toAccountId : undefined,
                                 status: status
                             });
                         }
-                        this.showToast(count > 1 ? `${count} lançamentos recorrentes gerados!` : 'Lançamento adicionado!');
+                        this.showToast(this.form.type === 'transfer' ? (count > 1 ? `${count} transferências agendadas!` : 'Transferência realizada com sucesso!') : (count > 1 ? `${count} lançamentos recorrentes gerados!` : 'Lançamento adicionado!'));
                     }
 
                     this.saveToStorage();
@@ -1584,13 +1942,17 @@
                     }
                 },
                 promptDelete(item) {
-                    this.deleteModal = { open: true, item: item, card: null, clearAll: false };
+                    this.deleteModal = { open: true, item: item, card: null, account: null, clearAll: false };
                 },
                 confirmDeleteAction() {
                     if (this.deleteModal.clearAll) {
                         this.transactions = [];
                         this.saveToStorage();
                         this.showToast('Base de lançamentos limpa com sucesso.');
+                    } else if (this.deleteModal.account) {
+                        this.accounts = this.accounts.filter(a => a.id !== this.deleteModal.account.id);
+                        this.saveToStorage();
+                        this.showToast('Conta excluída.');
                     } else if (this.deleteModal.card) {
                         this.cards = this.cards.filter(c => c.id !== this.deleteModal.card.id);
                         this.saveToStorage();
@@ -1807,14 +2169,17 @@
                         if (data && typeof data === 'object' && 'updatedAt' in data) {
                             const cloudItems = Array.isArray(data.items) ? data.items : [];
                             const cloudCards = Array.isArray(data.cards) ? data.cards : [];
+                            const cloudAccounts = Array.isArray(data.accounts) ? data.accounts : [];
                             const cloudUpdated = Number(data.updatedAt) || 0;
                             
                             if (cloudUpdated >= this.localUpdatedAt || this.transactions.length === 0) {
                                 this.transactions = cloudItems;
                                 if (Array.isArray(data.cards)) this.cards = cloudCards;
+                                if (Array.isArray(data.accounts)) this.accounts = cloudAccounts;
                                 this.localUpdatedAt = cloudUpdated;
                                 localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                                 localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
+                                localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                                 localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             } else {
                                 await this.pushToCloud();
@@ -1822,7 +2187,7 @@
                         } else if (Array.isArray(data)) {
                             this.transactions = data;
                             this.saveToStorage(true);
-                        } else if (this.transactions.length > 0 || this.cards.length > 0) {
+                        } else if (this.transactions.length > 0 || this.cards.length > 0 || this.accounts.length > 0) {
                             await this.pushToCloud();
                         }
 
@@ -1846,6 +2211,7 @@
                             body: JSON.stringify({
                                 items: this.transactions,
                                 cards: this.cards,
+                                accounts: this.accounts,
                                 isEmpty: this.transactions.length === 0,
                                 updatedAt: ts
                             })
@@ -1865,9 +2231,11 @@
                         if (cloudItems !== null && cloudUpdated > this.localUpdatedAt) {
                             this.transactions = cloudItems;
                             if (Array.isArray(data.cards)) this.cards = data.cards;
+                            if (Array.isArray(data.accounts)) this.accounts = data.accounts;
                             this.localUpdatedAt = cloudUpdated;
                             localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                             localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
+                            localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                             localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             this.renderAllCharts();
                         }
