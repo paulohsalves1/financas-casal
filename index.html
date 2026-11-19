@@ -501,19 +501,20 @@
                     <template x-for="card in filteredCardsSummary" :key="card.id">
                         <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-lg flex flex-col justify-between">
                             <!-- Cabeçalho Visual do Cartão -->
-                            <div class="p-5 text-white relative overflow-hidden" :style="`background: linear-gradient(135deg, ${card.color}dd 0%, #1c1c22 100%)`">
+                            <div class="p-5 text-white relative overflow-hidden" :style="`background: linear-gradient(135deg, ${getBankInfo(card.bank).color}ee 0%, #1c1c22 100%)`">
                                 <div class="flex items-start justify-between relative z-10">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-lg">
-                                            <i class="fa-solid fa-credit-card"></i>
+                                        <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center shadow-inner shrink-0">
+                                            <span class="font-black text-xs tracking-tighter leading-none" x-text="getBankInfo(card.bank).short"></span>
+                                            <i class="fa-solid fa-wifi rotate-90 text-[8px] text-white/70 mt-0.5"></i>
                                         </div>
                                         <div>
                                             <div class="flex items-center space-x-2">
                                                 <h4 class="font-extrabold text-base" x-text="card.name"></h4>
                                                 <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-black/30 text-white" x-text="card.user === 'Compartilhado' ? 'Casa' : card.user"></span>
                                             </div>
-                                            <p class="text-[11px] text-white/80 mt-0.5">
-                                                Fecha dia <strong x-text="card.closingDay"></strong> • Vence dia <strong x-text="card.dueDay"></strong>
+                                            <p class="text-[11px] text-white/85 mt-0.5">
+                                                <span class="font-semibold" x-text="getBankInfo(card.bank).name"></span> • Fecha dia <strong x-text="card.closingDay"></strong> • Vence dia <strong x-text="card.dueDay"></strong>
                                             </p>
                                         </div>
                                     </div>
@@ -745,7 +746,20 @@
             </div>
             <form @submit.prevent="saveCard()" class="p-6 space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1">Nome do Cartão *</label>
+                    <label class="block text-gray-400 mb-1.5">Banco Emissor *</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-40 overflow-y-auto pr-1">
+                        <template x-for="b in bankList" :key="b.id">
+                            <button type="button" @click="selectCardBank(b)"
+                                    :class="cardForm.bank === b.id ? 'ring-2 ring-white bg-mobills-cardHover' : 'bg-mobills-bg opacity-80 hover:opacity-100 border border-mobills-border'"
+                                    class="p-2 rounded-xl flex flex-col items-center justify-center space-y-1 transition cursor-pointer">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-[10px] shadow" :style="`background-color: ${b.color}`" x-text="b.short"></span>
+                                <span class="text-[10px] text-gray-200 font-semibold truncate w-full text-center" x-text="b.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Nome / Apelido do Cartão *</label>
                     <input type="text" required placeholder="Ex: Nubank Paulo, Inter Isabela..." x-model="cardForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -962,7 +976,24 @@
                 transactions: [],
                 cards: [],
                 cardModal: { open: false, editingId: null },
-                cardForm: { name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#7c3aed' },
+                cardForm: { bank: 'nubank', name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#820ad1' },
+                bankList: [
+                    { id: 'nubank', name: 'Nubank', short: 'Nu', color: '#820ad1' },
+                    { id: 'itau', name: 'Itaú', short: 'Itaú', color: '#ec7000' },
+                    { id: 'inter', name: 'Inter', short: 'Inter', color: '#ff7a00' },
+                    { id: 'bradesco', name: 'Bradesco', short: 'Brad', color: '#cc092f' },
+                    { id: 'santander', name: 'Santander', short: 'Sant', color: '#ec0000' },
+                    { id: 'bb', name: 'Banco do Brasil', short: 'BB', color: '#eab308' },
+                    { id: 'caixa', name: 'Caixa', short: 'CEF', color: '#005ca9' },
+                    { id: 'c6', name: 'C6 Bank', short: 'C6', color: '#242424' },
+                    { id: 'xp', name: 'XP', short: 'XP', color: '#18181b' },
+                    { id: 'btg', name: 'BTG Pactual', short: 'BTG', color: '#001e62' },
+                    { id: 'picpay', name: 'PicPay', short: 'Pic', color: '#11c76f' },
+                    { id: 'mercadopago', name: 'Mercado Pago', short: 'MP', color: '#009ee3' },
+                    { id: 'sicredi', name: 'Sicredi', short: 'Sicr', color: '#3fa110' },
+                    { id: 'sicoob', name: 'Sicoob', short: 'Sico', color: '#003641' },
+                    { id: 'outro', name: 'Outro', short: 'Card', color: '#7c3aed' }
+                ],
                 categoriesList: [
                     { name: 'Casa', color: '#06b6d4' },
                     { name: 'Alimentação', color: '#ef4444' },
@@ -1113,12 +1144,136 @@
                     this.activeTab = 'transactions';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
-                navigateToCategoryTransactions(type, categoryName) {
-                    this.filterType = type;
-                    this.filterCategory = categoryName;
-                    this.searchQuery = '';
-                    this.activeTab = 'transactions';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                formatCurrency(val) {
+                    const num = Number(val) || 0;
+                    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                },
+                formatDateHeader(dateStr) {
+                    if (!dateStr) return '';
+                    const parts = dateStr.split('-');
+                    if (parts.length !== 3) return dateStr;
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                },
+                getCategoryColor(catName) {
+                    const found = this.categoriesList.find(c => c.name.toLowerCase() === (catName || '').toLowerCase());
+                    if (found) return found.color;
+                    const palette = ['#06b6d4', '#ef4444', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899', '#f59e0b', '#14b8a6', '#6366f1'];
+                    let hash = 0;
+                    const str = catName || 'Outros';
+                    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                    return palette[Math.abs(hash) % palette.length];
+                },
+                get expenseBreakdown() {
+                    const map = {};
+                    let total = 0;
+                    this.basePeriodTransactions.filter(t => t.type === 'expense').forEach(t => {
+                        const cat = t.category || 'Outros';
+                        const amt = Number(t.amount) || 0;
+                        map[cat] = (map[cat] || 0) + amt;
+                        total += amt;
+                    });
+                    return Object.entries(map)
+                        .map(([name, val]) => ({
+                            name,
+                            total: val,
+                            percentage: total > 0 ? ((val / total) * 100).toFixed(1) : '0.0',
+                            color: this.getCategoryColor(name)
+                        }))
+                        .sort((a, b) => b.total - a.total);
+                },
+                get incomeBreakdown() {
+                    const map = {};
+                    let total = 0;
+                    this.basePeriodTransactions.filter(t => t.type === 'income').forEach(t => {
+                        const cat = t.category || 'Outros';
+                        const amt = Number(t.amount) || 0;
+                        map[cat] = (map[cat] || 0) + amt;
+                        total += amt;
+                    });
+                    return Object.entries(map)
+                        .map(([name, val]) => ({
+                            name,
+                            total: val,
+                            percentage: total > 0 ? ((val / total) * 100).toFixed(1) : '0.0',
+                            color: this.getCategoryColor(name)
+                        }))
+                        .sort((a, b) => b.total - a.total);
+                },
+                get activeReportData() {
+                    return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
+                },
+                get groupedDailyTransactions() {
+                    const list = this.monthFilteredTransactions;
+                    if (!list.length) return [];
+
+                    const dateMap = {};
+                    list.forEach(t => {
+                        const d = t.date || 'Sem data';
+                        if (!dateMap[d]) dateMap[d] = [];
+                        dateMap[d].push(t);
+                    });
+
+                    // Ordena datas em ordem crescente para calcular o saldo acumulado do dia
+                    const ascDates = Object.keys(dateMap).sort((a, b) => a.localeCompare(b));
+                    let running = 0;
+                    const computed = ascDates.map(d => {
+                        const items = dateMap[d];
+                        const daySubtotal = items.reduce((acc, t) => {
+                            const amt = Number(t.amount) || 0;
+                            return acc + (t.type === 'income' ? amt : -amt);
+                        }, 0);
+                        running += daySubtotal;
+                        return { date: d, items, daySubtotal, runningBalance: running };
+                    });
+
+                    // Exibe do dia mais recente para o mais antigo (padrão Mobills)
+                    return computed.reverse();
+                },
+                get isAllFilteredSelected() {
+                    const list = this.monthFilteredTransactions;
+                    return list.length > 0 && list.every(t => this.selectedTxIds.includes(t.id));
+                },
+                toggleSelectTx(id) {
+                    if (this.selectedTxIds.includes(id)) {
+                        this.selectedTxIds = this.selectedTxIds.filter(x => x !== id);
+                    } else {
+                        this.selectedTxIds.push(id);
+                    }
+                },
+                toggleSelectAllFiltered() {
+                    const list = this.monthFilteredTransactions;
+                    if (this.isAllFilteredSelected) {
+                        const idsSet = new Set(list.map(t => t.id));
+                        this.selectedTxIds = this.selectedTxIds.filter(id => !idsSet.has(id));
+                    } else {
+                        const merged = new Set([...this.selectedTxIds, ...list.map(t => t.id)]);
+                        this.selectedTxIds = Array.from(merged);
+                    }
+                },
+                bulkUpdateStatus(newStatus) {
+                    if (!this.selectedTxIds.length) return;
+                    const idsSet = new Set(this.selectedTxIds);
+                    let updated = 0;
+                    this.transactions.forEach(t => {
+                        if (idsSet.has(t.id)) {
+                            t.status = newStatus;
+                            updated++;
+                        }
+                    });
+                    this.selectedTxIds = [];
+                    this.saveToStorage();
+                    this.renderAllCharts();
+                    this.showToast(`${updated} lançamento(s) marcado(s) como ${newStatus === 'completed' ? 'efetivado(s)' : 'pendente(s)'}!`);
+                },
+                getBankInfo(bankId) {
+                    return this.bankList.find(b => b.id === bankId) || { id: 'outro', name: 'Cartão', short: 'Card', color: '#7c3aed' };
+                },
+                selectCardBank(bankObj) {
+                    this.cardForm.bank = bankObj.id;
+                    this.cardForm.color = bankObj.color;
+                    if (!this.cardForm.name) {
+                        this.cardForm.name = bankObj.id === 'outro' ? '' : bankObj.name;
+                    }
                 },
                 get basePeriodTransactions() {
                     return this.transactions.filter(t => {
@@ -1241,10 +1396,10 @@
                 openCardModal(card = null) {
                     if (card) {
                         this.cardModal = { open: true, editingId: card.id };
-                        this.cardForm = { ...card };
+                        this.cardForm = { bank: 'outro', ...card };
                     } else {
                         this.cardModal = { open: true, editingId: null };
-                        this.cardForm = { name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#7c3aed' };
+                        this.cardForm = { bank: 'nubank', name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#820ad1' };
                     }
                 },
                 saveCard() {
@@ -1258,12 +1413,13 @@
                     } else {
                         const newCard = {
                             id: 'card_' + Date.now() + Math.random().toString(36).substring(2, 5),
+                            bank: this.cardForm.bank || 'outro',
                             name: this.cardForm.name.trim(),
                             user: this.cardForm.user,
                             limit: Number(this.cardForm.limit) || 0,
                             closingDay: Number(this.cardForm.closingDay) || 23,
                             dueDay: Number(this.cardForm.dueDay) || 30,
-                            color: this.cardForm.color || '#7c3aed'
+                            color: this.cardForm.color || this.getBankInfo(this.cardForm.bank).color
                         };
                         this.cards.push(newCard);
                         this.showToast('Cartão cadastrado com sucesso!');
