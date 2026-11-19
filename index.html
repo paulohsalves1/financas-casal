@@ -100,6 +100,10 @@
                     <i class="fa-solid fa-list-ul w-5 text-center"></i>
                     <span>Transações</span>
                 </button>
+                <button @click="switchTab('cards')" :class="activeTab === 'cards' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
+                    <i class="fa-solid fa-credit-card w-5 text-center"></i>
+                    <span>Cartões de Crédito</span>
+                </button>
                 <button @click="switchTab('monthly')" :class="activeTab === 'monthly' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-calendar-days w-5 text-center"></i>
                     <span>Mês a Mês</span>
@@ -276,17 +280,17 @@
                     <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-arrow-down"></i></div>
                 </div>
 
-                <div @click="navigateToFilteredTransactions('todos')" title="Ver composição do balanço mensal"
-                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-cyan-500/50 flex items-center justify-between shadow-sm transition cursor-pointer group">
+                <div @click="switchTab('cards')" title="Clique para gerenciar seus cartões e faturas do período"
+                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-purple-500/60 flex items-center justify-between shadow-sm transition cursor-pointer group">
                     <div class="space-y-1">
                         <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400 group-hover:text-cyan-300 transition">Balanço mensal</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition"></i>
+                            <span class="text-xs font-semibold text-gray-400 group-hover:text-purple-300 transition">Cartão de crédito</span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition"></i>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></h3>
-                        <p class="text-[11px] text-gray-400">Receitas - Despesas</p>
+                        <h3 class="text-xl md:text-2xl font-extrabold text-purple-400 tracking-tight" x-text="formatCurrency(metrics.totalCartoes)"></h3>
+                        <p class="text-[11px] text-gray-400">Balanço: <span class="font-semibold" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-credit-card"></i></div>
                 </div>
             </div>
 
@@ -425,10 +429,14 @@
                                             <div class="min-w-0">
                                                 <div class="flex items-center space-x-2">
                                                     <span class="font-semibold text-sm text-white truncate" x-text="item.description"></span>
+                                                    <span x-show="item.cardId" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 flex items-center space-x-1">
+                                                        <i class="fa-solid fa-credit-card text-[9px]"></i>
+                                                        <span x-text="getCardName(item.cardId)"></span>
+                                                    </span>
                                                     <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0" :class="{'bg-blue-950/75 text-blue-400 border-blue-800': item.user === 'Paulo', 'bg-pink-950/75 text-pink-400 border-pink-800': item.user === 'Isabela', 'bg-purple-950/75 text-purple-400 border-purple-800': item.user === 'Compartilhado'}" x-text="item.user"></span>
                                                 </div>
                                                 <div class="flex items-center space-x-2 mt-1 text-xs text-gray-400">
-                                                    <span x-text="item.category"></span><span>•</span><span x-text="item.account || 'Carteira'"></span>
+                                                    <span x-text="item.category"></span><span>•</span><span x-text="item.cardId ? `Cartão: ${getCardName(item.cardId)}` : (item.account || 'Carteira')"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -446,6 +454,142 @@
                                 <div class="bg-mobills-bg px-5 py-1.5 rounded-full border border-mobills-border text-xs text-gray-300 flex items-center space-x-2">
                                     <span>Saldo Previsto Final do Dia</span>
                                     <strong class="text-sm font-extrabold" :class="group.runningBalance >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ABA CARTÕES DE CRÉDITO                     -->
+            <!-- ========================================== -->
+            <div x-show="activeTab === 'cards'" class="space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Meus Cartões de Crédito</h3>
+                        <p class="text-xs text-gray-400">Gerencie limites, acompanhe as faturas agrupadas no vencimento e lance compras parceladas.</p>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <button @click="openModal(null, true)" x-show="cards.length > 0" class="px-4 py-2.5 bg-mobills-card hover:bg-mobills-cardHover text-purple-300 border border-purple-500/40 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>Lançar Compra no Cartão</span>
+                        </button>
+                        <button @click="openCardModal()" class="px-4 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-lg shadow-purple-900/40 transition cursor-pointer">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Novo Cartão</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estado Vazio -->
+                <div x-show="filteredCardsSummary.length === 0" class="bg-mobills-card border border-mobills-border rounded-2xl p-8 text-center space-y-4">
+                    <div class="w-14 h-14 rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center text-2xl mx-auto">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <div class="space-y-1 max-w-md mx-auto">
+                        <h4 class="font-bold text-base text-white">Nenhum cartão cadastrado</h4>
+                        <p class="text-xs text-gray-400">Cadastre os cartões da família (ex: Nubank Paulo, Inter Isabela) informando o dia de fechamento e vencimento para automatizar os lançamentos parcelados.</p>
+                    </div>
+                    <button @click="openCardModal()" class="px-5 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white text-xs font-bold rounded-xl shadow-lg cursor-pointer">
+                        Cadastrar Primeiro Cartão
+                    </button>
+                </div>
+
+                <!-- Grid de Cartões -->
+                <div x-show="filteredCardsSummary.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <template x-for="card in filteredCardsSummary" :key="card.id">
+                        <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden shadow-lg flex flex-col justify-between">
+                            <!-- Cabeçalho Visual do Cartão -->
+                            <div class="p-5 text-white relative overflow-hidden" :style="`background: linear-gradient(135deg, ${card.color}dd 0%, #1c1c22 100%)`">
+                                <div class="flex items-start justify-between relative z-10">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-lg">
+                                            <i class="fa-solid fa-credit-card"></i>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="font-extrabold text-base" x-text="card.name"></h4>
+                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-black/30 text-white" x-text="card.user === 'Compartilhado' ? 'Casa' : card.user"></span>
+                                            </div>
+                                            <p class="text-[11px] text-white/80 mt-0.5">
+                                                Fecha dia <strong x-text="card.closingDay"></strong> • Vence dia <strong x-text="card.dueDay"></strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <button @click="openCardModal(card)" title="Editar cartão" class="p-2 rounded-lg bg-black/25 hover:bg-black/45 text-white/90 transition cursor-pointer"><i class="fa-solid fa-pen text-xs"></i></button>
+                                        <button @click="promptDeleteCard(card)" title="Excluir cartão" class="p-2 rounded-lg bg-black/25 hover:bg-red-600/80 text-white/90 transition cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                    </div>
+                                </div>
+
+                                <!-- Valor da Fatura do Período -->
+                                <div class="mt-5 pt-4 border-t border-white/15 flex items-end justify-between relative z-10">
+                                    <div>
+                                        <span class="text-[11px] uppercase tracking-wider text-white/75 font-semibold block" x-text="allMonthsMode ? `Faturas em ${selectedYear}` : `Fatura de ${formattedSelectedMonth}`"></span>
+                                        <span class="text-2xl font-extrabold tracking-tight" x-text="formatCurrency(card.periodTotal)"></span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span x-show="card.periodTotal === 0" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/15 text-white">Sem lançamentos</span>
+                                        <span x-show="card.periodTotal > 0 && card.pendingTotal === 0" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-white"><i class="fa-solid fa-check mr-1"></i>Fatura Paga</span>
+                                        <span x-show="card.pendingTotal > 0" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-black"><i class="fa-solid fa-clock mr-1"></i>Em Aberto</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Barra de Limite -->
+                            <div class="p-5 space-y-4 bg-mobills-card">
+                                <div x-show="card.limit > 0" class="space-y-1.5">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-gray-400">Comprometido total: <strong class="text-white" x-text="formatCurrency(card.totalCommitted)"></strong></span>
+                                        <span class="text-gray-400">Disponível: <strong :class="card.availableLimit >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(card.availableLimit)"></strong></span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-mobills-bg rounded-full overflow-hidden border border-mobills-border">
+                                        <div class="h-full rounded-full transition-all duration-500"
+                                             :class="card.limitPercent > 90 ? 'bg-red-500' : (card.limitPercent > 70 ? 'bg-amber-500' : 'bg-emerald-500')"
+                                             :style="`width: ${Math.min(100, card.limitPercent)}%`"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[11px] text-gray-500">
+                                        <span x-text="`${card.limitPercent.toFixed(0)}% utilizado`"></span>
+                                        <span x-text="`Limite: ${formatCurrency(card.limit)}`"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Lançamentos da Fatura do Mês -->
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="font-bold text-gray-300" x-text="`Compras na fatura (${card.items.length})`"></span>
+                                        <button x-show="card.items.length > 0" @click="navigateToCardTransactions(card.id)" class="text-mobills-purpleLight hover:underline font-semibold cursor-pointer">Ver no extrato →</button>
+                                    </div>
+                                    <div x-show="card.items.length === 0" class="p-3 rounded-xl bg-mobills-bg/60 border border-mobills-border/50 text-center text-xs text-gray-500">
+                                        Nenhuma compra lançada nesta fatura.
+                                    </div>
+                                    <div x-show="card.items.length > 0" class="max-h-44 overflow-y-auto divide-y divide-mobills-border/40 bg-mobills-bg/60 rounded-xl border border-mobills-border/60 px-3">
+                                        <template x-for="tx in card.items" :key="tx.id">
+                                            <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-white truncate" x-text="tx.description"></p>
+                                                    <p class="text-[11px] text-gray-400" x-text="`${tx.category} • Venc. ${formatDateHeader(tx.date)}`"></p>
+                                                </div>
+                                                <div class="flex items-center space-x-2 shrink-0">
+                                                    <span class="font-bold text-red-400" x-text="formatCurrency(tx.amount)"></span>
+                                                    <span class="w-2 h-2 rounded-full" :class="tx.status === 'completed' ? 'bg-emerald-400' : 'bg-amber-400'" :title="tx.status === 'completed' ? 'Pago' : 'Em aberto'"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Ações do Cartão -->
+                                <div class="pt-2 flex flex-wrap items-center gap-2">
+                                    <button @click="openModalForCard(card.id)" class="flex-1 py-2.5 px-3 bg-mobills-bg hover:bg-mobills-cardHover text-white border border-mobills-border rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                                        <i class="fa-solid fa-plus text-mobills-purpleLight"></i>
+                                        <span>Nova Compra</span>
+                                    </button>
+                                    <button x-show="card.pendingTotal > 0" @click="payCardInvoice(card)" class="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow transition cursor-pointer">
+                                        <i class="fa-solid fa-check-double"></i>
+                                        <span x-text="`Pagar Fatura (${formatCurrency(card.pendingTotal)})`"></span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -555,7 +699,7 @@
     </main>
 
     <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-mobills-card/95 backdrop-blur-md border-t border-mobills-border z-30 flex items-center justify-around px-2 py-2">
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-mobills-card/95 backdrop-blur-md border-t border-mobills-border z-30 flex items-center justify-around px-1 py-2">
         <button @click="switchTab('dashboard')" :class="activeTab === 'dashboard' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
             <i class="fa-solid fa-house text-base"></i>
             <span class="text-[10px] font-semibold">Início</span>
@@ -567,9 +711,9 @@
         <button @click="openModal()" aria-label="Novo Lançamento" class="w-12 h-12 -mt-6 rounded-2xl bg-mobills-purple hover:bg-mobills-purpleLight text-white shadow-lg shadow-purple-900/50 flex items-center justify-center text-lg cursor-pointer">
             <i class="fa-solid fa-plus"></i>
         </button>
-        <button @click="switchTab('reports')" :class="activeTab === 'reports' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
-            <i class="fa-solid fa-chart-pie text-base"></i>
-            <span class="text-[10px] font-semibold">Gráficos</span>
+        <button @click="switchTab('cards')" :class="activeTab === 'cards' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-credit-card text-base"></i>
+            <span class="text-[10px] font-semibold">Cartões</span>
         </button>
         <button @click="switchTab('settings')" :class="activeTab === 'settings' ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
             <i class="fa-solid fa-gear text-base"></i>
@@ -582,9 +726,9 @@
         <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-sm rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
             <div class="flex items-center space-x-3 text-red-400">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : 'Excluir lançamento?'"></h3>
+                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : (deleteModal.card ? 'Excluir cartão?' : 'Excluir lançamento?')"></h3>
             </div>
-            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : `Deseja realmente excluir '${deleteModal.item?.description}'?`"></p>
+            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : (deleteModal.card ? `Deseja excluir o cartão '${deleteModal.card?.name}'? Os lançamentos já gerados no extrato serão mantidos.` : `Deseja realmente excluir '${deleteModal.item?.description}'?`)"></p>
             <div class="flex justify-end space-x-3 pt-2">
                 <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
                 <button @click="confirmDeleteAction()" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl cursor-pointer">Confirmar</button>
@@ -592,7 +736,61 @@
         </div>
     </div>
 
-    <!-- MODAL NOVO / EDITAR COM RECORRÊNCIA -->
+    <!-- MODAL CADASTRO / EDIÇÃO DE CARTÃO DE CRÉDITO -->
+    <div x-show="cardModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="cardModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
+            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
+                <h3 class="font-bold text-base text-white" x-text="cardModal.editingId ? 'Editar Cartão' : 'Novo Cartão de Crédito'"></h3>
+                <button type="button" @click="cardModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form @submit.prevent="saveCard()" class="p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">Nome do Cartão *</label>
+                    <input type="text" required placeholder="Ex: Nubank Paulo, Inter Isabela..." x-model="cardForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Titular / Responsável</label>
+                        <select x-model="cardForm.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <option value="Compartilhado">Casa</option>
+                            <option value="Paulo">Paulo</option>
+                            <option value="Isabela">Isabela</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Limite Total (R$)</label>
+                        <input type="number" step="0.01" min="0" placeholder="0,00" x-model="cardForm.limit" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Dia de Fechamento *</label>
+                        <input type="number" min="1" max="31" required x-model="cardForm.closingDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Dia de Vencimento *</label>
+                        <input type="number" min="1" max="31" required x-model="cardForm.dueDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1.5">Cor do Cartão</label>
+                    <div class="flex items-center space-x-2.5">
+                        <template x-for="clr in ['#7c3aed', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4']" :key="clr">
+                            <button type="button" @click="cardForm.color = clr"
+                                    :class="cardForm.color === clr ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'"
+                                    class="w-7 h-7 rounded-full transition cursor-pointer" :style="`background-color: ${clr}`"></button>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" @click="cardModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Cartão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO / EDITAR COM RECORRÊNCIA E CARTÃO DE CRÉDITO -->
     <div x-show="isModalOpen" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
         <div @click.away="closeModal()" class="bg-mobills-card w-full max-w-lg rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
             <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
@@ -604,13 +802,54 @@
                     <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Despesa</button>
                     <button type="button" @click="setFormType('income')" :class="form.type === 'income' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="py-2.5 rounded-lg cursor-pointer">Receita</button>
                 </div>
+
+                <!-- Forma de Pagamento (Carteira vs Cartão) -->
+                <div x-show="form.type === 'expense' && !editingId" class="grid grid-cols-2 gap-2 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
+                    <button type="button" @click="form.useCreditCard = false" :class="!form.useCreditCard ? 'bg-mobills-card text-white font-bold border border-mobills-border' : 'text-gray-400'" class="py-2 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer">
+                        <i class="fa-solid fa-wallet text-[11px]"></i>
+                        <span>Conta / Carteira</span>
+                    </button>
+                    <button type="button" @click="enableCreditCardMode()" :class="form.useCreditCard ? 'bg-mobills-purple text-white font-bold' : 'text-gray-400'" class="py-2 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer">
+                        <i class="fa-solid fa-credit-card text-[11px]"></i>
+                        <span>Cartão de Crédito</span>
+                    </button>
+                </div>
+
+                <!-- Seleção do Cartão e Parcelamento -->
+                <div x-show="form.type === 'expense' && form.useCreditCard && !editingId" class="p-3.5 bg-purple-950/25 border border-purple-500/40 rounded-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-purple-300">Selecione o Cartão *</label>
+                        <button type="button" @click="closeModal(); openCardModal()" class="text-[11px] text-mobills-purpleLight hover:underline font-semibold cursor-pointer">+ Cadastrar cartão</button>
+                    </div>
+                    <select x-model="form.cardId" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                        <option value="">-- Escolha um cartão --</option>
+                        <template x-for="c in cards" :key="c.id">
+                            <option :value="c.id" x-text="`${c.name} (Fecha dia ${c.closingDay} • Vence dia ${c.dueDay})`"></option>
+                        </template>
+                    </select>
+                    <div class="grid grid-cols-2 gap-3 items-end">
+                        <div>
+                            <label class="block text-gray-400 mb-1">Parcelas (Valor Total será dividido)</label>
+                            <input type="number" min="1" max="48" x-model="form.installments" class="w-full bg-mobills-bg text-white px-3 py-2 rounded-xl border border-mobills-border">
+                        </div>
+                        <div class="p-2 bg-mobills-bg/80 rounded-xl border border-mobills-border text-right">
+                            <span class="text-[10px] text-gray-400 block">Valor por parcela</span>
+                            <strong class="text-sm text-white" x-text="formatCurrency((Number(form.amount) || 0) / Math.max(1, Number(form.installments) || 1))"></strong>
+                        </div>
+                    </div>
+                    <p x-show="cardInstallmentPreview" class="text-[11px] text-purple-300 flex items-center space-x-1.5">
+                        <i class="fa-regular fa-calendar-check"></i>
+                        <span x-text="cardInstallmentPreview"></span>
+                    </p>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-gray-400 mb-1">Valor (R$) *</label>
+                        <label class="block text-gray-400 mb-1" x-text="form.useCreditCard && !editingId ? 'Valor TOTAL da Compra (R$) *' : 'Valor (R$) *'"></label>
                         <input type="number" step="0.01" required x-model="form.amount" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1">Data *</label>
+                        <label class="block text-gray-400 mb-1" x-text="form.useCreditCard && !editingId ? 'Data da Compra *' : 'Data *'"></label>
                         <input type="date" required x-model="form.date" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                 </div>
@@ -635,8 +874,8 @@
                     </div>
                 </div>
 
-                <!-- Recorrência -->
-                <div x-show="!editingId" class="p-3 bg-mobills-bg rounded-xl border border-mobills-border space-y-2">
+                <!-- Recorrência (apenas quando não é cartão parcelado) -->
+                <div x-show="!editingId && !form.useCreditCard" class="p-3 bg-mobills-bg rounded-xl border border-mobills-border space-y-2">
                     <label class="block font-bold text-gray-300">Recorrência</label>
                     <div class="grid grid-cols-4 gap-1">
                         <button type="button" @click="form.recurrence = 'nenhuma'" :class="form.recurrence === 'nenhuma' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-card text-gray-400'" class="py-1.5 rounded-lg">Única</button>
@@ -721,6 +960,9 @@
                 syncTimer: null,
                 localUpdatedAt: 0,
                 transactions: [],
+                cards: [],
+                cardModal: { open: false, editingId: null },
+                cardForm: { name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#7c3aed' },
                 categoriesList: [
                     { name: 'Casa', color: '#06b6d4' },
                     { name: 'Alimentação', color: '#ef4444' },
@@ -736,17 +978,19 @@
                 ],
                 isModalOpen: false,
                 editingId: null,
-                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12 },
+                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardId: '', installments: 1 },
                 importModal: { open: false, parsedRows: [], replaceExisting: true },
-                deleteModal: { open: false, item: null, clearAll: false },
+                deleteModal: { open: false, item: null, card: null, clearAll: false },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
                 initApp() {
                     try {
                         const saved = JSON.parse(localStorage.getItem('paulo_isabela_transactions_v1') || '[]');
                         if (Array.isArray(saved)) this.transactions = saved;
+                        const savedCards = JSON.parse(localStorage.getItem('paulo_isabela_cards_v1') || '[]');
+                        if (Array.isArray(savedCards)) this.cards = savedCards;
                         this.localUpdatedAt = Number(localStorage.getItem('paulo_isabela_updated_at') || '0');
-                    } catch(e) { this.transactions = []; }
+                    } catch(e) { this.transactions = []; this.cards = []; }
 
                     // Carrega a configuração salva ou assume a configuração padrão embutida no código
                     let activeDbUrl = this.defaultFirebaseConfig.dbUrl;
@@ -781,6 +1025,7 @@
                 saveToStorage(syncCloud = true) {
                     this.localUpdatedAt = Date.now();
                     localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                    localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                     localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                     if (syncCloud && this.syncConfig.connected) this.pushToCloud();
                 },
@@ -789,7 +1034,7 @@
                     setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
                 get pageTitle() {
-                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', settings: 'Configurações / Backup' };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', cards: 'Cartões de Crédito', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', settings: 'Configurações / Backup' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
                 get formattedSelectedMonth() {
@@ -901,7 +1146,7 @@
                 },
                 get metrics() {
                     const list = this.basePeriodTransactions;
-                    let totalInc = 0, totalExp = 0, incConc = 0, expConc = 0;
+                    let totalInc = 0, totalExp = 0, incConc = 0, expConc = 0, totalCards = 0;
                     list.forEach(t => {
                         const amt = Number(t.amount) || 0;
                         if (t.type === 'income') {
@@ -910,12 +1155,14 @@
                         } else {
                             totalExp += amt;
                             if (t.status === 'completed') expConc += amt;
+                            if (t.cardId) totalCards += amt;
                         }
                     });
                     const bal = totalInc - totalExp;
                     return {
                         totalReceitas: totalInc,
                         totalDespesas: totalExp,
+                        totalCartoes: totalCards,
                         receitasConcluidas: incConc,
                         despesasConcluidas: expConc,
                         balancoMensal: bal,
@@ -923,116 +1170,185 @@
                         saldoPrevistoMes: bal
                     };
                 },
-                get expenseBreakdown() {
-                    const list = this.basePeriodTransactions.filter(t => t.type === 'expense');
-                    const map = {};
-                    let total = 0;
-                    list.forEach(t => {
-                        const amt = Number(t.amount) || 0;
-                        const cat = t.category || 'Outros';
-                        map[cat] = (map[cat] || 0) + amt;
-                        total += amt;
-                    });
-                    return Object.keys(map).map(cat => {
-                        const val = map[cat];
-                        const cObj = this.categoriesList.find(c => c.name === cat);
-                        return { name: cat, total: val, percentage: total > 0 ? ((val/total)*100).toFixed(1) : 0, color: cObj ? cObj.color : '#6b7280' };
-                    }).sort((a,b) => b.total - a.total);
-                },
-                get incomeBreakdown() {
-                    const list = this.basePeriodTransactions.filter(t => t.type === 'income');
-                    const map = {};
-                    let total = 0;
-                    list.forEach(t => {
-                        const amt = Number(t.amount) || 0;
-                        const cat = t.category || 'Outros';
-                        map[cat] = (map[cat] || 0) + amt;
-                        total += amt;
-                    });
-                    return Object.keys(map).map(cat => {
-                        const val = map[cat];
-                        const cObj = this.categoriesList.find(c => c.name === cat);
-                        return { name: cat, total: val, percentage: total > 0 ? ((val/total)*100).toFixed(1) : 0, color: cObj ? cObj.color : '#10b981' };
-                    }).sort((a,b) => b.total - a.total);
-                },
-                get groupedDailyTransactions() {
-                    const list = this.monthFilteredTransactions;
-                    const groupsMap = {};
-                    list.forEach(t => {
-                        const d = t.date || '2026-01-01';
-                        if (!groupsMap[d]) groupsMap[d] = [];
-                        groupsMap[d].push(t);
-                    });
-                    const dates = Object.keys(groupsMap).sort((a,b) => b.localeCompare(a));
-                    let running = this.metrics.saldoAtual;
-                    return dates.map(d => {
-                        const items = groupsMap[d];
-                        let daySub = 0;
-                        items.forEach(i => {
-                            const a = Number(i.amount) || 0;
-                            if (i.type === 'income') daySub += a; else daySub -= a;
-                        });
-                        const groupObj = { date: d, items, daySubtotal: daySub, runningBalance: running };
-                        running -= daySub;
-                        return groupObj;
+                get filteredCardsSummary() {
+                    return this.cards.filter(c => this.selectedUserFilter === 'Todos' || c.user === this.selectedUserFilter).map(card => {
+                        const periodItems = this.basePeriodTransactions.filter(t => t.cardId === card.id);
+                        const periodTotal = periodItems.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+                        const pendingTotal = periodItems.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+                        
+                        // Total comprometido (todas as parcelas em aberto deste cartão)
+                        const totalCommitted = this.transactions
+                            .filter(t => t.cardId === card.id && t.status !== 'completed')
+                            .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+                        const limit = Number(card.limit) || 0;
+                        const availableLimit = limit - totalCommitted;
+                        const limitPercent = limit > 0 ? (totalCommitted / limit) * 100 : 0;
+
+                        return {
+                            ...card,
+                            limit,
+                            items: periodItems,
+                            periodTotal,
+                            pendingTotal,
+                            totalCommitted,
+                            availableLimit,
+                            limitPercent
+                        };
                     });
                 },
-                get activeReportData() {
-                    return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
+                getCardName(cardId) {
+                    const c = this.cards.find(x => x.id === cardId);
+                    return c ? c.name : 'Cartão';
                 },
-                get isAllFilteredSelected() {
-                    const visible = this.monthFilteredTransactions;
-                    return visible.length > 0 && visible.every(t => this.selectedTxIds.includes(t.id));
+                get cardInstallmentPreview() {
+                    if (!this.form.useCreditCard || !this.form.cardId || !this.form.date) return '';
+                    const card = this.cards.find(c => c.id === this.form.cardId);
+                    if (!card) return '';
+                    const n = Math.max(1, Number(this.form.installments) || 1);
+                    const firstDue = this.computeCardDueDate(this.form.date, card, 0);
+                    if (n === 1) return `Será lançado na fatura com vencimento em ${this.formatDateHeader(firstDue)}.`;
+                    const lastDue = this.computeCardDueDate(this.form.date, card, n - 1);
+                    return `1ª parcela vence em ${this.formatDateHeader(firstDue)} e última (${n}/${n}) em ${this.formatDateHeader(lastDue)}.`;
                 },
-                toggleSelectTx(id) {
-                    if (this.selectedTxIds.includes(id)) {
-                        this.selectedTxIds = this.selectedTxIds.filter(x => x !== id);
+                computeCardDueDate(purchaseDateStr, card, installmentOffset = 0) {
+                    const [y, m, d] = purchaseDateStr.split('-').map(Number);
+                    const closingDay = Number(card.closingDay) || 23;
+                    const dueDay = Number(card.dueDay) || 30;
+
+                    // Mês base da fatura (0-indexed)
+                    let invoiceMonth = m - 1;
+                    let invoiceYear = y;
+
+                    // Se comprou no dia do fechamento ou depois, vai para a fatura do mês seguinte
+                    if (d >= closingDay) {
+                        invoiceMonth += 1;
+                    }
+                    // Se o vencimento é menor que o fechamento (ex: fecha dia 25 e vence dia 05 do mês seguinte)
+                    if (dueDay < closingDay) {
+                        invoiceMonth += 1;
+                    }
+
+                    invoiceMonth += installmentOffset;
+                    const targetDate = new Date(invoiceYear, invoiceMonth, 1);
+                    const lastDayOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+                    const clampedDueDay = Math.min(dueDay, lastDayOfTargetMonth);
+
+                    const finalY = targetDate.getFullYear();
+                    const finalM = String(targetDate.getMonth() + 1).padStart(2, '0');
+                    const finalD = String(clampedDueDay).padStart(2, '0');
+                    return `${finalY}-${finalM}-${finalD}`;
+                },
+                openCardModal(card = null) {
+                    if (card) {
+                        this.cardModal = { open: true, editingId: card.id };
+                        this.cardForm = { ...card };
                     } else {
-                        this.selectedTxIds.push(id);
+                        this.cardModal = { open: true, editingId: null };
+                        this.cardForm = { name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#7c3aed' };
                     }
                 },
-                toggleSelectAllFiltered() {
-                    const visibleIds = this.monthFilteredTransactions.map(t => t.id);
-                    if (this.isAllFilteredSelected) {
-                        this.selectedTxIds = this.selectedTxIds.filter(id => !visibleIds.includes(id));
+                saveCard() {
+                    if (!this.cardForm.name) return;
+                    if (this.cardModal.editingId) {
+                        const idx = this.cards.findIndex(c => c.id === this.cardModal.editingId);
+                        if (idx !== -1) {
+                            this.cards[idx] = { ...this.cards[idx], ...this.cardForm, limit: Number(this.cardForm.limit) || 0, closingDay: Number(this.cardForm.closingDay), dueDay: Number(this.cardForm.dueDay) };
+                        }
+                        this.showToast('Cartão atualizado!');
                     } else {
-                        const set = new Set([...this.selectedTxIds, ...visibleIds]);
-                        this.selectedTxIds = Array.from(set);
+                        const newCard = {
+                            id: 'card_' + Date.now() + Math.random().toString(36).substring(2, 5),
+                            name: this.cardForm.name.trim(),
+                            user: this.cardForm.user,
+                            limit: Number(this.cardForm.limit) || 0,
+                            closingDay: Number(this.cardForm.closingDay) || 23,
+                            dueDay: Number(this.cardForm.dueDay) || 30,
+                            color: this.cardForm.color || '#7c3aed'
+                        };
+                        this.cards.push(newCard);
+                        this.showToast('Cartão cadastrado com sucesso!');
                     }
+                    this.cardModal.open = false;
+                    this.saveToStorage();
                 },
-                bulkUpdateStatus(newStatus) {
-                    if (this.selectedTxIds.length === 0) return;
-                    const count = this.selectedTxIds.length;
+                promptDeleteCard(card) {
+                    this.deleteModal = { open: true, item: null, card: card, clearAll: false };
+                },
+                payCardInvoice(card) {
+                    let count = 0;
                     this.transactions.forEach(t => {
-                        if (this.selectedTxIds.includes(t.id)) {
-                            t.status = newStatus;
+                        if (t.cardId === card.id && t.status !== 'completed') {
+                            const matchPeriod = this.allMonthsMode
+                                ? t.date.startsWith(String(this.selectedYear))
+                                : t.date.startsWith(`${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`);
+                            if (matchPeriod) {
+                                t.status = 'completed';
+                                count++;
+                            }
                         }
                     });
+                    if (count > 0) {
+                        this.saveToStorage();
+                        this.renderAllCharts();
+                        this.showToast(`Fatura do cartão ${card.name} paga (${count} lançamento(s) efetivado(s))!`);
+                    }
+                },
+                navigateToCardTransactions(cardId) {
+                    const cardName = this.getCardName(cardId);
+                    this.filterType = 'expense';
+                    this.filterCategory = '';
+                    this.searchQuery = cardName;
                     this.selectedTxIds = [];
-                    this.saveToStorage();
-                    this.renderAllCharts();
-                    this.showToast(newStatus === 'completed' ? `${count} lançamento(s) efetivado(s)!` : `${count} lançamento(s) marcado(s) como pendente(s)!`);
+                    this.activeTab = 'transactions';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
-                formatCurrency(val) {
-                    return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                openModalForCard(cardId) {
+                    this.openModal(null, true);
+                    this.form.cardId = cardId;
+                    const card = this.cards.find(c => c.id === cardId);
+                    if (card) this.form.user = card.user;
                 },
-                formatDateHeader(dStr) {
-                    if (!dStr) return '';
-                    const [y, m, d] = dStr.split('-');
-                    return `${d}/${m}/${y}`;
+                enableCreditCardMode() {
+                    if (this.cards.length === 0) {
+                        this.closeModal();
+                        this.openCardModal();
+                        this.showToast('Cadastre um cartão de crédito primeiro!', 'error');
+                        return;
+                    }
+                    this.form.useCreditCard = true;
+                    if (!this.form.cardId && this.cards.length > 0) {
+                        this.form.cardId = this.cards[0].id;
+                    }
                 },
-                openModal(item = null) {
+                openModal(item = null, startInCardMode = false) {
                     if (item) {
                         this.editingId = item.id;
-                        this.form = { ...item };
+                        this.form = { ...item, useCreditCard: !!item.cardId, installments: 1 };
                     } else {
                         this.editingId = null;
-                        this.form = { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12 };
+                        this.form = {
+                            type: 'expense',
+                            amount: '',
+                            date: new Date().toISOString().split('T')[0],
+                            description: '',
+                            category: 'Outros',
+                            user: 'Compartilhado',
+                            account: 'Carteira',
+                            status: 'completed',
+                            recurrence: 'nenhuma',
+                            repeatCount: 12,
+                            useCreditCard: startInCardMode,
+                            cardId: startInCardMode && this.cards.length > 0 ? this.cards[0].id : '',
+                            installments: 1
+                        };
                     }
                     this.isModalOpen = true;
                 },
                 closeModal() { this.isModalOpen = false; },
-                setFormType(t) { this.form.type = t; },
+                setFormType(t) {
+                    this.form.type = t;
+                    if (t === 'income') this.form.useCreditCard = false;
+                },
                 saveTransaction() {
                     if (!this.form.amount || !this.form.description || !this.form.date) return;
                     
@@ -1040,6 +1356,36 @@
                         const idx = this.transactions.findIndex(t => t.id === this.editingId);
                         if (idx !== -1) this.transactions[idx] = { ...this.transactions[idx], ...this.form };
                         this.showToast('Lançamento atualizado!');
+                    } else if (this.form.type === 'expense' && this.form.useCreditCard) {
+                        const card = this.cards.find(c => c.id === this.form.cardId);
+                        if (!card) {
+                            this.showToast('Selecione um cartão de crédito.', 'error');
+                            return;
+                        }
+                        const installments = Math.max(1, Math.min(48, Number(this.form.installments) || 1));
+                        const totalAmount = Number(this.form.amount);
+                        const baseInstallment = Math.floor((totalAmount / installments) * 100) / 100;
+                        const firstInstallment = Number((totalAmount - baseInstallment * (installments - 1)).toFixed(2));
+
+                        for (let i = 0; i < installments; i++) {
+                            const dueDateStr = this.computeCardDueDate(this.form.date, card, i);
+                            const desc = installments > 1 ? `${this.form.description} (${i + 1}/${installments})` : this.form.description;
+                            const amt = i === 0 ? firstInstallment : baseInstallment;
+
+                            this.transactions.push({
+                                id: 'tx_cc_' + Date.now() + '_' + i + Math.random().toString(36).substring(2, 5),
+                                type: 'expense',
+                                amount: amt,
+                                date: dueDateStr,
+                                description: desc,
+                                category: this.form.category,
+                                user: this.form.user,
+                                account: card.name,
+                                cardId: card.id,
+                                status: 'pending'
+                            });
+                        }
+                        this.showToast(installments > 1 ? `${installments} parcelas lançadas no vencimento do cartão ${card.name}!` : `Compra lançada na fatura do ${card.name}!`);
                     } else {
                         const count = Number(this.form.recurrence !== 'nenhuma' ? this.form.repeatCount : 1) || 1;
                         const baseDate = new Date(this.form.date + 'T00:00:00');
@@ -1082,13 +1428,17 @@
                     }
                 },
                 promptDelete(item) {
-                    this.deleteModal = { open: true, item: item, clearAll: false };
+                    this.deleteModal = { open: true, item: item, card: null, clearAll: false };
                 },
                 confirmDeleteAction() {
                     if (this.deleteModal.clearAll) {
                         this.transactions = [];
                         this.saveToStorage();
                         this.showToast('Base de lançamentos limpa com sucesso.');
+                    } else if (this.deleteModal.card) {
+                        this.cards = this.cards.filter(c => c.id !== this.deleteModal.card.id);
+                        this.saveToStorage();
+                        this.showToast('Cartão excluído.');
                     } else if (this.deleteModal.item) {
                         this.transactions = this.transactions.filter(t => t.id !== this.deleteModal.item.id);
                         this.saveToStorage();
@@ -1300,12 +1650,15 @@
                         
                         if (data && typeof data === 'object' && 'updatedAt' in data) {
                             const cloudItems = Array.isArray(data.items) ? data.items : [];
+                            const cloudCards = Array.isArray(data.cards) ? data.cards : [];
                             const cloudUpdated = Number(data.updatedAt) || 0;
                             
                             if (cloudUpdated >= this.localUpdatedAt || this.transactions.length === 0) {
                                 this.transactions = cloudItems;
+                                if (Array.isArray(data.cards)) this.cards = cloudCards;
                                 this.localUpdatedAt = cloudUpdated;
                                 localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                                localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                                 localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             } else {
                                 await this.pushToCloud();
@@ -1313,7 +1666,7 @@
                         } else if (Array.isArray(data)) {
                             this.transactions = data;
                             this.saveToStorage(true);
-                        } else if (this.transactions.length > 0) {
+                        } else if (this.transactions.length > 0 || this.cards.length > 0) {
                             await this.pushToCloud();
                         }
 
@@ -1336,6 +1689,7 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 items: this.transactions,
+                                cards: this.cards,
                                 isEmpty: this.transactions.length === 0,
                                 updatedAt: ts
                             })
@@ -1354,8 +1708,10 @@
 
                         if (cloudItems !== null && cloudUpdated > this.localUpdatedAt) {
                             this.transactions = cloudItems;
+                            if (Array.isArray(data.cards)) this.cards = data.cards;
                             this.localUpdatedAt = cloudUpdated;
                             localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                            localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                             localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             this.renderAllCharts();
                         }
