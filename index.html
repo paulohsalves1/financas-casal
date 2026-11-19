@@ -115,7 +115,7 @@
             </nav>
         </div>
 
-        <div class="p-4 border-t border-mobills-border space-y-3">
+        <div x-show="activeTab !== 'settings'" class="p-4 border-t border-mobills-border space-y-3">
             <div>
                 <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Visão por Integrante</label>
                 <div class="grid grid-cols-2 gap-1.5 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
@@ -139,7 +139,7 @@
                 <span class="text-[11px] text-purple-400 font-semibold">Família Alves</span>
             </div>
         </button>
-        <select x-model="selectedUserFilter" aria-label="Filtrar por integrante" class="bg-mobills-bg text-gray-200 text-xs py-1.5 px-3 rounded-xl border border-mobills-border focus:outline-none">
+        <select x-show="activeTab !== 'settings'" x-model="selectedUserFilter" aria-label="Filtrar por integrante" class="bg-mobills-bg text-gray-200 text-xs py-1.5 px-3 rounded-xl border border-mobills-border focus:outline-none">
             <option value="Todos">Todos</option>
             <option value="Paulo">Paulo</option>
             <option value="Isabela">Isabela</option>
@@ -359,9 +359,15 @@
             <!-- ========================================== -->
             <div x-show="activeTab === 'transactions'" class="space-y-6">
                 <div class="bg-mobills-card p-4 rounded-2xl border border-mobills-border flex flex-wrap items-center justify-between gap-3">
-                    <div class="relative flex-1 min-w-[210px]">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                        <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none">
+                    <div class="flex items-center space-x-3 flex-1 min-w-[240px]">
+                        <label title="Selecionar todas as transações visíveis" class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-mobills-bg border border-mobills-border hover:border-mobills-purple cursor-pointer shrink-0 select-none transition">
+                            <input type="checkbox" :checked="isAllFilteredSelected" @change="toggleSelectAllFiltered()" class="w-4 h-4 rounded accent-mobills-purple cursor-pointer">
+                            <span class="text-xs font-semibold text-gray-300">Todas</span>
+                        </label>
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                            <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." class="w-full bg-mobills-bg text-xs md:text-sm text-white pl-9 pr-4 py-2 rounded-xl border border-mobills-border focus:outline-none">
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <div x-show="filterCategory !== ''" class="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-mobills-purple/20 border border-mobills-purple text-mobills-purpleLight text-xs font-bold">
@@ -377,6 +383,28 @@
                     </div>
                 </div>
 
+                <!-- Barra de Ações em Massa -->
+                <div x-show="selectedTxIds.length > 0" x-transition x-cloak
+                     class="bg-mobills-purple/15 border border-mobills-purple/50 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                    <div class="flex items-center space-x-2.5 text-xs">
+                        <span class="px-2.5 py-1 rounded-lg bg-mobills-purple text-white font-extrabold" x-text="selectedTxIds.length"></span>
+                        <span class="font-semibold text-white" x-text="selectedTxIds.length === 1 ? 'transação selecionada' : 'transações selecionadas'"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button @click="bulkUpdateStatus('completed')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition cursor-pointer">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Efetivar</span>
+                        </button>
+                        <button @click="bulkUpdateStatus('pending')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition cursor-pointer">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Tornar Pendente</span>
+                        </button>
+                        <button @click="selectedTxIds = []" class="px-3 py-2 bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 text-xs font-semibold rounded-xl border border-mobills-border transition cursor-pointer">
+                            Limpar
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Visão Diária Agrupada -->
                 <div class="space-y-5">
                     <template x-for="group in groupedDailyTransactions" :key="group.date">
@@ -387,9 +415,10 @@
                             </div>
                             <div class="divide-y divide-mobills-border/40">
                                 <template x-for="item in group.items" :key="item.id">
-                                    <div class="px-4 md:px-6 py-3.5 hover:bg-mobills-cardHover/60 transition flex items-center justify-between gap-3">
+                                    <div :class="selectedTxIds.includes(item.id) ? 'bg-mobills-purple/10' : 'hover:bg-mobills-cardHover/60'" class="px-4 md:px-6 py-3.5 transition flex items-center justify-between gap-3">
                                         <div class="flex items-center space-x-3.5 min-w-0">
-                                            <button @click="toggleStatus(item.id)" class="shrink-0 cursor-pointer">
+                                            <input type="checkbox" :checked="selectedTxIds.includes(item.id)" @change="toggleSelectTx(item.id)" aria-label="Selecionar transação" class="w-4 h-4 rounded accent-mobills-purple shrink-0 cursor-pointer">
+                                            <button @click="toggleStatus(item.id)" title="Alternar entre efetivado e pendente" class="shrink-0 cursor-pointer">
                                                 <div x-show="item.status === 'completed'" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
                                                 <div x-show="item.status === 'pending'" class="w-7 h-7 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-exclamation"></i></div>
                                             </button>
@@ -680,6 +709,7 @@
                 searchQuery: '',
                 filterType: 'todos',
                 filterCategory: '',
+                selectedTxIds: [],
                 reportViewType: 'despesas',
                 toast: { visible: false, message: '', type: 'success' },
                 // Configuração padrão embutida para conexão automática sem digitação manual
@@ -818,6 +848,7 @@
                         this.filterCategory = '';
                         this.searchQuery = '';
                     }
+                    this.selectedTxIds = [];
                     this.activeTab = tab;
                     this.$nextTick(() => this.renderAllCharts());
                 },
@@ -825,6 +856,15 @@
                     this.filterType = type;
                     this.filterCategory = '';
                     this.searchQuery = '';
+                    this.selectedTxIds = [];
+                    this.activeTab = 'transactions';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                navigateToCategoryTransactions(type, categoryName) {
+                    this.filterType = type;
+                    this.filterCategory = categoryName;
+                    this.searchQuery = '';
+                    this.selectedTxIds = [];
                     this.activeTab = 'transactions';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
@@ -939,6 +979,39 @@
                 },
                 get activeReportData() {
                     return this.reportViewType === 'despesas' ? this.expenseBreakdown : this.incomeBreakdown;
+                },
+                get isAllFilteredSelected() {
+                    const visible = this.monthFilteredTransactions;
+                    return visible.length > 0 && visible.every(t => this.selectedTxIds.includes(t.id));
+                },
+                toggleSelectTx(id) {
+                    if (this.selectedTxIds.includes(id)) {
+                        this.selectedTxIds = this.selectedTxIds.filter(x => x !== id);
+                    } else {
+                        this.selectedTxIds.push(id);
+                    }
+                },
+                toggleSelectAllFiltered() {
+                    const visibleIds = this.monthFilteredTransactions.map(t => t.id);
+                    if (this.isAllFilteredSelected) {
+                        this.selectedTxIds = this.selectedTxIds.filter(id => !visibleIds.includes(id));
+                    } else {
+                        const set = new Set([...this.selectedTxIds, ...visibleIds]);
+                        this.selectedTxIds = Array.from(set);
+                    }
+                },
+                bulkUpdateStatus(newStatus) {
+                    if (this.selectedTxIds.length === 0) return;
+                    const count = this.selectedTxIds.length;
+                    this.transactions.forEach(t => {
+                        if (this.selectedTxIds.includes(t.id)) {
+                            t.status = newStatus;
+                        }
+                    });
+                    this.selectedTxIds = [];
+                    this.saveToStorage();
+                    this.renderAllCharts();
+                    this.showToast(newStatus === 'completed' ? `${count} lançamento(s) efetivado(s)!` : `${count} lançamento(s) marcado(s) como pendente(s)!`);
                 },
                 formatCurrency(val) {
                     return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
