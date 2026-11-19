@@ -408,6 +408,10 @@
                             <i class="fa-solid fa-clock"></i>
                             <span>Tornar Pendente</span>
                         </button>
+                        <button @click="promptBulkDelete()" class="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition cursor-pointer">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Excluir Selecionadas</span>
+                        </button>
                         <button @click="selectedTxIds = []" class="px-3 py-2 bg-mobills-bg hover:bg-mobills-cardHover text-gray-300 text-xs font-semibold rounded-xl border border-mobills-border transition cursor-pointer">
                             Limpar
                         </button>
@@ -442,6 +446,10 @@
                                                     <span x-show="item.cardId" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 flex items-center space-x-1">
                                                         <i class="fa-solid fa-credit-card text-[9px]"></i>
                                                         <span x-text="getCardName(item.cardId)"></span>
+                                                    </span>
+                                                    <span x-show="getSeriesPeers(item).length > 1" title="Faz parte de um parcelamento ou recorrência" class="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shrink-0 flex items-center space-x-1">
+                                                        <i class="fa-solid fa-layer-group text-[9px]"></i>
+                                                        <span x-text="`${getSeriesPeers(item).length}x`"></span>
                                                     </span>
                                                     <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0" :class="{'bg-blue-950/75 text-blue-400 border-blue-800': item.user === 'Paulo', 'bg-pink-950/75 text-pink-400 border-pink-800': item.user === 'Isabela', 'bg-purple-950/75 text-purple-400 border-purple-800': item.user === 'Compartilhado'}" x-text="item.user"></span>
                                                 </div>
@@ -904,12 +912,33 @@
 
     <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
     <div x-show="deleteModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-sm rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
+        <div @click.away="deleteModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border p-6 space-y-4 shadow-2xl">
             <div class="flex items-center space-x-3 text-red-400">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : (deleteModal.account ? 'Excluir conta?' : (deleteModal.card ? 'Excluir cartão?' : 'Excluir lançamento?'))"></h3>
+                <h3 class="font-bold text-base text-white" x-text="deleteModal.clearAll ? 'Zerar todos os dados?' : (deleteModal.bulkCount > 0 ? `Excluir ${deleteModal.bulkCount} transações?` : (deleteModal.account ? 'Excluir conta?' : (deleteModal.card ? 'Excluir cartão?' : 'Excluir lançamento?')))"></h3>
             </div>
-            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : (deleteModal.account ? `Deseja excluir a conta '${deleteModal.account?.name}'? O histórico de transferências no extrato será mantido.` : (deleteModal.card ? `Deseja excluir o cartão '${deleteModal.card?.name}'? Os lançamentos já gerados no extrato serão mantidos.` : `Deseja realmente excluir '${deleteModal.item?.description}'?`))"></p>
+            <p class="text-xs text-gray-300" x-text="deleteModal.clearAll ? 'Isso apagará todos os lançamentos atuais deste aparelho e da nuvem sincronizada para você reimportar do zero.' : (deleteModal.bulkCount > 0 ? `Deseja excluir permanentemente as ${deleteModal.bulkCount} transações selecionadas?` : (deleteModal.account ? `Deseja excluir a conta '${deleteModal.account?.name}'? O histórico de transferências no extrato será mantido.` : (deleteModal.card ? `Deseja excluir o cartão '${deleteModal.card?.name}'? Os lançamentos já gerados no extrato serão mantidos.` : `Deseja realmente excluir '${deleteModal.item?.description}'?`)))"></p>
+
+            <!-- Opções de Escopo em Lote (Parcelas / Recorrência) -->
+            <div x-show="deleteModal.item && deleteModal.seriesCount > 1" class="p-3.5 bg-mobills-bg rounded-xl border border-indigo-500/40 space-y-2 text-xs">
+                <div class="flex items-center space-x-2 text-indigo-300 font-bold">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span x-text="`Lançamento em lote (${deleteModal.seriesCount} parcelas/repetições)`"></span>
+                </div>
+                <label class="flex items-center space-x-2.5 p-2 rounded-lg hover:bg-mobills-cardHover cursor-pointer">
+                    <input type="radio" value="single" x-model="deleteModal.scope" class="accent-mobills-purple">
+                    <span class="text-gray-200">Excluir <strong>somente este</strong> lançamento</span>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2 rounded-lg hover:bg-mobills-cardHover cursor-pointer">
+                    <input type="radio" value="future" x-model="deleteModal.scope" class="accent-mobills-purple">
+                    <span class="text-gray-200">Excluir <strong>este e os próximos</strong> (<span x-text="deleteModal.futureCount"></span> itens)</span>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2 rounded-lg hover:bg-mobills-cardHover cursor-pointer">
+                    <input type="radio" value="all" x-model="deleteModal.scope" class="accent-mobills-purple">
+                    <span class="text-gray-200">Excluir <strong>todos do lote</strong> (<span x-text="deleteModal.seriesCount"></span> itens)</span>
+                </label>
+            </div>
+
             <div class="flex justify-end space-x-3 pt-2">
                 <button @click="deleteModal.open = false" class="px-4 py-2 text-xs text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
                 <button @click="confirmDeleteAction()" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl cursor-pointer">Confirmar</button>
@@ -1109,6 +1138,33 @@
                     </div>
                 </div>
 
+                <!-- Edição em Lote (quando o lançamento pertence a um parcelamento ou recorrência) -->
+                <div x-show="editingId && editBatchInfo.total > 1" class="p-3.5 bg-indigo-950/30 rounded-xl border border-indigo-500/40 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-indigo-300 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span x-text="`Aplicar alterações em lote (${editBatchInfo.total} parcelas/itens)`"></span>
+                        </span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-mobills-bg/60 cursor-pointer">
+                            <input type="radio" value="single" x-model="editScope" class="accent-mobills-purple">
+                            <span class="text-gray-200">Somente <strong>este lançamento</strong></span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-mobills-bg/60 cursor-pointer">
+                            <input type="radio" value="future" x-model="editScope" class="accent-mobills-purple">
+                            <span class="text-gray-200"><strong>Este e os próximos</strong> (<span x-text="editBatchInfo.future"></span> lançamentos)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-mobills-bg/60 cursor-pointer">
+                            <input type="radio" value="all" x-model="editScope" class="accent-mobills-purple">
+                            <span class="text-gray-200"><strong>Todos do lote</strong> (<span x-text="editBatchInfo.total"></span> lançamentos)</span>
+                        </label>
+                    </div>
+                    <p x-show="editScope !== 'single'" class="text-[11px] text-gray-400">
+                        Atualiza valor, descrição (preservando a numeração <code class="text-indigo-300">(1/12)</code>), categoria, responsável e ajusta o dia do vencimento nos demais meses.
+                    </p>
+                </div>
+
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" @click="closeModal()" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
                     <button type="submit" class="px-6 py-2.5 bg-mobills-purple text-white font-bold rounded-xl cursor-pointer">Salvar</button>
@@ -1218,9 +1274,11 @@
                 ],
                 isModalOpen: false,
                 editingId: null,
+                editScope: 'single',
+                editBatchInfo: { total: 1, future: 1 },
                 form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardId: '', installments: 1, fromAccountId: 'wallet', toAccountId: '' },
                 importModal: { open: false, parsedRows: [], replaceExisting: true },
-                deleteModal: { open: false, item: null, card: null, account: null, clearAll: false },
+                deleteModal: { open: false, item: null, card: null, account: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
 
                 initApp() {
@@ -1475,6 +1533,52 @@
                     this.saveToStorage();
                     this.renderAllCharts();
                     this.showToast(`${updated} lançamento(s) marcado(s) como ${newStatus === 'completed' ? 'efetivado(s)' : 'pendente(s)'}!`);
+                },
+                promptBulkDelete() {
+                    if (!this.selectedTxIds.length) return;
+                    this.deleteModal = {
+                        open: true,
+                        item: null,
+                        card: null,
+                        account: null,
+                        clearAll: false,
+                        bulkCount: this.selectedTxIds.length,
+                        scope: 'single',
+                        seriesCount: 1,
+                        futureCount: 1
+                    };
+                },
+                extractBaseTitleAndSuffix(desc) {
+                    const str = String(desc || '').trim();
+                    const match = str.match(/^(.*?)(\s*\(\d+\/\d+\))\s*$/);
+                    if (match) {
+                        return { base: match[1].trim(), suffix: match[2] };
+                    }
+                    return { base: str, suffix: '' };
+                },
+                getSeriesPeers(tx) {
+                    if (!tx) return [];
+                    if (tx.seriesId) {
+                        return this.transactions
+                            .filter(t => t.seriesId === tx.seriesId)
+                            .sort((a, b) => a.date.localeCompare(b.date));
+                    }
+                    // Fallback inteligente para parcelas importadas do Mobills no formato "Nome (2/12)"
+                    const match = String(tx.description || '').trim().match(/^(.*?)\s*\((\d+)\/(\d+)\)\s*$/);
+                    if (match) {
+                        const baseName = match[1].trim().toLowerCase();
+                        const totalParts = match[3];
+                        const regex = new RegExp(`\\(\\d+\\/${totalParts}\\)\\s*$`);
+                        return this.transactions
+                            .filter(t =>
+                                t.type === tx.type &&
+                                (t.cardId || '') === (tx.cardId || '') &&
+                                regex.test(String(t.description || '').trim()) &&
+                                this.extractBaseTitleAndSuffix(t.description).base.toLowerCase() === baseName
+                            )
+                            .sort((a, b) => a.date.localeCompare(b.date));
+                    }
+                    return [tx];
                 },
                 getBankInfo(bankId) {
                     return this.bankList.find(b => b.id === bankId) || { id: 'outro', name: 'Cartão', short: 'Card', color: '#7c3aed' };
@@ -1815,9 +1919,15 @@
                 openModal(item = null, startInCardMode = false) {
                     if (item) {
                         this.editingId = item.id;
+                        const peers = this.getSeriesPeers(item);
+                        const futurePeers = peers.filter(p => p.date >= item.date);
+                        this.editBatchInfo = { total: peers.length, future: futurePeers.length };
+                        this.editScope = 'single';
                         this.form = { ...item, useCreditCard: !!item.cardId, installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
                     } else {
                         this.editingId = null;
+                        this.editBatchInfo = { total: 1, future: 1 };
+                        this.editScope = 'single';
                         this.form = {
                             type: 'expense',
                             amount: '',
@@ -1860,14 +1970,58 @@
                     if (this.editingId) {
                         const idx = this.transactions.findIndex(t => t.id === this.editingId);
                         if (idx !== -1) {
-                            this.transactions[idx] = {
-                                ...this.transactions[idx],
-                                ...this.form,
-                                amount: Number(this.form.amount),
-                                category: this.form.type === 'transfer' ? 'Transferência' : this.form.category
-                            };
+                            const originalTx = this.transactions[idx];
+                            const peers = this.editScope !== 'single' ? this.getSeriesPeers(originalTx) : [originalTx];
+                            const targetIds = new Set(
+                                peers
+                                    .filter(p => this.editScope === 'all' || (this.editScope === 'future' && p.date >= originalTx.date) || p.id === originalTx.id)
+                                    .map(p => p.id)
+                            );
+
+                            const newBaseTitle = this.extractBaseTitleAndSuffix(this.form.description).base;
+                            const newDay = Number((this.form.date || '').split('-')[2]) || null;
+
+                            let updatedCount = 0;
+                            this.transactions.forEach((tx, i) => {
+                                if (!targetIds.has(tx.id)) return;
+                                updatedCount++;
+
+                                if (tx.id === originalTx.id) {
+                                    this.transactions[i] = {
+                                        ...tx,
+                                        ...this.form,
+                                        amount: Number(this.form.amount),
+                                        category: this.form.type === 'transfer' ? 'Transferência' : this.form.category
+                                    };
+                                } else {
+                                    // Preserva o sufixo da parcela (ex: "(3/12)") ao atualizar o nome em lote
+                                    const peerSuffix = this.extractBaseTitleAndSuffix(tx.description).suffix;
+                                    const updatedDesc = peerSuffix ? `${newBaseTitle}${peerSuffix}` : newBaseTitle;
+
+                                    // Mantém mês/ano da parcela, ajustando o dia se alterado
+                                    let updatedDate = tx.date;
+                                    if (newDay && tx.date) {
+                                        const [py, pm] = tx.date.split('-').map(Number);
+                                        const maxDay = new Date(py, pm, 0).getDate();
+                                        updatedDate = `${py}-${String(pm).padStart(2, '0')}-${String(Math.min(newDay, maxDay)).padStart(2, '0')}`;
+                                    }
+
+                                    this.transactions[i] = {
+                                        ...tx,
+                                        type: this.form.type,
+                                        amount: Number(this.form.amount),
+                                        date: updatedDate,
+                                        description: updatedDesc,
+                                        category: this.form.type === 'transfer' ? 'Transferência' : this.form.category,
+                                        user: this.form.user,
+                                        fromAccountId: this.form.type === 'transfer' ? this.form.fromAccountId : tx.fromAccountId,
+                                        toAccountId: this.form.type === 'transfer' ? this.form.toAccountId : tx.toAccountId
+                                    };
+                                }
+                            });
+
+                            this.showToast(updatedCount > 1 ? `${updatedCount} lançamentos do lote atualizados!` : 'Lançamento atualizado!');
                         }
-                        this.showToast('Lançamento atualizado!');
                     } else if (this.form.type === 'expense' && this.form.useCreditCard) {
                         const card = this.cards.find(c => c.id === this.form.cardId);
                         if (!card) {
@@ -1878,6 +2032,7 @@
                         const totalAmount = Number(this.form.amount);
                         const baseInstallment = Math.floor((totalAmount / installments) * 100) / 100;
                         const firstInstallment = Number((totalAmount - baseInstallment * (installments - 1)).toFixed(2));
+                        const seriesId = installments > 1 ? 'ser_cc_' + Date.now() + Math.random().toString(36).substring(2, 6) : undefined;
 
                         for (let i = 0; i < installments; i++) {
                             const dueDateStr = this.computeCardDueDate(this.form.date, card, i);
@@ -1886,6 +2041,7 @@
 
                             this.transactions.push({
                                 id: 'tx_cc_' + Date.now() + '_' + i + Math.random().toString(36).substring(2, 5),
+                                seriesId,
                                 type: 'expense',
                                 amount: amt,
                                 date: dueDateStr,
@@ -1901,6 +2057,7 @@
                     } else {
                         const count = Number(this.form.recurrence !== 'nenhuma' ? this.form.repeatCount : 1) || 1;
                         const baseDate = new Date(this.form.date + 'T00:00:00');
+                        const seriesId = count > 1 ? 'ser_rec_' + Date.now() + Math.random().toString(36).substring(2, 6) : undefined;
 
                         for (let i = 0; i < count; i++) {
                             let currDate = new Date(baseDate);
@@ -1914,6 +2071,7 @@
 
                             this.transactions.push({
                                 id: 'tx_' + Date.now() + '_' + i + Math.random().toString(36).substring(2,5),
+                                seriesId,
                                 type: this.form.type,
                                 amount: Number(this.form.amount),
                                 date: dString,
@@ -1942,13 +2100,32 @@
                     }
                 },
                 promptDelete(item) {
-                    this.deleteModal = { open: true, item: item, card: null, account: null, clearAll: false };
+                    const peers = this.getSeriesPeers(item);
+                    const futurePeers = peers.filter(p => p.date >= item.date);
+                    this.deleteModal = {
+                        open: true,
+                        item: item,
+                        card: null,
+                        account: null,
+                        clearAll: false,
+                        bulkCount: 0,
+                        scope: 'single',
+                        seriesCount: peers.length,
+                        futureCount: futurePeers.length
+                    };
                 },
                 confirmDeleteAction() {
                     if (this.deleteModal.clearAll) {
                         this.transactions = [];
                         this.saveToStorage();
                         this.showToast('Base de lançamentos limpa com sucesso.');
+                    } else if (this.deleteModal.bulkCount > 0) {
+                        const idsSet = new Set(this.selectedTxIds);
+                        const removed = idsSet.size;
+                        this.transactions = this.transactions.filter(t => !idsSet.has(t.id));
+                        this.selectedTxIds = [];
+                        this.saveToStorage();
+                        this.showToast(`${removed} transação(ões) excluída(s).`);
                     } else if (this.deleteModal.account) {
                         this.accounts = this.accounts.filter(a => a.id !== this.deleteModal.account.id);
                         this.saveToStorage();
@@ -1958,9 +2135,21 @@
                         this.saveToStorage();
                         this.showToast('Cartão excluído.');
                     } else if (this.deleteModal.item) {
-                        this.transactions = this.transactions.filter(t => t.id !== this.deleteModal.item.id);
+                        const target = this.deleteModal.item;
+                        if (this.deleteModal.scope !== 'single' && this.deleteModal.seriesCount > 1) {
+                            const peers = this.getSeriesPeers(target);
+                            const idsToRemove = new Set(
+                                peers
+                                    .filter(p => this.deleteModal.scope === 'all' || (this.deleteModal.scope === 'future' && p.date >= target.date))
+                                    .map(p => p.id)
+                            );
+                            this.transactions = this.transactions.filter(t => !idsToRemove.has(t.id));
+                            this.showToast(`${idsToRemove.size} lançamentos do lote excluídos.`);
+                        } else {
+                            this.transactions = this.transactions.filter(t => t.id !== target.id);
+                            this.showToast('Lançamento excluído.');
+                        }
                         this.saveToStorage();
-                        this.showToast('Lançamento excluído.');
                     }
                     this.deleteModal.open = false;
                     this.renderAllCharts();
