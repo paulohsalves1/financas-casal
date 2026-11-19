@@ -239,193 +239,137 @@
         </header>
 
         <!-- CONTEÚDO -->
-        <div class="p-4 md:p-8 space-y-6 flex-1 max-w-7xl w-full mx-auto">
+        <div class="p-4 md:p-8 space-y-5 md:space-y-6 flex-1 max-w-7xl w-full mx-auto">
 
-            <!-- CARDS DE RESUMO INTERATIVOS -->
-            <div x-show="activeTab === 'dashboard' || activeTab === 'transactions'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- CARDS DE RESUMO INTERATIVOS (2 POR LINHA NO CELULAR / 4 NO DESKTOP) -->
+            <div x-show="activeTab === 'dashboard' || activeTab === 'transactions'" class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 <div @click="navigateToFilteredTransactions('todos')" title="Ver todos os lançamentos do período"
-                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-blue-500/50 flex items-center justify-between shadow-sm transition cursor-pointer group">
-                    <div class="space-y-1">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400 group-hover:text-gray-200 transition">Saldo atual</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition"></i>
+                     class="bg-mobills-card hover:bg-mobills-cardHover p-3.5 sm:p-5 rounded-2xl border border-mobills-border hover:border-blue-500/50 flex items-center justify-between gap-2 shadow-sm transition cursor-pointer group">
+                    <div class="space-y-0.5 sm:space-y-1 min-w-0">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-gray-200 transition truncate">Saldo atual</span>
+                            <i class="fa-solid fa-chevron-right text-[9px] sm:text-[10px] text-gray-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition shrink-0"></i>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-extrabold tracking-tight" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h3>
-                        <p class="text-[11px] text-gray-400">Previsto: <span class="font-semibold text-gray-200" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
+                        <h3 class="text-sm sm:text-xl md:text-2xl font-extrabold tracking-tight truncate" :class="metrics.saldoAtual >= 0 ? 'text-white' : 'text-red-400'" x-text="formatCurrency(metrics.saldoAtual)"></h3>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Previsto: <span class="font-semibold text-gray-200" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-building-columns"></i></div>
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center text-sm sm:text-lg shrink-0 group-hover:scale-105 transition"><i class="fa-solid fa-building-columns"></i></div>
                 </div>
 
                 <div @click="navigateToFilteredTransactions('income')" title="Clique para ver todas as receitas que compõem este valor"
-                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-emerald-500/60 flex items-center justify-between shadow-sm transition cursor-pointer group">
-                    <div class="space-y-1">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400 group-hover:text-emerald-300 transition">Receitas</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition"></i>
+                     class="bg-mobills-card hover:bg-mobills-cardHover p-3.5 sm:p-5 rounded-2xl border border-mobills-border hover:border-emerald-500/60 flex items-center justify-between gap-2 shadow-sm transition cursor-pointer group">
+                    <div class="space-y-0.5 sm:space-y-1 min-w-0">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-emerald-300 transition truncate">Receitas</span>
+                            <i class="fa-solid fa-chevron-right text-[9px] sm:text-[10px] text-gray-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0"></i>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-extrabold text-emerald-400 tracking-tight" x-text="formatCurrency(metrics.totalReceitas)"></h3>
-                        <p class="text-[11px] text-gray-400">Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span></p>
+                        <h3 class="text-sm sm:text-xl md:text-2xl font-extrabold text-emerald-400 tracking-tight truncate" x-text="formatCurrency(metrics.totalReceitas)"></h3>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Recebido: <span class="text-emerald-400 font-semibold" x-text="formatCurrency(metrics.receitasConcluidas)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-arrow-up"></i></div>
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-sm sm:text-lg shrink-0 group-hover:scale-105 transition"><i class="fa-solid fa-arrow-up"></i></div>
                 </div>
 
                 <div @click="navigateToFilteredTransactions('expense')" title="Clique para ver todas as despesas que compõem este valor"
-                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-red-500/60 flex items-center justify-between shadow-sm transition cursor-pointer group">
-                    <div class="space-y-1">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400 group-hover:text-red-300 transition">Despesas</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-red-400 group-hover:translate-x-0.5 transition"></i>
+                     class="bg-mobills-card hover:bg-mobills-cardHover p-3.5 sm:p-5 rounded-2xl border border-mobills-border hover:border-red-500/60 flex items-center justify-between gap-2 shadow-sm transition cursor-pointer group">
+                    <div class="space-y-0.5 sm:space-y-1 min-w-0">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-red-300 transition truncate">Despesas</span>
+                            <i class="fa-solid fa-chevron-right text-[9px] sm:text-[10px] text-gray-500 group-hover:text-red-400 group-hover:translate-x-0.5 transition shrink-0"></i>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-extrabold text-red-400 tracking-tight" x-text="formatCurrency(metrics.totalDespesas)"></h3>
-                        <p class="text-[11px] text-gray-400">Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span></p>
+                        <h3 class="text-sm sm:text-xl md:text-2xl font-extrabold text-red-400 tracking-tight truncate" x-text="formatCurrency(metrics.totalDespesas)"></h3>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Pago: <span class="text-red-400 font-semibold" x-text="formatCurrency(metrics.despesasConcluidas)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-sm sm:text-lg shrink-0 group-hover:scale-105 transition"><i class="fa-solid fa-arrow-down"></i></div>
                 </div>
 
                 <div @click="switchTab('cards')" title="Clique para gerenciar seus cartões e faturas do período"
-                     class="bg-mobills-card hover:bg-mobills-cardHover p-5 rounded-2xl border border-mobills-border hover:border-purple-500/60 flex items-center justify-between shadow-sm transition cursor-pointer group">
-                    <div class="space-y-1">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-xs font-semibold text-gray-400 group-hover:text-purple-300 transition">Cartão de crédito</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-gray-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition"></i>
+                     class="bg-mobills-card hover:bg-mobills-cardHover p-3.5 sm:p-5 rounded-2xl border border-mobills-border hover:border-purple-500/60 flex items-center justify-between gap-2 shadow-sm transition cursor-pointer group">
+                    <div class="space-y-0.5 sm:space-y-1 min-w-0">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400 group-hover:text-purple-300 transition truncate">Cartões</span>
+                            <i class="fa-solid fa-chevron-right text-[9px] sm:text-[10px] text-gray-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition shrink-0"></i>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-extrabold text-purple-400 tracking-tight" x-text="formatCurrency(metrics.totalCartoes)"></h3>
-                        <p class="text-[11px] text-gray-400">Balanço: <span class="font-semibold" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></span></p>
+                        <h3 class="text-sm sm:text-xl md:text-2xl font-extrabold text-purple-400 tracking-tight truncate" x-text="formatCurrency(metrics.totalCartoes)"></h3>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Balanço: <span class="font-semibold" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></span></p>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center text-lg group-hover:scale-105 transition"><i class="fa-solid fa-credit-card"></i></div>
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center text-sm sm:text-lg shrink-0 group-hover:scale-105 transition"><i class="fa-solid fa-credit-card"></i></div>
                 </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA RELATÓRIOS & EVOLUÇÃO ANUAL            -->
+            <!-- ABA 1: DASHBOARD                           -->
             <!-- ========================================== -->
-            <div x-show="activeTab === 'reports'" class="space-y-6">
-                <!-- Seletor de Sub-aba dentro de Relatórios -->
-                <div class="flex flex-wrap items-center justify-between gap-3 bg-mobills-card p-3 rounded-2xl border border-mobills-border">
-                    <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
-                        <button @click="reportSubTab = 'categories'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'categories' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-chart-pie"></i>
-                            <span>Por Categorias</span>
-                        </button>
-                        <button @click="reportSubTab = 'annual'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'annual' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
-                            <i class="fa-solid fa-chart-column"></i>
-                            <span x-text="`Evolução Anual (${selectedYear})`"></span>
-                        </button>
+            <div x-show="activeTab === 'dashboard'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-base text-white">Despesas por categoria</h3>
+                        <button @click="reportSubTab = 'categories'; reportViewType = 'despesas'; switchTab('reports')" class="text-xs text-mobills-purpleLight hover:underline cursor-pointer">Ver relatório →</button>
                     </div>
-                    <span class="text-xs text-gray-400 px-2" x-text="reportSubTab === 'categories' ? (allMonthsMode ? `Consolidado ${selectedYear}` : formattedSelectedMonth) : `Comparativo de 12 meses (${selectedYear})`"></span>
-                </div>
-
-                <!-- Sub-aba 1: Análise por Categorias -->
-                <div x-show="reportSubTab === 'categories'" class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
-                    <div class="flex items-center justify-between border-b border-mobills-border pb-4">
-                        <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
-                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
-                            <button @click="reportViewType = 'despesas'; $nextTick(() => renderAllCharts())" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg cursor-pointer">Despesas</button>
-                            <button @click="reportViewType = 'receitas'; $nextTick(() => renderAllCharts())" :class="reportViewType === 'receitas' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg cursor-pointer">Receitas</button>
+                    <div class="flex flex-col sm:flex-row items-center gap-6" x-show="expenseBreakdown.length > 0">
+                        <div class="relative w-44 h-44 shrink-0">
+                            <canvas id="dashExpenseChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[11px] text-gray-400">Total</span>
+                                <span class="text-xs font-extrabold text-white" x-text="formatCurrency(metrics.totalDespesas)"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                        <div class="lg:col-span-5 flex justify-center"><div class="relative w-64 h-64"><canvas id="reportsDonutChart"></canvas></div></div>
-                        <div class="lg:col-span-7 space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                            <template x-for="item in activeReportData" :key="item.name">
-                                <button @click="navigateToCategoryTransactions(reportViewType === 'despesas' ? 'expense' : 'income', item.name)"
-                                        title="Clique para abrir os lançamentos desta categoria"
-                                        class="w-full bg-mobills-bg hover:bg-mobills-cardHover p-3.5 rounded-xl border border-mobills-border hover:border-mobills-purple/60 flex items-center justify-between transition cursor-pointer group text-left">
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs shrink-0 shadow" :style="`background-color: ${item.color}`">
-                                            <i class="fa-solid" :class="item.icon"></i>
+                        <div class="flex-1 w-full space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                            <template x-for="cat in expenseBreakdown" :key="cat.name">
+                                <button @click="navigateToCategoryTransactions('expense', cat.name)"
+                                        title="Clique para filtrar as despesas desta categoria"
+                                        class="w-full flex items-center justify-between text-xs p-2 rounded-xl hover:bg-mobills-cardHover transition cursor-pointer group text-left">
+                                    <div class="flex items-center space-x-2.5 truncate">
+                                        <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] shrink-0" :style="`background-color: ${cat.color}`">
+                                            <i class="fa-solid" :class="cat.icon"></i>
                                         </span>
-                                        <div>
-                                            <span class="font-bold text-sm text-white block group-hover:text-mobills-purpleLight transition" x-text="item.name"></span>
-                                            <span class="text-[11px] text-gray-400" x-text="`${item.percentage}% do total`"></span>
-                                        </div>
+                                        <span class="text-gray-200 group-hover:text-white font-medium truncate" x-text="cat.name"></span>
                                     </div>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="font-extrabold text-sm" :class="reportViewType === 'despesas' ? 'text-red-400' : 'text-emerald-400'" x-text="formatCurrency(item.total)"></span>
-                                        <i class="fa-solid fa-chevron-right text-xs text-gray-500 group-hover:text-white group-hover:translate-x-0.5 transition"></i>
+                                    <div class="flex items-center space-x-2 shrink-0">
+                                        <span class="font-bold text-white" x-text="formatCurrency(cat.total)"></span>
+                                        <span class="text-gray-400 w-10 text-right" x-text="`${cat.percentage}%`"></span>
+                                        <i class="fa-solid fa-chevron-right text-[10px] text-gray-600 group-hover:text-mobills-purpleLight transition"></i>
                                     </div>
                                 </button>
                             </template>
                         </div>
                     </div>
+                    <div x-show="expenseBreakdown.length === 0" class="py-12 text-center text-gray-500 text-xs">Nenhuma despesa neste período.</div>
                 </div>
 
-                <!-- Sub-aba 2: Evolução Anual Comparativa (12 Meses) -->
-                <div x-show="reportSubTab === 'annual'" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                            <span class="text-xs font-semibold text-gray-400" x-text="`Total Receitas (${selectedYear})`"></span>
-                            <h4 class="text-xl font-extrabold text-emerald-400" x-text="formatCurrency(annualSummary.totalIncome)"></h4>
-                            <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgIncome)"></strong></p>
-                        </div>
-                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                            <span class="text-xs font-semibold text-gray-400" x-text="`Total Despesas (${selectedYear})`"></span>
-                            <h4 class="text-xl font-extrabold text-red-400" x-text="formatCurrency(annualSummary.totalExpense)"></h4>
-                            <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgExpense)"></strong></p>
-                        </div>
-                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                            <span class="text-xs font-semibold text-gray-400" x-text="`Saldo Líquido (${selectedYear})`"></span>
-                            <h4 class="text-xl font-extrabold" :class="annualSummary.netBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(annualSummary.netBalance)"></h4>
-                            <p class="text-[11px] text-gray-400">Média poupada/mês: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgNet)"></strong></p>
-                        </div>
-                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                            <span class="text-xs font-semibold text-gray-400">Mês de Maior Gasto</span>
-                            <h4 class="text-xl font-extrabold text-amber-400" x-text="annualSummary.heaviestMonth ? annualSummary.heaviestMonth.label : '—'"></h4>
-                            <p class="text-[11px] text-gray-400" x-text="annualSummary.heaviestMonth ? formatCurrency(annualSummary.heaviestMonth.expense) : 'Sem despesas no ano'"></p>
-                        </div>
+                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-base text-white">Receitas por categoria</h3>
+                        <button @click="reportSubTab = 'categories'; reportViewType = 'receitas'; switchTab('reports')" class="text-xs text-mobills-purpleLight hover:underline cursor-pointer">Ver relatório →</button>
                     </div>
-
-                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <h3 class="text-lg font-bold text-white" x-text="`Evolução Financeira — ${selectedYear}`"></h3>
-                                <p class="text-xs text-gray-400">Comparativo completo entre Receitas, Despesas e Balanço Mensal ao longo dos 12 meses.</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button @click="selectedYear--; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><i class="fa-solid fa-chevron-left mr-1"></i><span x-text="selectedYear - 1"></span></button>
-                                <button @click="selectedYear++; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><span x-text="selectedYear + 1"></span><i class="fa-solid fa-chevron-right ml-1"></i></button>
+                    <div class="flex flex-col sm:flex-row items-center gap-6" x-show="incomeBreakdown.length > 0">
+                        <div class="relative w-44 h-44 shrink-0">
+                            <canvas id="dashIncomeChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[11px] text-gray-400">Total</span>
+                                <span class="text-xs font-extrabold text-white" x-text="formatCurrency(metrics.totalReceitas)"></span>
                             </div>
                         </div>
-                        <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
-                    </div>
-
-                    <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden">
-                        <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
-                            <h4 class="font-bold text-sm text-white">Detalhamento Mensal (Clique em um mês para abrir)</h4>
-                            <span class="text-[11px] text-gray-400" x-text="`${annualSummary.activeMonthsCount} mês(es) com movimentação`"></span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr class="bg-mobills-bg/70 text-gray-400 border-b border-mobills-border uppercase text-[11px]">
-                                        <th class="py-3 px-4 font-semibold">Mês</th>
-                                        <th class="py-3 px-4 font-semibold text-right">Receitas</th>
-                                        <th class="py-3 px-4 font-semibold text-right">Despesas</th>
-                                        <th class="py-3 px-4 font-semibold text-right hidden sm:table-cell">Cartões</th>
-                                        <th class="py-3 px-4 font-semibold text-right">Balanço</th>
-                                        <th class="py-3 px-4 font-semibold text-right hidden md:table-cell">Acumulado Ano</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-mobills-border/40">
-                                    <template x-for="row in yearlyMonthsBreakdown" :key="row.monthIdx">
-                                        <tr @click="selectMonthYear(selectedYear, row.monthIdx); switchTab('dashboard')"
-                                            :class="row.monthIdx === selectedMonth && !allMonthsMode ? 'bg-mobills-purple/15' : 'hover:bg-mobills-cardHover'"
-                                            class="transition cursor-pointer">
-                                            <td class="py-3 px-4 font-bold text-white flex items-center space-x-2">
-                                                <span x-text="row.label"></span>
-                                                <span x-show="row.count > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-mobills-bg text-gray-400 border border-mobills-border" x-text="row.count"></span>
-                                            </td>
-                                            <td class="py-3 px-4 text-right font-semibold text-emerald-400" x-text="formatCurrency(row.income)"></td>
-                                            <td class="py-3 px-4 text-right font-semibold text-red-400" x-text="formatCurrency(row.expense)"></td>
-                                            <td class="py-3 px-4 text-right text-purple-300 hidden sm:table-cell" x-text="formatCurrency(row.cards)"></td>
-                                            <td class="py-3 px-4 text-right font-extrabold" :class="row.balance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.balance)"></td>
-                                            <td class="py-3 px-4 text-right font-bold hidden md:table-cell" :class="row.cumulative >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(row.cumulative)"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                        <div class="flex-1 w-full space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                            <template x-for="cat in incomeBreakdown" :key="cat.name">
+                                <button @click="navigateToCategoryTransactions('income', cat.name)"
+                                        title="Clique para filtrar as receitas desta categoria"
+                                        class="w-full flex items-center justify-between text-xs p-2 rounded-xl hover:bg-mobills-cardHover transition cursor-pointer group text-left">
+                                    <div class="flex items-center space-x-2.5 truncate">
+                                        <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] shrink-0" :style="`background-color: ${cat.color}`">
+                                            <i class="fa-solid" :class="cat.icon"></i>
+                                        </span>
+                                        <span class="text-gray-200 group-hover:text-white font-medium truncate" x-text="cat.name"></span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 shrink-0">
+                                        <span class="font-bold text-white" x-text="formatCurrency(cat.total)"></span>
+                                        <span class="text-gray-400 w-10 text-right" x-text="`${cat.percentage}%`"></span>
+                                        <i class="fa-solid fa-chevron-right text-[10px] text-gray-600 group-hover:text-emerald-400 transition"></i>
+                                    </div>
+                                </button>
+                            </template>
                         </div>
                     </div>
+                    <div x-show="incomeBreakdown.length === 0" class="py-12 text-center text-gray-500 text-xs">Nenhuma receita neste período.</div>
                 </div>
             </div>
 
@@ -860,93 +804,26 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA 3: MÊS A MÊS                           -->
-            <!-- ========================================== -->
-            <div x-show="activeTab === 'monthly'" class="space-y-6">
-                <!-- Cards de Indicadores Anuais -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                        <span class="text-xs font-semibold text-gray-400" x-text="`Total Receitas (${selectedYear})`"></span>
-                        <h4 class="text-xl font-extrabold text-emerald-400" x-text="formatCurrency(annualSummary.totalIncome)"></h4>
-                        <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgIncome)"></strong></p>
-                    </div>
-                    <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                        <span class="text-xs font-semibold text-gray-400" x-text="`Total Despesas (${selectedYear})`"></span>
-                        <h4 class="text-xl font-extrabold text-red-400" x-text="formatCurrency(annualSummary.totalExpense)"></h4>
-                        <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgExpense)"></strong></p>
-                    </div>
-                    <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                        <span class="text-xs font-semibold text-gray-400" x-text="`Saldo Líquido (${selectedYear})`"></span>
-                        <h4 class="text-xl font-extrabold" :class="annualSummary.netBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(annualSummary.netBalance)"></h4>
-                        <p class="text-[11px] text-gray-400">Média poupada/mês: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgNet)"></strong></p>
-                    </div>
-                    <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
-                        <span class="text-xs font-semibold text-gray-400">Mês de Maior Gasto</span>
-                        <h4 class="text-xl font-extrabold text-amber-400" x-text="annualSummary.heaviestMonth ? annualSummary.heaviestMonth.label : '—'"></h4>
-                        <p class="text-[11px] text-gray-400" x-text="annualSummary.heaviestMonth ? formatCurrency(annualSummary.heaviestMonth.expense) : 'Sem despesas no ano'"></p>
-                    </div>
-                </div>
-
-                <!-- Gráfico Comparativo dos 12 Meses -->
-                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-white" x-text="`Evolução Financeira Mês a Mês — ${selectedYear}`"></h3>
-                            <p class="text-xs text-gray-400">Comparativo completo entre Receitas, Despesas e Balanço Mensal ao longo dos 12 meses.</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button @click="selectedYear--; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><i class="fa-solid fa-chevron-left mr-1"></i><span x-text="selectedYear - 1"></span></button>
-                            <button @click="selectedYear++; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><span x-text="selectedYear + 1"></span><i class="fa-solid fa-chevron-right ml-1"></i></button>
-                        </div>
-                    </div>
-                    <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
-                </div>
-
-                <!-- Tabela Comparativa Mensal Clicável -->
-                <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden">
-                    <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
-                        <h4 class="font-bold text-sm text-white">Detalhamento Mensal (Clique em um mês para abrir)</h4>
-                        <span class="text-[11px] text-gray-400" x-text="`${annualSummary.activeMonthsCount} mês(es) com movimentação`"></span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr class="bg-mobills-bg/70 text-gray-400 border-b border-mobills-border uppercase text-[11px]">
-                                    <th class="py-3 px-4 font-semibold">Mês</th>
-                                    <th class="py-3 px-4 font-semibold text-right">Receitas</th>
-                                    <th class="py-3 px-4 font-semibold text-right">Despesas</th>
-                                    <th class="py-3 px-4 font-semibold text-right hidden sm:table-cell">Cartões</th>
-                                    <th class="py-3 px-4 font-semibold text-right">Balanço</th>
-                                    <th class="py-3 px-4 font-semibold text-right hidden md:table-cell">Acumulado Ano</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-mobills-border/40">
-                                <template x-for="row in yearlyMonthsBreakdown" :key="row.monthIdx">
-                                    <tr @click="selectMonthYear(selectedYear, row.monthIdx); switchTab('dashboard')"
-                                        :class="row.monthIdx === selectedMonth && !allMonthsMode ? 'bg-mobills-purple/15' : 'hover:bg-mobills-cardHover'"
-                                        class="transition cursor-pointer">
-                                        <td class="py-3 px-4 font-bold text-white flex items-center space-x-2">
-                                            <span x-text="row.label"></span>
-                                            <span x-show="row.count > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-mobills-bg text-gray-400 border border-mobills-border" x-text="row.count"></span>
-                                        </td>
-                                        <td class="py-3 px-4 text-right font-semibold text-emerald-400" x-text="formatCurrency(row.income)"></td>
-                                        <td class="py-3 px-4 text-right font-semibold text-red-400" x-text="formatCurrency(row.expense)"></td>
-                                        <td class="py-3 px-4 text-right text-purple-300 hidden sm:table-cell" x-text="formatCurrency(row.cards)"></td>
-                                        <td class="py-3 px-4 text-right font-extrabold" :class="row.balance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.balance)"></td>
-                                        <td class="py-3 px-4 text-right font-bold hidden md:table-cell" :class="row.cumulative >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(row.cumulative)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========================================== -->
-            <!-- ABA 4: RELATÓRIOS                          -->
+            <!-- ABA 3: RELATÓRIOS & EVOLUÇÃO ANUAL         -->
             <!-- ========================================== -->
             <div x-show="activeTab === 'reports'" class="space-y-6">
-                <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
+                <!-- Seletor de Sub-aba dentro de Relatórios -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-mobills-card p-3 rounded-2xl border border-mobills-border">
+                    <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
+                        <button @click="reportSubTab = 'categories'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'categories' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Por Categorias</span>
+                        </button>
+                        <button @click="reportSubTab = 'annual'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'annual' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-chart-column"></i>
+                            <span x-text="`Evolução Anual (${selectedYear})`"></span>
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-400 px-2" x-text="reportSubTab === 'categories' ? (allMonthsMode ? `Consolidado ${selectedYear}` : formattedSelectedMonth) : `Comparativo de 12 meses (${selectedYear})`"></span>
+                </div>
+
+                <!-- Sub-aba 1: Análise por Categorias -->
+                <div x-show="reportSubTab === 'categories'" class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
                     <div class="flex items-center justify-between border-b border-mobills-border pb-4">
                         <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
                         <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
@@ -976,6 +853,84 @@
                                     </div>
                                 </button>
                             </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-aba 2: Evolução Anual Comparativa (12 Meses) -->
+                <div x-show="reportSubTab === 'annual'" class="space-y-6">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                        <div class="bg-mobills-card p-3.5 sm:p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400" x-text="`Total Receitas (${selectedYear})`"></span>
+                            <h4 class="text-sm sm:text-xl font-extrabold text-emerald-400 truncate" x-text="formatCurrency(annualSummary.totalIncome)"></h4>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Média: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgIncome)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-3.5 sm:p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400" x-text="`Total Despesas (${selectedYear})`"></span>
+                            <h4 class="text-sm sm:text-xl font-extrabold text-red-400 truncate" x-text="formatCurrency(annualSummary.totalExpense)"></h4>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Média: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgExpense)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-3.5 sm:p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400" x-text="`Saldo Líquido (${selectedYear})`"></span>
+                            <h4 class="text-sm sm:text-xl font-extrabold truncate" :class="annualSummary.netBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(annualSummary.netBalance)"></h4>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 truncate">Média/mês: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgNet)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-3.5 sm:p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-[11px] sm:text-xs font-semibold text-gray-400">Maior Gasto</span>
+                            <h4 class="text-sm sm:text-xl font-extrabold text-amber-400 truncate" x-text="annualSummary.heaviestMonth ? annualSummary.heaviestMonth.label : '—'"></h4>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 truncate" x-text="annualSummary.heaviestMonth ? formatCurrency(annualSummary.heaviestMonth.expense) : 'Sem despesas'"></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h3 class="text-lg font-bold text-white" x-text="`Evolução Financeira — ${selectedYear}`"></h3>
+                                <p class="text-xs text-gray-400">Comparativo completo entre Receitas, Despesas e Balanço Mensal ao longo dos 12 meses.</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button @click="selectedYear--; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><i class="fa-solid fa-chevron-left mr-1"></i><span x-text="selectedYear - 1"></span></button>
+                                <button @click="selectedYear++; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><span x-text="selectedYear + 1"></span><i class="fa-solid fa-chevron-right ml-1"></i></button>
+                            </div>
+                        </div>
+                        <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden">
+                        <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white">Detalhamento Mensal (Clique em um mês para abrir)</h4>
+                            <span class="text-[11px] text-gray-400" x-text="`${annualSummary.activeMonthsCount} mês(es) com movimentação`"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-mobills-bg/70 text-gray-400 border-b border-mobills-border uppercase text-[11px]">
+                                        <th class="py-3 px-4 font-semibold">Mês</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Receitas</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Despesas</th>
+                                        <th class="py-3 px-4 font-semibold text-right hidden sm:table-cell">Cartões</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Balanço</th>
+                                        <th class="py-3 px-4 font-semibold text-right hidden md:table-cell">Acumulado Ano</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-mobills-border/40">
+                                    <template x-for="row in yearlyMonthsBreakdown" :key="row.monthIdx">
+                                        <tr @click="selectMonthYear(selectedYear, row.monthIdx); switchTab('dashboard')"
+                                            :class="row.monthIdx === selectedMonth && !allMonthsMode ? 'bg-mobills-purple/15' : 'hover:bg-mobills-cardHover'"
+                                            class="transition cursor-pointer">
+                                            <td class="py-3 px-4 font-bold text-white flex items-center space-x-2">
+                                                <span x-text="row.label"></span>
+                                                <span x-show="row.count > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-mobills-bg text-gray-400 border border-mobills-border" x-text="row.count"></span>
+                                            </td>
+                                            <td class="py-3 px-4 text-right font-semibold text-emerald-400" x-text="formatCurrency(row.income)"></td>
+                                            <td class="py-3 px-4 text-right font-semibold text-red-400" x-text="formatCurrency(row.expense)"></td>
+                                            <td class="py-3 px-4 text-right text-purple-300 hidden sm:table-cell" x-text="formatCurrency(row.cards)"></td>
+                                            <td class="py-3 px-4 text-right font-extrabold" :class="row.balance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.balance)"></td>
+                                            <td class="py-3 px-4 text-right font-bold hidden md:table-cell" :class="row.cumulative >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(row.cumulative)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1092,10 +1047,6 @@
             <i class="fa-solid fa-credit-card text-base"></i>
             <span class="text-[10px] font-semibold">Cartões</span>
         </button>
-        <button @click="mobileMoreOpen = !mobileMoreOpen" :class="['accounts', 'monthly', 'reports', 'categories', 'settings'].includes(activeTab) ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
-            <i class="fa-solid fa-bars text-base"></i>
-            <span class="text-[10px] font-semibold">Mais</span>
-        </button>
         <button @click="mobileMoreOpen = !mobileMoreOpen" :class="['accounts', 'reports', 'categories', 'settings'].includes(activeTab) ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
             <i class="fa-solid fa-bars text-base"></i>
             <span class="text-[10px] font-semibold">Mais</span>
@@ -1167,6 +1118,58 @@
     </div>
 
     <!-- MODAL CADASTRO / EDIÇÃO / UNIFICAÇÃO DE CATEGORIA -->
+    <div x-show="categoryModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="categoryModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
+            <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
+                <h3 class="font-bold text-base text-white" x-text="categoryModal.originalName ? 'Editar / Unificar Categoria' : 'Nova Categoria'"></h3>
+                <button type="button" @click="categoryModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form @submit.prevent="saveCategory()" class="p-6 space-y-4 text-xs">
+                <div class="flex items-center space-x-3 p-3 bg-mobills-bg rounded-xl border border-mobills-border">
+                    <span class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base shrink-0 shadow" :style="`background-color: ${categoryForm.color}`">
+                        <i class="fa-solid" :class="categoryForm.icon"></i>
+                    </span>
+                    <div>
+                        <span class="text-[11px] text-gray-400 block">Prévia nas transações</span>
+                        <strong class="text-sm text-white" x-text="categoryForm.name || 'Nome da Categoria'"></strong>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Nome da Categoria *</label>
+                    <input type="text" required placeholder="Ex: Abastecimento, Mercado, Educação..." x-model="categoryForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    <p x-show="categoryModal.originalName" class="text-[11px] text-gray-400 mt-1.5">Se digitar o nome de uma categoria já existente, todos os lançamentos serão unificados nela automaticamente.</p>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1.5">Ícone da Categoria</label>
+                    <div class="grid grid-cols-6 gap-2 max-h-36 overflow-y-auto p-2 bg-mobills-bg rounded-xl border border-mobills-border">
+                        <template x-for="opt in categoryIconOptions" :key="opt.icon">
+                            <button type="button" @click="categoryForm.icon = opt.icon" :title="opt.label"
+                                    :class="categoryForm.icon === opt.icon ? 'bg-mobills-purple text-white ring-2 ring-white' : 'bg-mobills-card text-gray-300 hover:text-white hover:bg-mobills-cardHover'"
+                                    class="h-9 rounded-lg flex items-center justify-center text-sm transition cursor-pointer">
+                                <i class="fa-solid" :class="opt.icon"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1.5">Cor da Categoria</label>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="clr in ['#06b6d4', '#ef4444', '#8b5cf6', '#3b82f6', '#10b981', '#ec4899', '#a855f7', '#f59e0b', '#14b8a6', '#22c55e', '#f97316', '#6366f1', '#6b7280']" :key="clr">
+                            <button type="button" @click="categoryForm.color = clr"
+                                    :style="`background-color: ${clr}`"
+                                    :class="categoryForm.color === clr ? 'ring-2 ring-white scale-110' : 'opacity-75 hover:opacity-100'"
+                                    class="w-7 h-7 rounded-full transition cursor-pointer"></button>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" @click="categoryModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Categoria</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL CADASTRO / EDIÇÃO DE CARTÃO DE CRÉDITO -->
     <div x-show="cardModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
         <div @click.away="cardModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
@@ -1620,7 +1623,6 @@
                     if (savedSync) {
                         try {
                             const cfg = JSON.parse(savedSync);
-                            // Ignora caso tenha sido salvo anteriormente o link errado do console web
                             if (cfg.dbUrl && !cfg.dbUrl.includes('console.firebase.google.com')) {
                                 activeDbUrl = cfg.dbUrl;
                             }
@@ -1628,7 +1630,6 @@
                         } catch(e) {}
                     }
 
-                    // Permite sobrescrever via URL se necessário
                     const urlParams = new URLSearchParams(window.location.search);
                     if (urlParams.get('db')) activeDbUrl = urlParams.get('db');
                     if (urlParams.get('room')) activeRoomCode = urlParams.get('room');
@@ -1862,7 +1863,6 @@
                     const origName = this.categoryModal.originalName;
 
                     if (origName) {
-                        // Renomeia/unifica nos lançamentos existentes
                         let movedCount = 0;
                         if (origName !== newName) {
                             this.transactions.forEach(t => {
@@ -1872,7 +1872,6 @@
                                 }
                             });
                         }
-                        // Atualiza lista de categorias evitando duplicidade
                         this.categoriesList = this.categoriesList.filter(c => c.name.toLowerCase() !== origName.toLowerCase());
                         const existingIdx = this.categoriesList.findIndex(c => c.name.toLowerCase() === newName.toLowerCase());
                         if (existingIdx !== -1) {
@@ -1965,7 +1964,6 @@
                         dateMap[d].push(t);
                     });
 
-                    // Ordena datas em ordem crescente para calcular o saldo acumulado do dia
                     const ascDates = Object.keys(dateMap).sort((a, b) => a.localeCompare(b));
                     let running = 0;
                     const computed = ascDates.map(d => {
@@ -1979,7 +1977,6 @@
                         return { date: d, items, daySubtotal, runningBalance: running };
                     });
 
-                    // Exibe do dia mais recente para o mais antigo (padrão Mobills)
                     return computed.reverse();
                 },
                 get isAllFilteredSelected() {
@@ -2025,6 +2022,7 @@
                         item: null,
                         card: null,
                         account: null,
+                        category: null,
                         clearAll: false,
                         bulkCount: this.selectedTxIds.length,
                         scope: 'single',
@@ -2047,7 +2045,6 @@
                             .filter(t => t.seriesId === tx.seriesId)
                             .sort((a, b) => a.date.localeCompare(b.date));
                     }
-                    // Fallback inteligente para parcelas importadas do Mobills no formato "Nome (2/12)"
                     const match = String(tx.description || '').trim().match(/^(.*?)\s*\((\d+)\/(\d+)\)\s*$/);
                     if (match) {
                         const baseName = match[1].trim().toLowerCase();
@@ -2233,7 +2230,7 @@
                     this.saveToStorage();
                 },
                 promptDeleteAccount(acc) {
-                    this.deleteModal = { open: true, item: null, card: null, account: acc, clearAll: false };
+                    this.deleteModal = { open: true, item: null, card: null, account: acc, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 };
                 },
                 openTransferModal(fromId = 'wallet', toId = '') {
                     if (this.accounts.length === 0) {
@@ -2255,7 +2252,6 @@
                         const periodTotal = periodItems.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         const pendingTotal = periodItems.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         
-                        // Total comprometido (todas as parcelas em aberto deste cartão)
                         const totalCommitted = this.transactions
                             .filter(t => t.cardId === card.id && t.status !== 'completed')
                             .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
@@ -2294,15 +2290,12 @@
                     const closingDay = Number(card.closingDay) || 23;
                     const dueDay = Number(card.dueDay) || 30;
 
-                    // Mês base da fatura (0-indexed)
                     let invoiceMonth = m - 1;
                     let invoiceYear = y;
 
-                    // Se comprou no dia do fechamento ou depois, vai para a fatura do mês seguinte
                     if (d >= closingDay) {
                         invoiceMonth += 1;
                     }
-                    // Se o vencimento é menor que o fechamento (ex: fecha dia 25 e vence dia 05 do mês seguinte)
                     if (dueDay < closingDay) {
                         invoiceMonth += 1;
                     }
@@ -2352,7 +2345,7 @@
                     this.saveToStorage();
                 },
                 promptDeleteCard(card) {
-                    this.deleteModal = { open: true, item: null, card: card, clearAll: false };
+                    this.deleteModal = { open: true, item: null, card: card, account: null, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 };
                 },
                 payCardInvoice(card) {
                     let count = 0;
@@ -2478,11 +2471,9 @@
                                         category: this.form.type === 'transfer' ? 'Transferência' : this.form.category
                                     };
                                 } else {
-                                    // Preserva o sufixo da parcela (ex: "(3/12)") ao atualizar o nome em lote
                                     const peerSuffix = this.extractBaseTitleAndSuffix(tx.description).suffix;
                                     const updatedDesc = peerSuffix ? `${newBaseTitle}${peerSuffix}` : newBaseTitle;
 
-                                    // Mantém mês/ano da parcela, ajustando o dia se alterado
                                     let updatedDate = tx.date;
                                     if (newDay && tx.date) {
                                         const [py, pm] = tx.date.split('-').map(Number);
@@ -2591,6 +2582,7 @@
                         item: item,
                         card: null,
                         account: null,
+                        category: null,
                         clearAll: false,
                         bulkCount: 0,
                         scope: 'single',
@@ -2700,7 +2692,6 @@
                                 const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
                                 if (rows.length < 2) return;
 
-                                // Localiza a linha de cabeçalho do Mobills
                                 let headerIdx = rows.findIndex(r =>
                                     r.some(cell => /descri|valor|data|categoria/i.test(String(cell)))
                                 );
@@ -2783,7 +2774,6 @@
                     } else {
                         this.transactions.push(...this.importModal.parsedRows);
                     }
-                    // Ajusta o mês selecionado para o mês mais recente importado
                     const firstDate = this.importModal.parsedRows[0]?.date;
                     if (firstDate) {
                         const [y, m] = firstDate.split('-').map(Number);
