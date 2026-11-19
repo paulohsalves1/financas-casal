@@ -45,7 +45,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/Chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- SheetJS (Excel/CSV) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -438,30 +438,27 @@
             <!-- ========================================== -->
             <div x-show="activeTab === 'settings'" class="max-w-2xl mx-auto space-y-6">
                 <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-purple/50 space-y-4 shadow-lg">
-                    <h3 class="font-bold text-base text-white">Sincronização em Tempo Real (Firebase)</h3>
-                    <p class="text-xs text-gray-400">Insira a URL do seu Realtime Database do Firebase e um Código Secreto para sincronizar automaticamente entre o seu celular e o da Isabela.</p>
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-base text-white">Sincronização Automática (Firebase)</h3>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-mobills-purple/20 text-mobills-purpleLight border border-mobills-purple/40">Pré-configurado</span>
+                    </div>
+                    <p class="text-xs text-gray-400">Os dados do seu banco já estão configurados diretamente no sistema. Qualquer aparelho que abrir o link oficial será sincronizado automaticamente.</p>
                     <div class="space-y-3 text-xs">
                         <div>
                             <label class="block text-gray-400 mb-1">URL do Firebase Realtime Database</label>
-                            <input type="url" x-model="syncConfig.dbUrl" placeholder="https://seu-projeto-default-rtdb.firebaseio.com" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <input type="url" x-model="syncConfig.dbUrl" placeholder="https://financas-paulo-isabela-default-rtdb.firebaseio.com" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                         </div>
                         <div>
-                            <label class="block text-gray-400 mb-1">Código Secreto do Casal</label>
-                            <input type="text" x-model="syncConfig.roomCode" placeholder="Ex: paulo-isabela-2026" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <label class="block text-gray-400 mb-1">Código da Sala do Casal</label>
+                            <input type="text" x-model="syncConfig.roomCode" placeholder="Ex: 2325Ogros" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                         </div>
-                        <button @click="connectCloudSync(true)" class="w-full py-3 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg cursor-pointer">Conectar e Sincronizar</button>
+                        <button @click="connectCloudSync(true)" class="w-full py-3 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl shadow-lg cursor-pointer">Forçar Sincronização Agora</button>
                         
                         <div x-show="syncConfig.connected" class="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between text-emerald-300">
                             <div class="flex items-center space-x-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span class="font-semibold">Sincronizado ativamente</span>
+                                <span class="font-semibold">Conectado e sincronizando automaticamente</span>
                             </div>
-                        </div>
-                        <div x-show="syncConfig.connected" class="pt-2">
-                            <button @click="copyPairingLink()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center space-x-2 shadow-lg cursor-pointer">
-                                <i class="fa-solid fa-link text-sm"></i>
-                                <span>Copiar Link de Pareamento p/ Isabela</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -577,6 +574,11 @@
                 filterType: 'todos',
                 reportViewType: 'despesas',
                 toast: { visible: false, message: '', type: 'success' },
+                // Configuração padrão embutida para conexão automática sem digitação manual
+                defaultFirebaseConfig: {
+                    dbUrl: 'https://financas-paulo-isabela-default-rtdb.firebaseio.com',
+                    roomCode: '2325Ogros'
+                },
                 syncConfig: { dbUrl: '', roomCode: '', connected: false, lastSync: '' },
                 syncTimer: null,
                 transactions: [],
@@ -605,26 +607,32 @@
                         if (Array.isArray(saved)) this.transactions = saved;
                     } catch(e) { this.transactions = []; }
 
+                    // Carrega a configuração salva ou assume a configuração padrão embutida no código
+                    let activeDbUrl = this.defaultFirebaseConfig.dbUrl;
+                    let activeRoomCode = this.defaultFirebaseConfig.roomCode;
+
                     const savedSync = localStorage.getItem('paulo_isabela_sync_v1');
                     if (savedSync) {
                         try {
                             const cfg = JSON.parse(savedSync);
-                            this.syncConfig.dbUrl = cfg.dbUrl || '';
-                            this.syncConfig.roomCode = cfg.roomCode || '';
-                            if (this.syncConfig.dbUrl && this.syncConfig.roomCode) {
-                                this.connectCloudSync(false);
+                            // Ignora caso tenha sido salvo anteriormente o link errado do console web
+                            if (cfg.dbUrl && !cfg.dbUrl.includes('console.firebase.google.com')) {
+                                activeDbUrl = cfg.dbUrl;
                             }
+                            if (cfg.roomCode) activeRoomCode = cfg.roomCode;
                         } catch(e) {}
                     }
 
-                    // Checar query params para pareamento automático
+                    // Permite sobrescrever via URL se necessário
                     const urlParams = new URLSearchParams(window.location.search);
-                    const qDb = urlParams.get('db');
-                    const qRoom = urlParams.get('room');
-                    if (qDb && qRoom) {
-                        this.syncConfig.dbUrl = qDb;
-                        this.syncConfig.roomCode = qRoom;
-                        this.connectCloudSync(true);
+                    if (urlParams.get('db')) activeDbUrl = urlParams.get('db');
+                    if (urlParams.get('room')) activeRoomCode = urlParams.get('room');
+
+                    this.syncConfig.dbUrl = activeDbUrl;
+                    this.syncConfig.roomCode = activeRoomCode;
+
+                    if (this.syncConfig.dbUrl && this.syncConfig.roomCode) {
+                        this.connectCloudSync(false);
                     }
 
                     this.$nextTick(() => this.renderAllCharts());
