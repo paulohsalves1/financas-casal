@@ -1148,18 +1148,19 @@
                     try {
                         const res = await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`);
                         const data = await res.json();
-                        if (data && Array.isArray(data)) {
-                            if (data.length >= this.transactions.length) {
-                                this.transactions = data;
-                                localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
-                            }
+                        if (data && Array.isArray(data.items)) {
+                            this.transactions = data.items;
+                            localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
+                        } else if (data && Array.isArray(data)) {
+                            this.transactions = data;
+                            localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                         } else {
                             await this.pushToCloud();
                         }
                         this.syncConfig.connected = true;
                         if (showMsg) this.showToast('Sincronizado com sucesso!');
                         if (this.syncTimer) clearInterval(this.syncTimer);
-                        this.syncTimer = setInterval(() => this.pullFromCloud(), 10000);
+                        this.syncTimer = setInterval(() => this.pullFromCloud(), 8000);
                         this.renderAllCharts();
                     } catch(e) {
                         this.syncConfig.connected = false;
@@ -1171,7 +1172,10 @@
                     try {
                         await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`, {
                             method: 'PUT',
-                            body: JSON.stringify(this.transactions)
+                            body: JSON.stringify({
+                                items: this.transactions,
+                                updatedAt: Date.now()
+                            })
                         });
                     } catch(e) {}
                 },
@@ -1180,9 +1184,10 @@
                     try {
                         const res = await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json`);
                         const data = await res.json();
-                        if (data && Array.isArray(data)) {
-                            if (JSON.stringify(data) !== JSON.stringify(this.transactions)) {
-                                this.transactions = data;
+                        const cloudItems = (data && Array.isArray(data.items)) ? data.items : (Array.isArray(data) ? data : null);
+                        if (cloudItems !== null) {
+                            if (JSON.stringify(cloudItems) !== JSON.stringify(this.transactions)) {
+                                this.transactions = cloudItems;
                                 localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                                 this.renderAllCharts();
                             }
