@@ -108,10 +108,6 @@
                     <i class="fa-solid fa-credit-card w-5 text-center"></i>
                     <span>Cartões de Crédito</span>
                 </button>
-                <button @click="switchTab('monthly')" :class="activeTab === 'monthly' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
-                    <i class="fa-solid fa-calendar-days w-5 text-center"></i>
-                    <span>Mês a Mês</span>
-                </button>
                 <button @click="switchTab('reports')" :class="activeTab === 'reports' ? 'bg-mobills-purple/15 text-mobills-purpleLight border-l-4 border-mobills-purple font-semibold' : 'text-gray-400 hover:bg-mobills-cardHover hover:text-gray-200 font-medium'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-left text-sm cursor-pointer">
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                     <span>Relatórios & Previsões</span>
@@ -128,10 +124,12 @@
         </div>
 
         <div x-show="activeTab !== 'settings' && activeTab !== 'categories'" class="p-4 border-t border-mobills-border space-y-3">
-                    <button @click="selectedUserFilter = 'Paulo'" :class="selectedUserFilter === 'Paulo' ? 'bg-mobills-blue text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Paulo</button>
-                    <button @click="selectedUserFilter = 'Isabela'" :class="selectedUserFilter === 'Isabela' ? 'bg-mobills-pink text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Isabela</button>
-                    <button @click="selectedUserFilter = 'Compartilhado'" :class="selectedUserFilter === 'Compartilhado' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Casa</button>
-                </div>
+            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Visão por Integrante</span>
+            <div class="grid grid-cols-2 gap-1.5 bg-mobills-bg p-1.5 rounded-xl border border-mobills-border">
+                <button @click="selectedUserFilter = 'Todos'" :class="selectedUserFilter === 'Todos' ? 'bg-mobills-purple text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Todos</button>
+                <button @click="selectedUserFilter = 'Paulo'" :class="selectedUserFilter === 'Paulo' ? 'bg-mobills-blue text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Paulo</button>
+                <button @click="selectedUserFilter = 'Isabela'" :class="selectedUserFilter === 'Isabela' ? 'bg-mobills-pink text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Isabela</button>
+                <button @click="selectedUserFilter = 'Compartilhado'" :class="selectedUserFilter === 'Compartilhado' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="py-1.5 text-xs rounded-lg transition cursor-pointer">Casa</button>
             </div>
         </div>
     </aside>
@@ -299,68 +297,133 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- ABA 1: DASHBOARD                           -->
+            <!-- ABA RELATÓRIOS & EVOLUÇÃO ANUAL            -->
             <!-- ========================================== -->
-            <div x-show="activeTab === 'dashboard'" class="space-y-6">
-                
-                <div x-show="transactions.length === 0" class="bg-mobills-card border border-mobills-purple/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 rounded-2xl bg-mobills-purple/20 text-mobills-purpleLight flex items-center justify-center text-xl"><i class="fa-solid fa-rocket"></i></div>
-                        <div class="space-y-1">
-                            <h3 class="text-base md:text-lg font-bold text-white">Bem-vindos, Paulo & Isabela!</h3>
-                            <p class="text-xs md:text-sm text-gray-400">Importe sua planilha do Mobills ou cadastre as despesas e receitas.</p>
+            <div x-show="activeTab === 'reports'" class="space-y-6">
+                <!-- Seletor de Sub-aba dentro de Relatórios -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-mobills-card p-3 rounded-2xl border border-mobills-border">
+                    <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
+                        <button @click="reportSubTab = 'categories'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'categories' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Por Categorias</span>
+                        </button>
+                        <button @click="reportSubTab = 'annual'; $nextTick(() => renderAllCharts())" :class="reportSubTab === 'annual' ? 'bg-mobills-purple text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-4 py-2 rounded-lg flex items-center space-x-2 transition cursor-pointer">
+                            <i class="fa-solid fa-chart-column"></i>
+                            <span x-text="`Evolução Anual (${selectedYear})`"></span>
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-400 px-2" x-text="reportSubTab === 'categories' ? (allMonthsMode ? `Consolidado ${selectedYear}` : formattedSelectedMonth) : `Comparativo de 12 meses (${selectedYear})`"></span>
+                </div>
+
+                <!-- Sub-aba 1: Análise por Categorias -->
+                <div x-show="reportSubTab === 'categories'" class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-6">
+                    <div class="flex items-center justify-between border-b border-mobills-border pb-4">
+                        <h3 class="text-lg font-bold text-white">Análise por Categorias</h3>
+                        <div class="flex bg-mobills-bg p-1 rounded-xl border border-mobills-border text-xs">
+                            <button @click="reportViewType = 'despesas'; $nextTick(() => renderAllCharts())" :class="reportViewType === 'despesas' ? 'bg-red-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg cursor-pointer">Despesas</button>
+                            <button @click="reportViewType = 'receitas'; $nextTick(() => renderAllCharts())" :class="reportViewType === 'receitas' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400'" class="px-4 py-1.5 rounded-lg cursor-pointer">Receitas</button>
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button @click="openImportModal()" class="py-3 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl text-sm cursor-pointer">Importar Mobills</button>
-                        <button @click="openModal()" class="py-3 px-5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-semibold rounded-2xl text-sm cursor-pointer">Novo Lançamento</button>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        <div class="lg:col-span-5 flex justify-center"><div class="relative w-64 h-64"><canvas id="reportsDonutChart"></canvas></div></div>
+                        <div class="lg:col-span-7 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                            <template x-for="item in activeReportData" :key="item.name">
+                                <button @click="navigateToCategoryTransactions(reportViewType === 'despesas' ? 'expense' : 'income', item.name)"
+                                        title="Clique para abrir os lançamentos desta categoria"
+                                        class="w-full bg-mobills-bg hover:bg-mobills-cardHover p-3.5 rounded-xl border border-mobills-border hover:border-mobills-purple/60 flex items-center justify-between transition cursor-pointer group text-left">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs shrink-0 shadow" :style="`background-color: ${item.color}`">
+                                            <i class="fa-solid" :class="item.icon"></i>
+                                        </span>
+                                        <div>
+                                            <span class="font-bold text-sm text-white block group-hover:text-mobills-purpleLight transition" x-text="item.name"></span>
+                                            <span class="text-[11px] text-gray-400" x-text="`${item.percentage}% do total`"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="font-extrabold text-sm" :class="reportViewType === 'despesas' ? 'text-red-400' : 'text-emerald-400'" x-text="formatCurrency(item.total)"></span>
+                                        <i class="fa-solid fa-chevron-right text-xs text-gray-500 group-hover:text-white group-hover:translate-x-0.5 transition"></i>
+                                    </div>
+                                </button>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
-                        <h3 class="font-bold text-base text-white mb-4">Despesas por categoria</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                            <div class="relative w-44 h-44 mx-auto"><canvas id="dashExpenseChart"></canvas></div>
-                            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                                <template x-for="cat in expenseBreakdown" :key="cat.name">
-                                    <button @click="navigateToCategoryTransactions('expense', cat.name)" title="Ver lançamentos desta categoria" class="w-full flex items-center justify-between text-xs p-1.5 rounded-lg hover:bg-mobills-cardHover transition cursor-pointer group">
-                                        <div class="flex items-center space-x-2 truncate">
-                                            <span class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] shrink-0 shadow-sm" :style="`background-color: ${cat.color}`">
-                                                <i class="fa-solid" :class="cat.icon"></i>
-                                            </span>
-                                            <span class="text-gray-200 group-hover:text-white truncate" x-text="cat.name"></span>
-                                        </div>
-                                        <div class="flex items-center space-x-1.5 shrink-0 ml-2">
-                                            <span class="font-bold text-white" x-text="formatCurrency(cat.total)"></span>
-                                            <i class="fa-solid fa-chevron-right text-[9px] text-gray-500 group-hover:text-red-400"></i>
-                                        </div>
-                                    </button>
-                                </template>
-                            </div>
+                <!-- Sub-aba 2: Evolução Anual Comparativa (12 Meses) -->
+                <div x-show="reportSubTab === 'annual'" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-xs font-semibold text-gray-400" x-text="`Total Receitas (${selectedYear})`"></span>
+                            <h4 class="text-xl font-extrabold text-emerald-400" x-text="formatCurrency(annualSummary.totalIncome)"></h4>
+                            <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgIncome)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-xs font-semibold text-gray-400" x-text="`Total Despesas (${selectedYear})`"></span>
+                            <h4 class="text-xl font-extrabold text-red-400" x-text="formatCurrency(annualSummary.totalExpense)"></h4>
+                            <p class="text-[11px] text-gray-400">Média mensal: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgExpense)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-xs font-semibold text-gray-400" x-text="`Saldo Líquido (${selectedYear})`"></span>
+                            <h4 class="text-xl font-extrabold" :class="annualSummary.netBalance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(annualSummary.netBalance)"></h4>
+                            <p class="text-[11px] text-gray-400">Média poupada/mês: <strong class="text-gray-200" x-text="formatCurrency(annualSummary.avgNet)"></strong></p>
+                        </div>
+                        <div class="bg-mobills-card p-5 rounded-2xl border border-mobills-border space-y-1">
+                            <span class="text-xs font-semibold text-gray-400">Mês de Maior Gasto</span>
+                            <h4 class="text-xl font-extrabold text-amber-400" x-text="annualSummary.heaviestMonth ? annualSummary.heaviestMonth.label : '—'"></h4>
+                            <p class="text-[11px] text-gray-400" x-text="annualSummary.heaviestMonth ? formatCurrency(annualSummary.heaviestMonth.expense) : 'Sem despesas no ano'"></p>
                         </div>
                     </div>
 
-                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border flex flex-col justify-between">
-                        <h3 class="font-bold text-base text-white mb-4">Receitas por categoria</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                            <div class="relative w-44 h-44 mx-auto"><canvas id="dashIncomeChart"></canvas></div>
-                            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                                <template x-for="cat in incomeBreakdown" :key="cat.name">
-                                    <button @click="navigateToCategoryTransactions('income', cat.name)" title="Ver lançamentos desta categoria" class="w-full flex items-center justify-between text-xs p-1.5 rounded-lg hover:bg-mobills-cardHover transition cursor-pointer group">
-                                        <div class="flex items-center space-x-2 truncate">
-                                            <span class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] shrink-0 shadow-sm" :style="`background-color: ${cat.color}`">
-                                                <i class="fa-solid" :class="cat.icon"></i>
-                                            </span>
-                                            <span class="text-gray-200 group-hover:text-white truncate" x-text="cat.name"></span>
-                                        </div>
-                                        <div class="flex items-center space-x-1.5 shrink-0 ml-2">
-                                            <span class="font-bold text-emerald-400" x-text="formatCurrency(cat.total)"></span>
-                                            <i class="fa-solid fa-chevron-right text-[9px] text-gray-500 group-hover:text-emerald-400"></i>
-                                        </div>
-                                    </button>
-                                </template>
+                    <div class="bg-mobills-card p-6 rounded-2xl border border-mobills-border space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h3 class="text-lg font-bold text-white" x-text="`Evolução Financeira — ${selectedYear}`"></h3>
+                                <p class="text-xs text-gray-400">Comparativo completo entre Receitas, Despesas e Balanço Mensal ao longo dos 12 meses.</p>
                             </div>
+                            <div class="flex items-center space-x-2">
+                                <button @click="selectedYear--; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><i class="fa-solid fa-chevron-left mr-1"></i><span x-text="selectedYear - 1"></span></button>
+                                <button @click="selectedYear++; $nextTick(() => renderAllCharts())" class="px-3 py-1.5 rounded-xl bg-mobills-bg hover:bg-mobills-cardHover border border-mobills-border text-xs font-bold text-gray-300 cursor-pointer"><span x-text="selectedYear + 1"></span><i class="fa-solid fa-chevron-right ml-1"></i></button>
+                            </div>
+                        </div>
+                        <div class="h-72"><canvas id="monthlyEvolutionChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-mobills-card rounded-2xl border border-mobills-border overflow-hidden">
+                        <div class="px-6 py-4 border-b border-mobills-border flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-white">Detalhamento Mensal (Clique em um mês para abrir)</h4>
+                            <span class="text-[11px] text-gray-400" x-text="`${annualSummary.activeMonthsCount} mês(es) com movimentação`"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-mobills-bg/70 text-gray-400 border-b border-mobills-border uppercase text-[11px]">
+                                        <th class="py-3 px-4 font-semibold">Mês</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Receitas</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Despesas</th>
+                                        <th class="py-3 px-4 font-semibold text-right hidden sm:table-cell">Cartões</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Balanço</th>
+                                        <th class="py-3 px-4 font-semibold text-right hidden md:table-cell">Acumulado Ano</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-mobills-border/40">
+                                    <template x-for="row in yearlyMonthsBreakdown" :key="row.monthIdx">
+                                        <tr @click="selectMonthYear(selectedYear, row.monthIdx); switchTab('dashboard')"
+                                            :class="row.monthIdx === selectedMonth && !allMonthsMode ? 'bg-mobills-purple/15' : 'hover:bg-mobills-cardHover'"
+                                            class="transition cursor-pointer">
+                                            <td class="py-3 px-4 font-bold text-white flex items-center space-x-2">
+                                                <span x-text="row.label"></span>
+                                                <span x-show="row.count > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-mobills-bg text-gray-400 border border-mobills-border" x-text="row.count"></span>
+                                            </td>
+                                            <td class="py-3 px-4 text-right font-semibold text-emerald-400" x-text="formatCurrency(row.income)"></td>
+                                            <td class="py-3 px-4 text-right font-semibold text-red-400" x-text="formatCurrency(row.expense)"></td>
+                                            <td class="py-3 px-4 text-right text-purple-300 hidden sm:table-cell" x-text="formatCurrency(row.cards)"></td>
+                                            <td class="py-3 px-4 text-right font-extrabold" :class="row.balance >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(row.balance)"></td>
+                                            <td class="py-3 px-4 text-right font-bold hidden md:table-cell" :class="row.cumulative >= 0 ? 'text-gray-200' : 'text-red-400'" x-text="formatCurrency(row.cumulative)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1033,6 +1096,10 @@
             <i class="fa-solid fa-bars text-base"></i>
             <span class="text-[10px] font-semibold">Mais</span>
         </button>
+        <button @click="mobileMoreOpen = !mobileMoreOpen" :class="['accounts', 'reports', 'categories', 'settings'].includes(activeTab) ? 'text-mobills-purpleLight' : 'text-gray-400'" class="flex flex-col items-center justify-center p-1.5 space-y-1 cursor-pointer">
+            <i class="fa-solid fa-bars text-base"></i>
+            <span class="text-[10px] font-semibold">Mais</span>
+        </button>
     </nav>
 
     <!-- GAVETA DE MENU COMPLETO NO CELULAR ("MAIS") -->
@@ -1047,10 +1114,6 @@
                     <i class="fa-solid fa-building-columns text-cyan-400 text-base"></i>
                     <span>Contas & Reservas</span>
                 </button>
-                <button @click="switchTab('monthly'); mobileMoreOpen = false" :class="activeTab === 'monthly' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-bg text-gray-200 border border-mobills-border'" class="p-3.5 rounded-2xl flex items-center space-x-3 cursor-pointer">
-                    <i class="fa-solid fa-calendar-days text-amber-400 text-base"></i>
-                    <span>Mês a Mês</span>
-                </button>
                 <button @click="switchTab('reports'); mobileMoreOpen = false" :class="activeTab === 'reports' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-bg text-gray-200 border border-mobills-border'" class="p-3.5 rounded-2xl flex items-center space-x-3 cursor-pointer">
                     <i class="fa-solid fa-chart-pie text-emerald-400 text-base"></i>
                     <span>Relatórios</span>
@@ -1059,9 +1122,9 @@
                     <i class="fa-solid fa-tags text-pink-400 text-base"></i>
                     <span>Categorias</span>
                 </button>
-                <button @click="switchTab('settings'); mobileMoreOpen = false" :class="activeTab === 'settings' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-bg text-gray-200 border border-mobills-border'" class="col-span-2 p-3.5 rounded-2xl flex items-center space-x-3 cursor-pointer">
+                <button @click="switchTab('settings'); mobileMoreOpen = false" :class="activeTab === 'settings' ? 'bg-mobills-purple text-white font-bold' : 'bg-mobills-bg text-gray-200 border border-mobills-border'" class="p-3.5 rounded-2xl flex items-center space-x-3 cursor-pointer">
                     <i class="fa-solid fa-gear text-purple-400 text-base"></i>
-                    <span>Configurações & Backup</span>
+                    <span>Configurações</span>
                 </button>
             </div>
         </div>
@@ -1104,58 +1167,58 @@
     </div>
 
     <!-- MODAL CADASTRO / EDIÇÃO / UNIFICAÇÃO DE CATEGORIA -->
-    <div x-show="categoryModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-        <div @click.away="categoryModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
+    <!-- MODAL CADASTRO / EDIÇÃO DE CARTÃO DE CRÉDITO -->
+    <div x-show="cardModal.open" x-transition.opacity x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div @click.away="cardModal.open = false" class="bg-mobills-card w-full max-w-md rounded-2xl border border-mobills-border shadow-2xl overflow-hidden my-auto">
             <div class="px-6 py-4 border-b border-mobills-border flex justify-between items-center bg-mobills-bg/50">
-                <h3 class="font-bold text-base text-white" x-text="categoryModal.originalName ? 'Editar / Unificar Categoria' : 'Nova Categoria'"></h3>
-                <button type="button" @click="categoryModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="font-bold text-base text-white" x-text="cardModal.editingId ? 'Editar Cartão de Crédito' : 'Novo Cartão de Crédito'"></h3>
+                <button type="button" @click="cardModal.open = false" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form @submit.prevent="saveCategory()" class="p-6 space-y-4 text-xs">
-                <!-- Pré-visualização ao vivo -->
-                <div class="p-3 bg-mobills-bg rounded-xl border border-mobills-border flex items-center space-x-3">
-                    <span class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base shadow shrink-0 transition" :style="`background-color: ${categoryForm.color}`">
-                        <i class="fa-solid" :class="categoryForm.icon"></i>
-                    </span>
-                    <div>
-                        <span class="text-[10px] uppercase tracking-wider text-gray-400 block">Pré-visualização nas transações</span>
-                        <strong class="text-sm text-white" x-text="categoryForm.name || 'Nome da Categoria'"></strong>
-                    </div>
-                </div>
-
+            <form @submit.prevent="saveCard()" class="p-6 space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1">Nome da Categoria *</label>
-                    <input type="text" required placeholder="Ex: Abastecimento, Mercado, Pet, Presentes..." x-model="categoryForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
-                    <p x-show="categoryModal.originalName" class="text-[11px] text-gray-400 mt-1.5">
-                        Se digitar o nome de uma categoria já existente, todos os lançamentos serão unificados nela automaticamente.
-                    </p>
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1.5">Ícone da Categoria</label>
-                    <div class="grid grid-cols-7 gap-2 max-h-36 overflow-y-auto p-1 bg-mobills-bg rounded-xl border border-mobills-border">
-                        <template x-for="ic in categoryIconOptions" :key="ic.icon">
-                            <button type="button" @click="categoryForm.icon = ic.icon" :title="ic.label"
-                                    :class="categoryForm.icon === ic.icon ? 'bg-mobills-purple text-white ring-2 ring-white' : 'bg-mobills-card text-gray-300 hover:bg-mobills-cardHover hover:text-white'"
-                                    class="h-9 rounded-lg flex items-center justify-center text-sm transition cursor-pointer">
-                                <i class="fa-solid" :class="ic.icon"></i>
+                    <label class="block text-gray-400 mb-1.5">Banco Emissor *</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto pr-1">
+                        <template x-for="b in bankList" :key="b.id">
+                            <button type="button" @click="selectCardBank(b)"
+                                    :class="cardForm.bank === b.id ? 'ring-2 ring-white bg-mobills-cardHover' : 'bg-mobills-bg opacity-80 hover:opacity-100 border border-mobills-border'"
+                                    class="p-2 rounded-xl flex flex-col items-center justify-center space-y-1 transition cursor-pointer">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-[10px] shadow" :style="`background-color: ${b.color}`" x-text="b.short"></span>
+                                <span class="text-[10px] text-gray-200 font-semibold truncate w-full text-center" x-text="b.name"></span>
                             </button>
                         </template>
                     </div>
                 </div>
-
                 <div>
-                    <label class="block text-gray-400 mb-1.5">Cor da Categoria</label>
-                    <div class="flex flex-wrap gap-2">
-                        <template x-for="c in ['#06b6d4','#ef4444','#8b5cf6','#3b82f6','#10b981','#ec4899','#a855f7','#f59e0b','#14b8a6','#22c55e','#f97316','#6366f1','#6b7280']" :key="c">
-                            <button type="button" @click="categoryForm.color = c"
-                                    :class="categoryForm.color === c ? 'ring-2 ring-white scale-110' : 'opacity-75 hover:opacity-100'"
-                                    class="w-7 h-7 rounded-full transition cursor-pointer" :style="`background-color: ${c}`"></button>
-                        </template>
+                    <label class="block text-gray-400 mb-1">Nome / Apelido do Cartão *</label>
+                    <input type="text" required placeholder="Ex: Nubank Paulo, Inter Isabela..." x-model="cardForm.name" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Titular</label>
+                        <select x-model="cardForm.user" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                            <option value="Compartilhado">Casa</option>
+                            <option value="Paulo">Paulo</option>
+                            <option value="Isabela">Isabela</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Limite Total (R$)</label>
+                        <input type="number" step="0.01" min="0" placeholder="0,00" x-model="cardForm.limit" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Dia de Fechamento *</label>
+                        <input type="number" min="1" max="31" required x-model="cardForm.closingDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Dia de Vencimento *</label>
+                        <input type="number" min="1" max="31" required x-model="cardForm.dueDay" class="w-full bg-mobills-bg text-white px-3 py-2.5 rounded-xl border border-mobills-border">
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
-                    <button type="button" @click="categoryModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Categoria</button>
+                    <button type="button" @click="cardModal.open = false" class="px-4 py-2 text-gray-400 cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-mobills-purple hover:bg-mobills-purpleLight text-white font-bold rounded-xl cursor-pointer">Salvar Cartão</button>
                 </div>
             </form>
         </div>
@@ -1441,6 +1504,7 @@
                 filterCategory: '',
                 selectedTxIds: [],
                 mobileMoreOpen: false,
+                reportSubTab: 'categories',
                 reportViewType: 'despesas',
                 toast: { visible: false, message: '', type: 'success' },
                 // Configuração padrão embutida para conexão automática sem digitação manual
@@ -1592,7 +1656,7 @@
                     setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
                 get pageTitle() {
-                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', accounts: 'Contas & Reservas', cards: 'Cartões de Crédito', monthly: 'Mês a Mês', reports: 'Relatórios & Previsões', categories: 'Categorias', settings: 'Configurações / Backup' };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', accounts: 'Contas & Reservas', cards: 'Cartões de Crédito', reports: 'Relatórios & Previsões', categories: 'Categorias', settings: 'Configurações / Backup' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
                 get formattedSelectedMonth() {
@@ -2896,7 +2960,7 @@
                             options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, cutout: '75%' }
                         }));
 
-                        this._safeRenderChart('repDonut', 'reportsDonutChart', this.activeTab === 'reports', () => {
+                        this._safeRenderChart('repDonut', 'reportsDonutChart', this.activeTab === 'reports' && this.reportSubTab === 'categories', () => {
                             const rData = this.activeReportData;
                             return {
                                 type: 'doughnut',
@@ -2905,7 +2969,7 @@
                             };
                         });
 
-                        this._safeRenderChart('monthlyEv', 'monthlyEvolutionChart', this.activeTab === 'monthly', () => {
+                        this._safeRenderChart('monthlyEv', 'monthlyEvolutionChart', this.activeTab === 'reports' && this.reportSubTab === 'annual', () => {
                             const yearRows = this.yearlyMonthsBreakdown;
                             return {
                                 type: 'bar',
