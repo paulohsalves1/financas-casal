@@ -613,7 +613,7 @@
                     });
 
                     const ascDates = Object.keys(dateMap).sort((a, b) => a.localeCompare(b));
-                    let running = 0;
+                    let running = this.priorAccumulatedBalances.priorProjectedBalance;
                     const computed = ascDates.map(d => {
                         const items = dateMap[d];
                         const daySubtotal = items.reduce((acc, t) => {
@@ -745,6 +745,7 @@
                     });
                 },
                 get metrics() {
+                    const prior = this.priorAccumulatedBalances;
                     const list = this.basePeriodTransactions;
                     let totalInc = 0, totalExp = 0, incConc = 0, expConc = 0, totalCards = 0;
                     let transferEffectAll = 0, transferEffectCompleted = 0;
@@ -764,15 +765,44 @@
                         }
                     });
                     const bal = totalInc - totalExp;
+                    const totalAvailableCardsLimit = this.filteredCardsSummary.reduce((sum, c) => sum + (Number(c.availableLimit) || 0), 0);
                     return {
                         totalReceitas: totalInc,
                         totalDespesas: totalExp,
                         totalCartoes: totalCards,
+                        totalLimiteDisponivelCartoes: totalAvailableCardsLimit,
                         receitasConcluidas: incConc,
                         despesasConcluidas: expConc,
                         balancoMensal: bal,
-                        saldoAtual: incConc - expConc + transferEffectCompleted,
-                        saldoPrevistoMes: bal + transferEffectAll
+                        saldoAtual: prior.priorCompletedBalance + (incConc - expConc + transferEffectCompleted),
+                        saldoPrevistoMes: prior.priorProjectedBalance + (bal + transferEffectAll)
+                    };
+                },
+                get priorAccumulatedBalances() {
+                    const cutoffDate = this.allMonthsMode
+                        ? `${this.selectedYear}-01-01`
+                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+
+                    let priorCompleted = 0;
+                    let priorProjected = 0;
+
+                    this.transactions.forEach(t => {
+                        if (!t.date || t.date >= cutoffDate) return;
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
+
+                        const amt = Number(t.amount) || 0;
+                        let delta = 0;
+                        if (t.type === 'transfer') delta = this.getTransferWalletEffect(t);
+                        else if (t.type === 'income') delta = amt;
+                        else delta = -amt;
+
+                        priorProjected += delta;
+                        if (t.status === 'completed') priorCompleted += delta;
+                    });
+
+                    return {
+                        priorCompletedBalance: priorCompleted,
+                        priorProjectedBalance: priorProjected
                     };
                 },
                 getTransferWalletEffect(t) {
@@ -896,13 +926,20 @@
                         : `Resgate de ${this.getAccountName(this.form.fromAccountId)}`;
                 },
                 get filteredCardsSummary() {
+                    const now = new Date();
+                    const currentMonthCutoff = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+                    const selectedMonthCutoff = this.allMonthsMode
+                        ? `${this.selectedYear}-01-01`
+                        : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+                    const effectiveCutoff = selectedMonthCutoff > currentMonthCutoff ? selectedMonthCutoff : currentMonthCutoff;
+
                     return this.cards.filter(c => this.selectedUserFilter === 'Todos' || c.user === this.selectedUserFilter).map(card => {
                         const periodItems = this.basePeriodTransactions.filter(t => t.cardId === card.id);
                         const periodTotal = periodItems.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         const pendingTotal = periodItems.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         
                         const totalCommitted = this.transactions
-                            .filter(t => t.cardId === card.id && t.status !== 'completed')
+                            .filter(t => t.cardId === card.id && t.status !== 'completed' && (!t.date || t.date >= effectiveCutoff))
                             .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         const limit = Number(card.limit) || 0;
                         const availableLimit = limit - totalCommitted;
@@ -1801,7 +1838,7 @@
                     <div class="min-w-0 pr-2">
                         <p class="text-xs md:text-sm text-gray-400 flex items-center gap-1 truncate">Saldo atual <i class="fa-solid fa-chevron-right text-[10px]"></i></p>
                         <p class="text-base sm:text-lg md:text-2xl font-bold text-white mt-1 truncate" x-text="formatCurrency(metrics.saldoAtual)"></p>
-                        <p class="text-[11px] md:text-xs text-gray-400 mt-1 truncate">Previsto: <span class="text-gray-200 font-medium" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
+                        <p class="text-xs md:text-sm text-gray-300 mt-1.5 truncate">Previsto: <span class="font-bold" :class="metrics.saldoPrevistoMes >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.saldoPrevistoMes)"></span></p>
                     </div>
                     <div class="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
                         <i class="fa-solid fa-building-columns text-sm md:text-lg"></i>
@@ -1837,7 +1874,7 @@
                     <div class="min-w-0 pr-2">
                         <p class="text-xs md:text-sm text-gray-400 flex items-center gap-1 truncate">Cartão de crédito <i class="fa-solid fa-chevron-right text-[10px]"></i></p>
                         <p class="text-base sm:text-lg md:text-2xl font-bold text-purple-400 mt-1 truncate" x-text="formatCurrency(metrics.totalCartoes)"></p>
-                        <p class="text-[11px] md:text-xs text-gray-400 mt-1 truncate">Balanço: <span class="font-medium" :class="metrics.balancoMensal >= 0 ? 'text-cyan-400' : 'text-red-400'" x-text="formatCurrency(metrics.balancoMensal)"></span></p>
+                        <p class="text-[11px] md:text-xs text-gray-400 mt-1 truncate">Limite disp.: <span class="font-medium" :class="metrics.totalLimiteDisponivelCartoes >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(metrics.totalLimiteDisponivelCartoes)"></span></p>
                     </div>
                     <div class="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
                         <i class="fa-solid fa-credit-card text-sm md:text-lg"></i>
@@ -2096,9 +2133,11 @@
                             </div>
 
                             <!-- Day Projected Balance Footer -->
-                            <div class="bg-[#18181e] px-4 py-2 flex justify-center border-t border-[#2c2c35]">
-                                <span class="px-3 py-1 rounded-full bg-[#25252d] text-[11px] text-gray-300">
-                                    Saldo Previsto Final do Dia <strong class="text-white ml-1" x-text="formatCurrency(group.runningBalance)"></strong>
+                            <div class="bg-[#18181e] px-4 py-2.5 flex justify-center border-t border-[#2c2c35]">
+                                <span class="px-4 py-1.5 rounded-full bg-[#25252d] border border-[#363644] text-xs md:text-sm text-gray-200 font-medium shadow-sm flex items-center gap-1.5">
+                                    <i class="fa-solid fa-wallet text-purple-400 text-xs"></i>
+                                    <span>Saldo Previsto Final do Dia</span>
+                                    <strong class="font-bold tracking-tight ml-0.5" :class="group.runningBalance >= 0 ? 'text-cyan-300' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
                                 </span>
                             </div>
                         </div>
