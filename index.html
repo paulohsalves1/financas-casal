@@ -138,6 +138,7 @@
                 searchQuery: '',
                 filterType: 'todos',
                 filterCategory: '',
+                filterCardId: '',
                 selectedTxIds: [],
                 mobileSelectionMode: false,
                 mobileMoreOpen: false,
@@ -169,6 +170,16 @@
                 accounts: [],
                 cardModal: { open: false, editingId: null },
                 cardForm: { bank: 'nubank', name: '', user: 'Compartilhado', limit: '', closingDay: 23, dueDay: 30, color: '#820ad1' },
+                cardImportModal: {
+                    open: false,
+                    cardId: '',
+                    mode: 'file',
+                    rawText: '',
+                    targetInvoiceMonth: '',
+                    useInvoiceDueDate: true,
+                    skipCredits: true,
+                    rows: []
+                },
                 accountModal: { open: false, editingId: null },
                 accountForm: { bank: 'nubank', name: '', categoryType: 'Reserva de Emergência', user: 'Compartilhado', initialBalance: '', goal: '' },
                 bankList: [
@@ -376,6 +387,7 @@
                         this.filterType = 'todos';
                         this.filterStatusOnly = 'all';
                         this.filterCategory = '';
+                        this.filterCardId = '';
                         this.searchQuery = '';
                     }
                     this.selectedTxIds = [];
@@ -387,6 +399,18 @@
                     this.filterType = type;
                     this.filterStatusOnly = statusOnly;
                     this.filterCategory = '';
+                    this.filterCardId = '';
+                    this.searchQuery = '';
+                    this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
+                    this.activeTab = 'transactions';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                navigateToCategoryTransactions(type, categoryName) {
+                    this.filterType = type;
+                    this.filterStatusOnly = 'all';
+                    this.filterCategory = categoryName;
+                    this.filterCardId = '';
                     this.searchQuery = '';
                     this.selectedTxIds = [];
                     this.mobileSelectionMode = false;
@@ -885,9 +909,10 @@
                         if (this.filterType !== 'todos' && t.type !== this.filterType) return false;
                         if (this.filterStatusOnly === 'pending' && t.status === 'completed') return false;
                         if (this.filterCategory && (t.category || 'Outros') !== this.filterCategory) return false;
+                        if (this.filterCardId && t.cardId !== this.filterCardId) return false;
                         if (this.searchQuery) {
                             const q = this.searchQuery.toLowerCase();
-                            const match = (t.description||'').toLowerCase().includes(q) || (t.category||'').toLowerCase().includes(q);
+                            const match = (t.description||'').toLowerCase().includes(q) || (t.category||'').toLowerCase().includes(q) || (t.account||'').toLowerCase().includes(q);
                             if (!match) return false;
                         }
                         return true;
@@ -1340,6 +1365,244 @@
                 promptDeleteCard(card) {
                     this.deleteModal = { open: true, item: null, card: card, account: null, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 };
                 },
+                openCardImportModal(card) {
+                    const defaultMonth = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`;
+                    this.cardImportModal = {
+                        open: true,
+                        cardId: card.id,
+                        mode: 'file',
+                        rawText: '',
+                        targetInvoiceMonth: defaultMonth,
+                        useInvoiceDueDate: true,
+                        skipCredits: true,
+                        rows: []
+                    };
+                },
+                guessCategoryFromDescription(desc) {
+                    const n = (desc || '').toLowerCase();
+                    if (/posto|combust|gasolin|etanol|ipiranga|shell|petrobras|ale\b|abastec/.test(n)) return 'Abastecimento';
+                    if (/supermercad|mercad|atacad|assai|carrefour|pao de acucar|extra\b|hortifruti|acougue|padaria|panificadora/.test(n)) return 'Mercado';
+                    if (/ifood|restaur|lanch|pizza|burger|mcdonald|bk\b|subway|sorvet|cafe|bar\b|churrasc|sushi|acai/.test(n)) return 'Alimentação';
+                    if (/uber|99app|99\b|estacion|pedagio|sem parar|veloe|azul|gol\b|latam|passag|oficina|pneu|auto pecas/.test(n)) return 'Transporte';
+                    if (/farmac|drogasil|droga raia|pague menos|panvel|ultrafarma|medic|clinic|hospit|dentist|exame|laborat/.test(n)) return 'Saúde';
+                    if (/escola|faculd|universid|curso|udemy|alura|livraria|papelaria|colegio|mensalidade/.test(n)) return 'Educação';
+                    if (/netflix|spotify|amazon prime|disney|hbo|max\b|globoplay|youtube|icloud|apple\.com|google storage|deezer/.test(n)) return 'Assinatura';
+                    if (/energ|cpfl|enel|cemig|copel|agua|sabesp|sanepar|vivo|claro|tim\b|oi\b|internet|condom|aluguel|leroy|telhanorte/.test(n)) return 'Casa';
+                    if (/cinema|ingresso|teatro|hotel|airbnb|booking|viagem|parque|show/.test(n)) return 'Lazer';
+                    if (/amazon|mercadolivre|mercado livre|shopee|shein|magalu|magazine|americanas|casas bahia|renner|riachuelo|cea\b|zara|centauro|netshoes/.test(n)) return 'Compras';
+                    return 'Outros';
+                },
+                buildCardInvoiceRow(rawDate, rawDesc, rawAmount, card) {
+                    let desc = String(rawDesc || '').replace(/\s+/g, ' ').trim();
+                    desc = desc.replace(/\bparcela\s*(\d+)\s*(?:de|\/)\s*(\d+)/i, '($1/$2)');
+                    const isCredit = rawAmount < 0 || /pagamento\s+(?:de\s+)?fatura|pagto\s+fatura|estorno|cr[eé]dito\s+em\s+fatura|desconto\s+fatura/i.test(desc);
+                    const amount = Math.abs(Number(rawAmount) || 0);
+                    const purchaseDate = this.parseMobillsDate(rawDate);
+                    const [ty, tm] = (this.cardImportModal.targetInvoiceMonth || `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`).split('-').map(Number);
+                    const dueDay = Number(card?.dueDay) || 10;
+                    const maxDay = new Date(ty, tm, 0).getDate();
+                    const invoiceDueDate = `${ty}-${String(tm).padStart(2, '0')}-${String(Math.min(dueDay, maxDay)).padStart(2, '0')}`;
+                    const computedDueDate = card ? this.computeCardDueDate(purchaseDate, card, 0) : invoiceDueDate;
+
+                    return {
+                        id: 'imp_cc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                        selected: !isCredit,
+                        isCredit,
+                        purchaseDate,
+                        invoiceDueDate,
+                        computedDueDate,
+                        description: desc,
+                        amount,
+                        category: this.guessCategoryFromDescription(desc)
+                    };
+                },
+                parseOfxContent(text, card) {
+                    const blocks = text.split(/<STMTTRN>/i).slice(1);
+                    const rows = [];
+                    blocks.forEach(b => {
+                        const dtMatch = b.match(/<DTPOSTED>(\d{8})/i);
+                        const amtMatch = b.match(/<TRNAMT>([-+]?\d+(?:[.,]\d+)?)/i);
+                        const memoMatch = b.match(/<MEMO>([^\r\n<]+)/i) || b.match(/<NAME>([^\r\n<]+)/i);
+                        if (!amtMatch || !memoMatch) return;
+                        let dateStr = new Date().toISOString().split('T')[0];
+                        if (dtMatch) {
+                            const raw = dtMatch[1];
+                            dateStr = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+                        }
+                        const rawVal = parseFloat(amtMatch[1].replace(',', '.'));
+                        const desc = memoMatch[1].trim();
+                        if (!desc || rawVal === 0) return;
+                        // Em OFX de cartão, compras costumam vir negativas e pagamentos positivos
+                        const normalizedVal = rawVal < 0 ? Math.abs(rawVal) : -Math.abs(rawVal);
+                        rows.push(this.buildCardInvoiceRow(dateStr, desc, normalizedVal, card));
+                    });
+                    return rows;
+                },
+                handleCardInvoiceFile(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const card = this.cards.find(c => c.id === this.cardImportModal.cardId);
+                    const fileName = file.name.toLowerCase();
+
+                    if (fileName.endsWith('.ofx') || fileName.endsWith('.qfx')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const rows = this.parseOfxContent(String(e.target.result || ''), card);
+                            this.cardImportModal.rows = rows;
+                            this.showToast(rows.length > 0 ? `${rows.length} lançamentos lidos do arquivo OFX!` : 'Nenhum lançamento encontrado no OFX.', rows.length > 0 ? 'success' : 'error');
+                        };
+                        reader.readAsText(file, 'ISO-8859-1');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const parsed = [];
+
+                            workbook.SheetNames.forEach(sheetName => {
+                                const sheet = workbook.Sheets[sheetName];
+                                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                                if (rows.length < 2) return;
+
+                                let headerIdx = rows.findIndex(r =>
+                                    r.some(cell => /data|date|descri|title|lan[çc]amento|estabelecimento|valor|amount/i.test(String(cell)))
+                                );
+                                if (headerIdx === -1) headerIdx = 0;
+
+                                const headers = rows[headerIdx].map(h => String(h).toLowerCase().trim());
+                                const colIdx = {
+                                    date: headers.findIndex(h => /data|date/.test(h)),
+                                    desc: headers.findIndex(h => /descri|title|lan[çc]amento|estabelecimento|hist[oó]rico/.test(h)),
+                                    val: headers.findIndex(h => /valor|amount|total|pre[çc]o/.test(h)),
+                                    inst: headers.findIndex(h => /parcela|installment/.test(h))
+                                };
+
+                                for (let i = headerIdx + 1; i < rows.length; i++) {
+                                    const r = rows[i];
+                                    if (!r || r.every(c => String(c).trim() === '')) continue;
+
+                                    const rawValCell = colIdx.val !== -1 ? r[colIdx.val] : r.find(c => /^-?\s*(R\$)?\s*\d+[.,]\d{2}$/.test(String(c).trim()));
+                                    const numericVal = this.parseMobillsAmount(rawValCell);
+                                    if (numericVal === 0) continue;
+
+                                    let desc = String((colIdx.desc !== -1 ? r[colIdx.desc] : (r[1] || r[0])) || '').trim();
+                                    if (!desc || /^total|^saldo|^subtotal/i.test(desc)) continue;
+
+                                    if (colIdx.inst !== -1 && r[colIdx.inst]) {
+                                        const instStr = String(r[colIdx.inst]).trim();
+                                        if (/^\d+\/\d+$/.test(instStr) && !desc.includes(instStr)) {
+                                            desc = `${desc} (${instStr})`;
+                                        }
+                                    }
+
+                                    const rawDateCell = colIdx.date !== -1 ? r[colIdx.date] : r[0];
+                                    parsed.push(this.buildCardInvoiceRow(rawDateCell, desc, numericVal, card));
+                                }
+                            });
+
+                            this.cardImportModal.rows = parsed;
+                            this.showToast(parsed.length > 0 ? `${parsed.length} itens encontrados na fatura!` : 'Não foi possível identificar colunas de Data, Descrição e Valor.', parsed.length > 0 ? 'success' : 'error');
+                        } catch (err) {
+                            this.showToast('Erro ao processar arquivo da fatura.', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                },
+                parseCardInvoiceText() {
+                    const text = String(this.cardImportModal.rawText || '').trim();
+                    if (!text) {
+                        this.showToast('Cole as linhas da fatura antes de processar.', 'error');
+                        return;
+                    }
+                    const card = this.cards.find(c => c.id === this.cardImportModal.cardId);
+                    const monthMap = { jan: '01', fev: '02', mar: '03', abr: '04', mai: '05', jun: '06', jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12' };
+                    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    const parsed = [];
+
+                    lines.forEach(line => {
+                        // Captura valor monetário no fim ou meio da linha (ex: R$ 125,90 ou -45,00)
+                        const valMatch = line.match(/(-?\s*(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}|-?\s*(?:R\$\s*)?\d+,\d{2})\s*$/);
+                        if (!valMatch) return;
+                        const numericVal = this.parseMobillsAmount(valMatch[1]);
+                        if (numericVal === 0) return;
+
+                        let rest = line.slice(0, valMatch.index).trim();
+                        let dateStr = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+
+                        // Formato DD/MM/YYYY ou DD/MM
+                        const dmyMatch = rest.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*[-–]?\s*/);
+                        // Formato Nubank PDF/App: "12 NOV" ou "12 NOV 2026"
+                        const txtDateMatch = !dmyMatch && rest.match(/^(\d{1,2})\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?:\s+(\d{2,4}))?\s*[-–]?\s*/i);
+
+                        if (dmyMatch) {
+                            const dd = dmyMatch[1].padStart(2, '0');
+                            const mm = dmyMatch[2].padStart(2, '0');
+                            const yy = dmyMatch[3] ? (dmyMatch[3].length === 2 ? '20' + dmyMatch[3] : dmyMatch[3]) : String(this.selectedYear);
+                            dateStr = `${yy}-${mm}-${dd}`;
+                            rest = rest.slice(dmyMatch[0].length).trim();
+                        } else if (txtDateMatch) {
+                            const dd = txtDateMatch[1].padStart(2, '0');
+                            const mm = monthMap[txtDateMatch[2].toLowerCase()] || '01';
+                            const yy = txtDateMatch[3] ? (txtDateMatch[3].length === 2 ? '20' + txtDateMatch[3] : txtDateMatch[3]) : String(this.selectedYear);
+                            dateStr = `${yy}-${mm}-${dd}`;
+                            rest = rest.slice(txtDateMatch[0].length).trim();
+                        }
+
+                        if (!rest || /^total|^saldo|^pagamento/i.test(rest)) return;
+                        parsed.push(this.buildCardInvoiceRow(dateStr, rest, numericVal, card));
+                    });
+
+                    this.cardImportModal.rows = parsed;
+                    this.showToast(parsed.length > 0 ? `${parsed.length} lançamentos extraídos do texto!` : 'Nenhuma linha no formato "Data Descrição Valor" encontrada.', parsed.length > 0 ? 'success' : 'error');
+                },
+                get cardImportSelectedSummary() {
+                    const selected = this.cardImportModal.rows.filter(r => r.selected && (!this.cardImportModal.skipCredits || !r.isCredit));
+                    const total = selected.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+                    return { count: selected.length, total };
+                },
+                confirmCardInvoiceImport() {
+                    const card = this.cards.find(c => c.id === this.cardImportModal.cardId);
+                    if (!card) return;
+                    const toImport = this.cardImportModal.rows.filter(r => r.selected && (!this.cardImportModal.skipCredits || !r.isCredit));
+                    if (toImport.length === 0) {
+                        this.showToast('Selecione pelo menos 1 item para importar.', 'error');
+                        return;
+                    }
+
+                    const [ty, tm] = (this.cardImportModal.targetInvoiceMonth || `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`).split('-').map(Number);
+                    const dueDay = Number(card.dueDay) || 10;
+                    const maxDay = new Date(ty, tm, 0).getDate();
+                    const fixedInvoiceDueDate = `${ty}-${String(tm).padStart(2, '0')}-${String(Math.min(dueDay, maxDay)).padStart(2, '0')}`;
+
+                    toImport.forEach((row, idx) => {
+                        const finalDate = this.cardImportModal.useInvoiceDueDate ? fixedInvoiceDueDate : row.computedDueDate;
+                        this.transactions.push({
+                            id: 'tx_cc_imp_' + Date.now() + '_' + idx + Math.random().toString(36).substring(2, 5),
+                            type: 'expense',
+                            amount: Number(row.amount) || 0,
+                            date: finalDate,
+                            description: row.description,
+                            category: row.category || 'Outros',
+                            user: card.user || 'Compartilhado',
+                            account: card.name,
+                            cardId: card.id,
+                            status: 'pending'
+                        });
+                    });
+
+                    if (this.cardImportModal.useInvoiceDueDate && ty && tm) {
+                        this.selectedYear = ty;
+                        this.selectedMonth = tm - 1;
+                    }
+
+                    this.cardImportModal.open = false;
+                    this.saveToStorage();
+                    this.renderAllCharts();
+                    this.showToast(`${toImport.length} compras importadas para a fatura do ${card.name}!`);
+                },
                 payCardInvoice(card) {
                     let count = 0;
                     this.transactions.forEach(t => {
@@ -1360,11 +1623,13 @@
                     }
                 },
                 navigateToCardTransactions(cardId) {
-                    const cardName = this.getCardName(cardId);
                     this.filterType = 'expense';
+                    this.filterStatusOnly = 'all';
                     this.filterCategory = '';
-                    this.searchQuery = cardName;
+                    this.filterCardId = cardId;
+                    this.searchQuery = '';
                     this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
                     this.activeTab = 'transactions';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
@@ -2551,18 +2816,11 @@
                             <span x-text="'Categoria: ' + filterCategory"></span>
                             <button @click="filterCategory = ''" class="hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                    </div>
 
-                    <!-- Barra de Ações em Lote -->
-                    <div x-show="selectedTxIds.length > 0" class="flex flex-wrap items-center justify-between gap-2 bg-purple-950/40 border border-purple-500/40 rounded-xl p-3">
-                        <div class="flex items-center gap-2">
-                            <button @click="toggleSelectAllFiltered()" class="text-xs text-purple-300 underline" x-text="isAllFilteredSelected ? 'Desmarcar todos' : 'Marcar todos'"></button>
-                            <span class="text-xs font-semibold text-white" x-text="selectedTxIds.length + ' selecionado(s)'"></span>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-1.5">
-                            <button @click="bulkUpdateStatus('completed')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">Efetivar</button>
-                            <button @click="bulkUpdateStatus('pending')" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition">Pendente</button>
-                            <button @click="promptBulkDelete()" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition">Excluir</button>
+                        <div x-show="filterCardId" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-600/20 border border-purple-500/40 text-purple-300 text-xs">
+                            <i class="fa-solid fa-credit-card text-[10px]"></i>
+                            <span x-text="'Cartão: ' + getCardName(filterCardId)"></span>
+                            <button @click="filterCardId = ''" class="hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
                 </div>
@@ -2971,9 +3229,14 @@
                             </div>
 
                             <div class="bg-[#18181e] px-5 py-3 border-t border-[#2c2c35] flex flex-wrap items-center justify-between gap-2">
-                                <button @click="openModalForCard(card.id)" class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-xs font-semibold transition">
-                                    + Lançar Compra
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="openModalForCard(card.id)" class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-xs font-semibold transition">
+                                        + Lançar Compra
+                                    </button>
+                                    <button @click="openCardImportModal(card)" class="px-3 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition" title="Importar arquivo CSV, Excel, OFX ou colar texto da fatura">
+                                        <i class="fa-solid fa-file-import"></i> Importar Fatura
+                                    </button>
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <button @click="navigateToCardTransactions(card.id)" class="px-3 py-1.5 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] text-gray-200 text-xs font-medium transition">
                                         Ver Itens (<span x-text="card.items.length"></span>)
@@ -3557,37 +3820,37 @@
         </div>
     </div>
 
-    <!-- ==================== MODAL: CATEGORIA ==================== -->
+    <!-- ==================== MODAL: CATEGORIA PERSONALIZADA ==================== -->
     <div x-show="categoryModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div @click.away="categoryModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white" x-text="categoryModal.originalName ? 'Editar / Unificar Categoria' : 'Nova Categoria'"></h3>
+                <h3 class="text-lg font-bold text-white" x-text="categoryModal.originalName ? 'Editar Categoria' : 'Nova Categoria'"></h3>
                 <button @click="categoryModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Nome da Categoria *</label>
-                <input type="text" x-model="categoryForm.name" placeholder="Ex: Mercado, Pet, Viagem..." class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white">
+                <input type="text" x-model="categoryForm.name" placeholder="Ex: Pet, Viagem, Farmácia..." class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white">
             </div>
 
             <div>
-                <label class="block text-xs text-gray-400 mb-2">Cor</label>
-                <div class="flex flex-wrap gap-2">
-                    <template x-for="c in ['#06b6d4','#ef4444','#f97316','#eab308','#10b981','#22c55e','#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#6b7280']" :key="c">
-                        <button type="button" @click="categoryForm.color = c"
-                                :class="categoryForm.color === c ? 'ring-2 ring-white scale-110' : ''"
-                                class="w-7 h-7 rounded-full transition" :style="'background-color:' + c"></button>
+                <label class="block text-xs text-gray-400 mb-1">Cor</label>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <template x-for="col in ['#06b6d4','#ef4444','#f97316','#eab308','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#6b7280']" :key="col">
+                        <button type="button" @click="categoryForm.color = col"
+                                :class="categoryForm.color === col ? 'ring-2 ring-white scale-110' : 'opacity-75'"
+                                class="w-7 h-7 rounded-full transition" :style="'background-color:' + col"></button>
                     </template>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs text-gray-400 mb-2">Ícone</label>
-                <div class="grid grid-cols-6 gap-2 max-h-44 overflow-y-auto p-1">
+                <label class="block text-xs text-gray-400 mb-1.5">Ícone</label>
+                <div class="grid grid-cols-6 gap-1.5 max-h-40 overflow-y-auto bg-[#121216] p-2 rounded-xl border border-[#2c2c35]">
                     <template x-for="opt in categoryIconOptions" :key="opt.icon">
                         <button type="button" @click="categoryForm.icon = opt.icon"
-                                :class="categoryForm.icon === opt.icon ? 'bg-purple-600 text-white' : 'bg-[#121216] text-gray-400 hover:text-white'"
-                                class="h-10 rounded-xl flex items-center justify-center transition" :title="opt.label">
+                                :class="categoryForm.icon === opt.icon ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-[#25252d]'"
+                                class="p-2 rounded-lg flex items-center justify-center text-sm transition" :title="opt.label">
                             <i class="fa-solid" :class="opt.icon"></i>
                         </button>
                     </template>
@@ -3603,26 +3866,26 @@
 
     <!-- ==================== MODAL: TETO GERAL DE DESPESAS ==================== -->
     <div x-show="totalBudgetModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div @click.away="totalBudgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-sm p-6 space-y-4">
+        <div @click.away="totalBudgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white">Teto Geral Mensal</h3>
+                <h3 class="text-lg font-bold text-white">Teto Geral Mensal de Despesas</h3>
                 <button @click="totalBudgetModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-gray-400">Defina o limite máximo de despesas mensais da família (deixe 0 para remover).</p>
+            <p class="text-xs text-gray-400">Defina o limite máximo mensal de despesas somando toda a família (deixe 0 para remover).</p>
             <div>
-                <label class="block text-xs text-gray-400 mb-1">Valor do Teto Mensal (R$)</label>
-                <input type="number" step="0.01" min="0" x-model="totalBudgetModal.amount" placeholder="Ex: 7500,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                <label class="block text-xs text-gray-400 mb-1">Valor Mensal (R$)</label>
+                <input type="number" step="0.01" x-model="totalBudgetModal.amount" placeholder="Ex: 7500,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white">
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" @click="totalBudgetModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
-                <button type="button" @click="saveTotalBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar Teto</button>
+                <button type="button" @click="saveTotalBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Salvar Teto</button>
             </div>
         </div>
     </div>
 
-    <!-- ==================== MODAL: ORÇAMENTO POR CATEGORIA ==================== -->
+    <!-- ==================== MODAL: META POR CATEGORIA ==================== -->
     <div x-show="budgetModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div @click.away="budgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-sm p-6 space-y-4">
+        <div @click.away="budgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-md p-6 space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-bold text-white">Meta Mensal por Categoria</h3>
                 <button @click="budgetModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
@@ -3637,12 +3900,127 @@
             </div>
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Limite Mensal (R$)</label>
-                <input type="number" step="0.01" min="0" x-model="budgetModal.amount" placeholder="Ex: 1200,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
-                <p class="text-[11px] text-gray-500 mt-1">Essa meta valerá automaticamente para todos os meses.</p>
+                <input type="number" step="0.01" x-model="budgetModal.amount" placeholder="Ex: 1200,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white">
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" @click="budgetModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
-                <button type="button" @click="saveCategoryBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar Meta</button>
+                <button type="button" @click="saveCategoryBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Salvar Meta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: IMPORTAR FATURA DO CARTÃO ==================== -->
+    <div x-show="cardImportModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div @click.away="cardImportModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-[#2c2c35] flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-import text-cyan-400"></i>
+                        <span>Importar Fatura — <span class="text-purple-400" x-text="getCardName(cardImportModal.cardId)"></span></span>
+                    </h3>
+                    <p class="text-xs text-gray-400">Importe CSV/Excel (Nubank, Inter, C6, Itaú), OFX ou cole o texto copiado da fatura.</p>
+                </div>
+                <button @click="cardImportModal.open = false" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <!-- Modo de Importação -->
+                <div class="grid grid-cols-2 gap-2 bg-[#121216] p-1.5 rounded-xl border border-[#2c2c35]">
+                    <button type="button" @click="cardImportModal.mode = 'file'"
+                            :class="cardImportModal.mode === 'file' ? 'bg-purple-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                            class="py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-file-csv"></i> Arquivo (CSV, Excel, OFX)
+                    </button>
+                    <button type="button" @click="cardImportModal.mode = 'text'"
+                            :class="cardImportModal.mode === 'text' ? 'bg-purple-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                            class="py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-paste"></i> Colar Texto da Fatura
+                    </button>
+                </div>
+
+                <!-- Configurações de Destino da Fatura -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#121216] border border-[#2c2c35] rounded-xl p-3.5">
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Mês de Vencimento da Fatura</label>
+                        <input type="month" x-model="cardImportModal.targetInvoiceMonth" class="w-full bg-[#1c1c22] border border-[#2c2c35] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                    </div>
+                    <div class="flex flex-col justify-center gap-1.5 text-xs text-gray-300">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" x-model="cardImportModal.useInvoiceDueDate" class="accent-purple-600">
+                            <span>Lançar tudo na fatura do mês acima</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" x-model="cardImportModal.skipCredits" class="accent-purple-600">
+                            <span>Ignorar pagamentos/estornos negativos</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Upload de Arquivo -->
+                <div x-show="cardImportModal.mode === 'file'" class="bg-[#121216] border border-dashed border-[#3a3a48] rounded-xl p-4 text-center space-y-2">
+                    <input type="file" accept=".csv,.xlsx,.xls,.ofx,.qfx" @change="handleCardInvoiceFile($event)"
+                           class="w-full text-xs text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500">
+                    <p class="text-[11px] text-gray-500">Suporta CSV do Nubank/Inter/C6, planilhas Excel (.xlsx) e arquivos OFX de bancos.</p>
+                </div>
+
+                <!-- Colar Texto -->
+                <div x-show="cardImportModal.mode === 'text'" class="space-y-2">
+                    <textarea x-model="cardImportModal.rawText" rows="5"
+                              placeholder="Cole aqui as linhas da fatura (ex:&#10;12/11 Supermercado Paulista 245,80&#10;15 NOV Uber *Viagem 32,50&#10;18/11 Amazon Parcela 2/5 89,90)"
+                              class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"></textarea>
+                    <button type="button" @click="parseCardInvoiceText()" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Ler Linhas Coladas
+                    </button>
+                </div>
+
+                <!-- Pré-visualização e Categorização dos Itens -->
+                <div x-show="cardImportModal.rows.length > 0" class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-bold text-white">
+                            Itens identificados (<span x-text="cardImportSelectedSummary.count"></span> selecionados •
+                            <span class="text-purple-400" x-text="formatCurrency(cardImportSelectedSummary.total)"></span>)
+                        </p>
+                        <button type="button" @click="cardImportModal.rows.forEach(r => { if(!cardImportModal.skipCredits || !r.isCredit) r.selected = !r.selected })"
+                                class="text-[11px] text-purple-400 hover:text-purple-300 font-semibold">
+                            Inverter seleção
+                        </button>
+                    </div>
+
+                    <div class="bg-[#121216] border border-[#2c2c35] rounded-xl divide-y divide-[#2c2c35]/70 max-h-64 overflow-y-auto">
+                        <template x-for="row in cardImportModal.rows" :key="row.id">
+                            <div x-show="!cardImportModal.skipCredits || !row.isCredit" class="p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+                                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                    <input type="checkbox" x-model="row.selected" class="w-4 h-4 accent-purple-600 shrink-0">
+                                    <div class="min-w-0 flex-1">
+                                        <input type="text" x-model="row.description" class="w-full bg-transparent text-xs font-semibold text-white focus:bg-[#1c1c22] rounded px-1 py-0.5 focus:outline-none">
+                                        <p class="text-[10px] text-gray-500 px-1" x-text="'Compra: ' + formatDateHeader(row.purchaseDate)"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <select x-model="row.category" class="bg-[#1c1c22] border border-[#2c2c35] rounded-lg px-2 py-1 text-[11px] text-gray-200">
+                                        <template x-for="cat in allCategoriesWithStats" :key="cat.name">
+                                            <option :value="cat.name" x-text="cat.name"></option>
+                                        </template>
+                                    </select>
+                                    <span class="text-xs font-bold text-red-400 w-20 text-right" x-text="formatCurrency(row.amount)"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-[#18181e] border-t border-[#2c2c35] flex items-center justify-between gap-2">
+                <span class="text-[11px] text-gray-400" x-show="cardImportSelectedSummary.count > 0">
+                    Total a importar: <strong class="text-white" x-text="formatCurrency(cardImportSelectedSummary.total)"></strong>
+                </span>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" @click="cardImportModal.open = false" class="px-4 py-2 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                    <button type="button" @click="confirmCardInvoiceImport()" :disabled="cardImportSelectedSummary.count === 0"
+                            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold transition">
+                        Importar para Fatura
+                    </button>
+                </div>
             </div>
         </div>
     </div>
