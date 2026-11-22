@@ -2908,6 +2908,35 @@
                             <button @click="filterCardId = ''" class="hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
+
+                    <!-- Barra de Ações em Lote (Efetivar, Pendente, Excluir) -->
+                    <div x-show="selectedTxIds.length > 0" x-transition
+                         class="bg-purple-950/40 border border-purple-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-xs font-bold" x-text="selectedTxIds.length"></span>
+                            <span class="text-xs font-semibold text-purple-200">item(ns) selecionado(s)</span>
+                            <button type="button" @click="toggleSelectAllFiltered()" class="md:hidden text-[11px] text-purple-300 underline ml-1"
+                                    x-text="isAllFilteredSelected ? 'Desmarcar todas' : 'Marcar todas'"></button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" @click="bulkUpdateStatus('completed')"
+                                    class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-check"></i> Efetivar
+                            </button>
+                            <button type="button" @click="bulkUpdateStatus('pending')"
+                                    class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-clock"></i> Deixar Pendente
+                            </button>
+                            <button type="button" @click="promptBulkDelete()"
+                                    class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-trash"></i> Excluir
+                            </button>
+                            <button type="button" @click="selectedTxIds = []; mobileSelectionMode = false"
+                                    class="px-2.5 py-1.5 rounded-lg bg-[#25252d] hover:bg-[#2f2f39] text-gray-300 text-xs font-semibold transition" title="Limpar seleção">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lista Agrupada por Dia -->
