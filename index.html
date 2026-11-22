@@ -139,6 +139,7 @@
                 filterType: 'todos',
                 filterCategory: '',
                 selectedTxIds: [],
+                mobileSelectionMode: false,
                 mobileMoreOpen: false,
                 dashExpenseListOpen: false,
                 dashIncomeListOpen: false,
@@ -237,6 +238,7 @@
                 importModal: { open: false, parsedRows: [], replaceExisting: true },
                 deleteModal: { open: false, item: null, card: null, account: null, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                weekdayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
 
                 initApp() {
                     try {
@@ -352,6 +354,7 @@
                         this.searchQuery = '';
                     }
                     this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
                     this.activeTab = tab;
                     setTimeout(() => this.renderAllCharts(), 60);
                 },
@@ -360,6 +363,7 @@
                     this.filterCategory = '';
                     this.searchQuery = '';
                     this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
                     this.activeTab = 'transactions';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
@@ -368,6 +372,7 @@
                     this.filterCategory = categoryName;
                     this.searchQuery = '';
                     this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
                     this.activeTab = 'transactions';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
@@ -380,6 +385,14 @@
                     const parts = dateStr.split('-');
                     if (parts.length !== 3) return dateStr;
                     return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                },
+                formatMobileDateHeader(dateStr) {
+                    if (!dateStr) return '';
+                    const parts = dateStr.split('-').map(Number);
+                    if (parts.length !== 3) return dateStr;
+                    const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const wd = this.weekdayNames[dt.getDay()] || '';
+                    return `${wd}, ${parts[2]}`;
                 },
                 getCategoryColor(catName) {
                     const found = this.categoriesList.find(c => c.name.toLowerCase() === (catName || '').toLowerCase());
@@ -646,6 +659,7 @@
                         }
                     });
                     this.selectedTxIds = [];
+                    this.mobileSelectionMode = false;
                     this.saveToStorage();
                     this.renderAllCharts();
                     this.showToast(`${updated} lançamento(s) marcado(s) como ${newStatus === 'completed' ? 'efetivado(s)' : 'pendente(s)'}!`);
@@ -1235,6 +1249,7 @@
                         const removed = idsSet.size;
                         this.transactions = this.transactions.filter(t => !idsSet.has(t.id));
                         this.selectedTxIds = [];
+                        this.mobileSelectionMode = false;
                         this.saveToStorage();
                         this.showToast(`${removed} transação(ões) excluída(s).`);
                     } else if (this.deleteModal.account) {
@@ -1270,6 +1285,7 @@
                             this.transactions = this.transactions.filter(t => t.id !== target.id);
                             this.showToast('Lançamento excluído.');
                         }
+                        this.closeModal();
                         this.saveToStorage();
                     }
                     this.deleteModal.open = false;
@@ -1775,21 +1791,6 @@
             </button>
         </div>
 
-        <!-- Quick Month Pills Bar -->
-        <div x-show="availableMonthPills.length > 0" class="px-4 md:px-8 py-2.5 bg-[#15151a] border-b border-[#2c2c35] flex items-center gap-2 overflow-x-auto">
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5 shrink-0">
-                <i class="fa-solid fa-clock-rotate-left"></i> Meses:
-            </span>
-            <template x-for="pill in availableMonthPills" :key="pill.key">
-                <button @click="selectMonthYear(pill.year, pill.month)"
-                        :class="(!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month) ? 'bg-purple-600 text-white font-semibold' : 'bg-[#1c1c22] text-gray-300 hover:bg-[#25252d] border border-[#2c2c35]'"
-                        class="px-3 py-1 rounded-full text-xs flex items-center gap-1.5 shrink-0 transition">
-                    <span x-text="pill.label"></span>
-                    <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="(!allMonthsMode && selectedYear === pill.year && selectedMonth === pill.month) ? 'bg-purple-800 text-white' : 'bg-[#2c2c35] text-gray-400'" x-text="pill.count"></span>
-                </button>
-            </template>
-        </div>
-
         <!-- Main Workspace -->
         <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
 
@@ -1936,11 +1937,21 @@
                 <!-- Filter & Search Bar -->
                 <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-4 space-y-3">
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="flex items-center gap-2 bg-[#121216] border border-[#2c2c35] px-3 py-2 rounded-xl cursor-pointer select-none">
+                        <label class="hidden md:flex items-center gap-2 bg-[#121216] border border-[#2c2c35] px-3 py-2 rounded-xl cursor-pointer select-none">
                             <input type="checkbox" :checked="isAllFilteredSelected" @change="toggleSelectAllFiltered()" class="w-4 h-4 rounded accent-purple-600">
                             <span class="text-xs font-semibold text-gray-200">Todas</span>
                         </label>
-                        <div class="relative flex-1 min-w-[200px]">
+                        <button type="button" @click="mobileSelectionMode = !mobileSelectionMode; if(!mobileSelectionMode) selectedTxIds = []"
+                                :class="mobileSelectionMode ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#121216] text-gray-300 border-[#2c2c35]'"
+                                class="md:hidden flex items-center gap-1.5 border px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span x-text="mobileSelectionMode ? 'Cancelar' : 'Selecionar'"></span>
+                        </button>
+                        <button type="button" x-show="mobileSelectionMode" @click="toggleSelectAllFiltered()"
+                                class="md:hidden bg-[#121216] border border-[#2c2c35] text-purple-300 px-3 py-2 rounded-xl text-xs font-semibold shrink-0">
+                            <span x-text="isAllFilteredSelected ? 'Desmarcar' : 'Todas'"></span>
+                        </button>
+                        <div class="relative flex-1 min-w-[180px]">
                             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
                             <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." class="w-full bg-[#121216] border border-[#2c2c35] text-sm text-white rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-purple-500">
                         </div>
@@ -1973,7 +1984,7 @@
                             <button @click="promptBulkDelete()" class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-trash"></i> Excluir
                             </button>
-                            <button @click="selectedTxIds = []" class="px-2.5 py-1.5 rounded-xl bg-[#25252d] text-gray-300 text-xs">Limpar</button>
+                            <button @click="selectedTxIds = []; mobileSelectionMode = false" class="px-2.5 py-1.5 rounded-xl bg-[#25252d] text-gray-300 text-xs">Limpar</button>
                         </div>
                     </div>
                 </div>
@@ -1990,53 +2001,95 @@
                         <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl overflow-hidden">
                             <!-- Day Header -->
                             <div class="bg-[#23232b] px-4 py-2.5 flex items-center justify-between border-b border-[#2c2c35]">
-                                <span class="text-xs md:text-sm font-bold text-white" x-text="formatDateHeader(group.date)"></span>
-                                <span class="text-xs text-gray-400">Movimento: <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(group.daySubtotal)"></strong></span>
+                                <span class="md:hidden text-sm font-bold text-white" x-text="formatMobileDateHeader(group.date)"></span>
+                                <span class="hidden md:inline text-sm font-bold text-white" x-text="formatDateHeader(group.date)"></span>
+                                <span class="text-[11px] md:text-xs text-gray-400">Movimento: <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(group.daySubtotal)"></strong></span>
                             </div>
 
                             <!-- Items -->
                             <div class="divide-y divide-[#2c2c35]">
                                 <template x-for="tx in group.items" :key="tx.id">
-                                    <div class="p-3.5 md:px-5 flex items-center justify-between gap-3 hover:bg-[#222229] transition">
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <input type="checkbox" :checked="selectedTxIds.includes(tx.id)" @change="toggleSelectTx(tx.id)" class="w-4 h-4 rounded accent-purple-600 shrink-0">
+                                    <div>
+                                        <!-- MOBILE ROW (Clean Mobills-style layout, full readable description) -->
+                                        <div @click="mobileSelectionMode ? toggleSelectTx(tx.id) : openModal(tx)"
+                                             class="md:hidden px-3.5 py-3 flex items-center justify-between gap-2.5 active:bg-[#25252d] transition cursor-pointer">
+                                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                                <input x-show="mobileSelectionMode" type="checkbox" :checked="selectedTxIds.includes(tx.id)" @click.stop="toggleSelectTx(tx.id)" class="w-4 h-4 rounded accent-purple-600 shrink-0">
 
-                                            <!-- Status Toggle -->
-                                            <button @click="toggleStatus(tx.id)" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition"
-                                                    :class="tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'"
-                                                    :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
-                                                <i class="fa-solid text-xs" :class="tx.status === 'completed' ? 'fa-check' : 'fa-exclamation'"></i>
-                                            </button>
+                                                <!-- Circular Category Icon -->
+                                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm shrink-0"
+                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
+                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                                                </div>
 
-                                            <!-- Category Icon -->
-                                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs shrink-0"
-                                                 :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
-                                                <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                                                <!-- Description + Category | Account -->
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-[13px] font-semibold text-gray-100 leading-snug break-words" x-text="tx.description"></p>
+                                                    <p class="text-[11px] text-gray-400 mt-0.5 truncate">
+                                                        <span x-text="tx.type === 'transfer' ? 'Transferência' : tx.category"></span>
+                                                        <span class="mx-1 text-gray-600">|</span>
+                                                        <span x-text="tx.account || 'Carteira'"></span>
+                                                        <span x-show="tx.user && tx.user !== 'Compartilhado'" class="text-purple-400 ml-1" x-text="'• ' + tx.user"></span>
+                                                    </p>
+                                                </div>
                                             </div>
 
-                                            <!-- Info -->
-                                            <div class="min-w-0">
-                                                <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
-                                                <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
-                                                    <span x-text="tx.type === 'transfer' ? 'Transferência' : tx.category"></span>
-                                                    <span>•</span>
-                                                    <span x-text="tx.account || 'Carteira'"></span>
-                                                    <span x-show="tx.user && tx.user !== 'Compartilhado'" class="px-1.5 py-0.2 rounded bg-[#2c2c35] text-gray-300" x-text="tx.user"></span>
-                                                </div>
+                                            <!-- Right Side: Amount + Status Pin Toggle -->
+                                            <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
+                                                <span class="text-[13px] font-bold tracking-tight"
+                                                      :class="tx.type === 'transfer' ? 'text-cyan-400' : (tx.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
+                                                      x-text="formatCurrency(tx.amount)"></span>
+                                                <button type="button" @click.stop="toggleStatus(tx.id)"
+                                                        class="w-5 h-5 rounded-full flex items-center justify-center transition"
+                                                        :class="tx.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'"
+                                                        :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
+                                                    <i class="fa-solid text-[9px]" :class="tx.status === 'completed' ? 'fa-check' : 'fa-thumbtack'"></i>
+                                                </button>
                                             </div>
                                         </div>
 
-                                        <!-- Amount & Actions -->
-                                        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-                                            <span class="text-sm font-bold"
-                                                  :class="tx.type === 'transfer' ? 'text-cyan-400' : (tx.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
-                                                  x-text="formatCurrency(tx.amount)"></span>
-                                            <button @click="openModal(tx)" class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2c2c35] transition" title="Editar">
-                                                <i class="fa-solid fa-pen text-xs"></i>
-                                            </button>
-                                            <button @click="promptDelete(tx)" class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#2c2c35] transition" title="Excluir">
-                                                <i class="fa-solid fa-trash text-xs"></i>
-                                            </button>
+                                        <!-- DESKTOP ROW (Unchanged) -->
+                                        <div class="hidden md:flex px-5 py-3.5 items-center justify-between gap-3 hover:bg-[#222229] transition">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <input type="checkbox" :checked="selectedTxIds.includes(tx.id)" @change="toggleSelectTx(tx.id)" class="w-4 h-4 rounded accent-purple-600 shrink-0">
+
+                                                <!-- Status Toggle -->
+                                                <button @click="toggleStatus(tx.id)" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition"
+                                                        :class="tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'"
+                                                        :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
+                                                    <i class="fa-solid text-xs" :class="tx.status === 'completed' ? 'fa-check' : 'fa-exclamation'"></i>
+                                                </button>
+
+                                                <!-- Category Icon -->
+                                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs shrink-0"
+                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
+                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                                                </div>
+
+                                                <!-- Info -->
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
+                                                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
+                                                        <span x-text="tx.type === 'transfer' ? 'Transferência' : tx.category"></span>
+                                                        <span>•</span>
+                                                        <span x-text="tx.account || 'Carteira'"></span>
+                                                        <span x-show="tx.user && tx.user !== 'Compartilhado'" class="px-1.5 py-0.2 rounded bg-[#2c2c35] text-gray-300" x-text="tx.user"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Amount & Actions -->
+                                            <div class="flex items-center gap-3 shrink-0">
+                                                <span class="text-sm font-bold"
+                                                      :class="tx.type === 'transfer' ? 'text-cyan-400' : (tx.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
+                                                      x-text="formatCurrency(tx.amount)"></span>
+                                                <button @click="openModal(tx)" class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2c2c35] transition" title="Editar">
+                                                    <i class="fa-solid fa-pen text-xs"></i>
+                                                </button>
+                                                <button @click="promptDelete(tx)" class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#2c2c35] transition" title="Excluir">
+                                                    <i class="fa-solid fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
@@ -2595,16 +2648,24 @@
 
             <!-- Status -->
             <div x-show="!form.useCreditCard" class="flex items-center justify-between bg-[#121216] border border-[#2c2c35] p-3 rounded-xl">
-                <span class="text-xs text-gray-300">Situação inicial</span>
+                <span class="text-xs text-gray-300">Situação</span>
                 <div class="flex gap-2">
                     <button type="button" @click="form.status = 'completed'" :class="form.status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-[#25252d] text-gray-400'" class="px-3 py-1 rounded-lg text-xs font-semibold">Efetivado</button>
                     <button type="button" @click="form.status = 'pending'" :class="form.status === 'pending' ? 'bg-amber-600 text-white' : 'bg-[#25252d] text-gray-400'" class="px-3 py-1 rounded-lg text-xs font-semibold">Pendente</button>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-2">
-                <button type="button" @click="closeModal()" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
-                <button type="button" @click="saveTransaction()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar</button>
+            <div class="flex items-center justify-between gap-2 pt-2">
+                <div>
+                    <button x-show="editingId" type="button" @click="promptDelete(transactions.find(t => t.id === editingId))"
+                            class="px-3.5 py-2.5 rounded-xl bg-red-950/70 hover:bg-red-900/80 border border-red-800/70 text-red-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-trash"></i> Excluir
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="closeModal()" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                    <button type="button" @click="saveTransaction()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar</button>
+                </div>
             </div>
         </div>
     </div>
