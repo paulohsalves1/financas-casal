@@ -1519,44 +1519,129 @@
                     }
                     const card = this.cards.find(c => c.id === this.cardImportModal.cardId);
                     const monthMap = { jan: '01', fev: '02', mar: '03', abr: '04', mai: '05', jun: '06', jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12' };
-                    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    const cleanInvisible = (s) => String(s || '').replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ').replace(/\s+/g, ' ').trim();
+                    const lines = text.split(/\r?\n/).map(cleanInvisible).filter(Boolean);
                     const parsed = [];
 
+                    const dateStartRegex = /^(?:(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?|(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*(?:\s*(?:de\s+)?(\d{2,4}))?)(?:\s*[-–—•|]\s*|\s+|$)/i;
+                    const dateAnywhereRegex = /(?:^|[\s\-–—•|(])(?:(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?|(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*(?:\s*(?:de\s+)?(\d{2,4}))?)(?=$|[\s\-–—•|)])/i;
+                    const moneyRegex = /([+-]?\s*(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}|[+-]?\s*(?:R\$\s*)?\d+,\d{2})/g;
+
+                    const parseDateToken = (m) => {
+                        if (!m) return null;
+                        if (m[1] && m[2]) {
+                            const dd = Number(m[1]);
+                            const mm = Number(m[2]);
+                            if (dd < 1 || dd > 31 || mm < 1 || mm > 12) return null;
+                            const yy = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(this.selectedYear);
+                            return `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+                        }
+                        if (m[4] && m[5]) {
+                            const dd = Number(m[4]);
+                            if (dd < 1 || dd > 31) return null;
+                            const mm = monthMap[m[5].toLowerCase().slice(0, 3)] || '01';
+                            const yy = m[6] ? (m[6].length === 2 ? '20' + m[6] : m[6]) : String(this.selectedYear);
+                            return `${yy}-${mm}-${String(dd).padStart(2, '0')}`;
+                        }
+                        return null;
+                    };
+
+                    const extractDateFromText = (str, fallbackDate) => {
+                        const s = cleanInvisible(str);
+                        let dMatch = s.match(dateStartRegex);
+                        if (dMatch) {
+                            const parsedD = parseDateToken(dMatch);
+                            if (parsedD) {
+                                return { date: parsedD, cleaned: s.slice(dMatch[0].length).trim() };
+                            }
+                        }
+                        const anyMatch = s.match(dateAnywhereRegex);
+                        if (anyMatch) {
+                            const parsedD = parseDateToken(anyMatch);
+                            if (parsedD) {
+                                const before = s.slice(0, anyMatch.index).trim();
+                                const after = s.slice(anyMatch.index + anyMatch[0].length).trim();
+                                const joined = [before, after].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+                                return { date: parsedD, cleaned: joined || s };
+                            }
+                        }
+                        return { date: fallbackDate, cleaned: s };
+                    };
+
+                    const defaultFallbackDate = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+
+                    // 1ª Passada: linhas completas (ex: "21/11/2026 Rolê — R$ 46,00 (Cartão físico)")
                     lines.forEach(line => {
-                        // Captura valor monetário no fim ou meio da linha (ex: R$ 125,90 ou -45,00)
-                        const valMatch = line.match(/(-?\s*(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}|-?\s*(?:R\$\s*)?\d+,\d{2})\s*$/);
-                        if (!valMatch) return;
-                        const numericVal = this.parseMobillsAmount(valMatch[1]);
+                        const matches = [...line.matchAll(moneyRegex)];
+                        if (matches.length === 0) return;
+                        const lastMatch = matches[matches.length - 1];
+                        const numericVal = this.parseMobillsAmount(lastMatch[0]);
                         if (numericVal === 0) return;
 
-                        let rest = line.slice(0, valMatch.index).trim();
-                        let dateStr = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
+                        const beforeVal = line.slice(0, lastMatch.index).trim();
+                        const afterVal = line.slice(lastMatch.index + lastMatch[0].length).trim();
 
-                        // Formato DD/MM/YYYY ou DD/MM
-                        const dmyMatch = rest.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*[-–]?\s*/);
-                        // Formato Nubank PDF/App: "12 NOV" ou "12 NOV 2026"
-                        const txtDateMatch = !dmyMatch && rest.match(/^(\d{1,2})\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(?:\s+(\d{2,4}))?\s*[-–]?\s*/i);
-
-                        if (dmyMatch) {
-                            const dd = dmyMatch[1].padStart(2, '0');
-                            const mm = dmyMatch[2].padStart(2, '0');
-                            const yy = dmyMatch[3] ? (dmyMatch[3].length === 2 ? '20' + dmyMatch[3] : dmyMatch[3]) : String(this.selectedYear);
-                            dateStr = `${yy}-${mm}-${dd}`;
-                            rest = rest.slice(dmyMatch[0].length).trim();
-                        } else if (txtDateMatch) {
-                            const dd = txtDateMatch[1].padStart(2, '0');
-                            const mm = monthMap[txtDateMatch[2].toLowerCase()] || '01';
-                            const yy = txtDateMatch[3] ? (txtDateMatch[3].length === 2 ? '20' + txtDateMatch[3] : txtDateMatch[3]) : String(this.selectedYear);
-                            dateStr = `${yy}-${mm}-${dd}`;
-                            rest = rest.slice(txtDateMatch[0].length).trim();
+                        let extracted = extractDateFromText(beforeVal, null);
+                        if (!extracted.date && afterVal) {
+                            const afterExtracted = extractDateFromText(afterVal, null);
+                            if (afterExtracted.date) extracted.date = afterExtracted.date;
                         }
 
-                        if (!rest || /^total|^saldo|^pagamento/i.test(rest)) return;
-                        parsed.push(this.buildCardInvoiceRow(dateStr, rest, numericVal, card));
+                        const dateStr = extracted.date || defaultFallbackDate;
+                        let desc = (extracted.cleaned || beforeVal).replace(/^[-–—•|]+|[-–—•|]+$/g, '').trim();
+                        if (!desc || /^(?:total|saldo|subtotal|limite|vencimento|fechamento|fatura)\b/i.test(desc)) return;
+
+                        parsed.push(this.buildCardInvoiceRow(dateStr, desc, numericVal, card));
                     });
 
+                    // 2ª Passada (Fallback para PDF/App que quebra Data, Descrição e Valor em linhas separadas)
+                    if (parsed.length === 0) {
+                        let currentDate = defaultFallbackDate;
+                        let pendingDescParts = [];
+
+                        lines.forEach(line => {
+                            if (/^(?:total|saldo|subtotal|limite|vencimento|fechamento|resumo|encargos|iof|juros)\b/i.test(line)) {
+                                pendingDescParts = [];
+                                return;
+                            }
+
+                            const lineMoneyMatches = [...line.matchAll(moneyRegex)];
+
+                            // Linha sem valor monetário: pode ser só data ou "Descrição + Data"
+                            if (lineMoneyMatches.length === 0) {
+                                const ext = extractDateFromText(line, null);
+                                if (ext.date) {
+                                    currentDate = ext.date;
+                                    if (ext.cleaned && ext.cleaned !== line) pendingDescParts.push(ext.cleaned);
+                                } else if (line.length >= 2) {
+                                    pendingDescParts.push(line);
+                                }
+                                return;
+                            }
+
+                            // Linha contendo valor monetário
+                            const lastM = lineMoneyMatches[lineMoneyMatches.length - 1];
+                            const val = this.parseMobillsAmount(lastM[0]);
+                            const inlineText = line.slice(0, lastM.index).trim();
+                            const extInline = extractDateFromText(inlineText, null);
+                            if (extInline.date) currentDate = extInline.date;
+                            if (extInline.cleaned) pendingDescParts.push(extInline.cleaned);
+
+                            const fullDesc = pendingDescParts.join(' ').replace(/\s+/g, ' ').trim();
+                            if (val !== 0 && fullDesc && !/^(?:total|saldo|subtotal)\b/i.test(fullDesc)) {
+                                parsed.push(this.buildCardInvoiceRow(currentDate, fullDesc, val, card));
+                            }
+                            pendingDescParts = [];
+                        });
+                    }
+
                     this.cardImportModal.rows = parsed;
-                    this.showToast(parsed.length > 0 ? `${parsed.length} lançamentos extraídos do texto!` : 'Nenhuma linha no formato "Data Descrição Valor" encontrada.', parsed.length > 0 ? 'success' : 'error');
+                    this.showToast(
+                        parsed.length > 0
+                            ? `${parsed.length} lançamento(s) extraído(s) do texto!`
+                            : 'Não identifiquei valores no formato R$ 0,00. Verifique o texto colado.',
+                        parsed.length > 0 ? 'success' : 'error'
+                    );
                 },
                 get cardImportSelectedSummary() {
                     const selected = this.cardImportModal.rows.filter(r => r.selected && (!this.cardImportModal.skipCredits || !r.isCredit));
@@ -3993,7 +4078,10 @@
                                     <input type="checkbox" x-model="row.selected" class="w-4 h-4 accent-purple-600 shrink-0">
                                     <div class="min-w-0 flex-1">
                                         <input type="text" x-model="row.description" class="w-full bg-transparent text-xs font-semibold text-white focus:bg-[#1c1c22] rounded px-1 py-0.5 focus:outline-none">
-                                        <p class="text-[10px] text-gray-500 px-1" x-text="'Compra: ' + formatDateHeader(row.purchaseDate)"></p>
+                                        <div class="flex items-center gap-1.5 px-1 mt-0.5">
+                                            <span class="text-[10px] text-gray-500">Compra:</span>
+                                            <input type="date" x-model="row.purchaseDate" class="bg-transparent text-[10px] text-gray-300 focus:bg-[#1c1c22] rounded px-1 focus:outline-none">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
