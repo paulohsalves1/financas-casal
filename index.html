@@ -148,6 +148,14 @@
                 budgets: { monthlyTotalLimit: 0, categories: {} },
                 budgetModal: { open: false, categoryName: '', amount: '' },
                 totalBudgetModal: { open: false, amount: '' },
+                dueAlertModal: { open: false, mode: 'today' },
+                quickTemplates: [
+                    { id: 'tpl_1', title: 'Abastecimento', type: 'expense', category: 'Abastecimento', user: 'Paulo', useCreditCard: false, cardId: '' },
+                    { id: 'tpl_2', title: 'Mercado', type: 'expense', category: 'Mercado', user: 'Compartilhado', useCreditCard: false, cardId: '' },
+                    { id: 'tpl_3', title: 'Padaria / Café', type: 'expense', category: 'Alimentação', user: 'Compartilhado', useCreditCard: false, cardId: '' }
+                ],
+                filterStatusOnly: 'all',
+                calcHelperOpen: false,
                 toast: { visible: false, message: '', type: 'success' },
                 defaultFirebaseConfig: {
                     dbUrl: 'https://financas-paulo-isabela-default-rtdb.firebaseio.com',
@@ -260,6 +268,10 @@
                                 categories: savedBudgets.categories && typeof savedBudgets.categories === 'object' ? savedBudgets.categories : {}
                             };
                         }
+                        const savedTemplates = JSON.parse(localStorage.getItem('paulo_isabela_templates_v1') || 'null');
+                        if (Array.isArray(savedTemplates) && savedTemplates.length > 0) {
+                            this.quickTemplates = savedTemplates;
+                        }
                         this.localUpdatedAt = Number(localStorage.getItem('paulo_isabela_updated_at') || '0');
                     } catch(e) { this.transactions = []; this.cards = []; this.accounts = []; }
 
@@ -297,6 +309,7 @@
                     localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                     localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
                     localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
+                    localStorage.setItem('paulo_isabela_templates_v1', JSON.stringify(this.quickTemplates));
                     localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                     if (syncCloud && this.syncConfig.connected) this.pushToCloud();
                 },
@@ -361,6 +374,7 @@
                 switchTab(tab) {
                     if (tab === 'transactions') {
                         this.filterType = 'todos';
+                        this.filterStatusOnly = 'all';
                         this.filterCategory = '';
                         this.searchQuery = '';
                     }
@@ -369,8 +383,9 @@
                     this.activeTab = tab;
                     setTimeout(() => this.renderAllCharts(), 60);
                 },
-                navigateToFilteredTransactions(type) {
+                navigateToFilteredTransactions(type, statusOnly = 'all') {
                     this.filterType = type;
+                    this.filterStatusOnly = statusOnly;
                     this.filterCategory = '';
                     this.searchQuery = '';
                     this.selectedTxIds = [];
@@ -380,6 +395,7 @@
                 },
                 navigateToCategoryTransactions(type, categoryName) {
                     this.filterType = type;
+                    this.filterStatusOnly = 'all';
                     this.filterCategory = categoryName;
                     this.searchQuery = '';
                     this.selectedTxIds = [];
@@ -867,6 +883,7 @@
                 get monthFilteredTransactions() {
                     return this.basePeriodTransactions.filter(t => {
                         if (this.filterType !== 'todos' && t.type !== this.filterType) return false;
+                        if (this.filterStatusOnly === 'pending' && t.status === 'completed') return false;
                         if (this.filterCategory && (t.category || 'Outros') !== this.filterCategory) return false;
                         if (this.searchQuery) {
                             const q = this.searchQuery.toLowerCase();
@@ -875,6 +892,164 @@
                         }
                         return true;
                     });
+                },
+                get smartDueAlerts() {
+                    const now = new Date();
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const in3DaysDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+                    const in3DaysStr = `${in3DaysDate.getFullYear()}-${String(in3DaysDate.getMonth() + 1).padStart(2, '0')}-${String(in3DaysDate.getDate()).padStart(2, '0')}`;
+
+                    const overdueItems = [];
+                    const todayItems = [];
+                    const upcomingItems = [];
+                    let overdueTotal = 0;
+                    let todayTotal = 0;
+                    let upcomingTotal = 0;
+
+                    this.transactions.forEach(t => {
+                        if (t.status === 'completed' || !t.date) return;
+                        if (this.selectedUserFilter !== 'Todos' && t.user !== this.selectedUserFilter) return;
+                        const amt = Number(t.amount) || 0;
+                        if (t.date < todayStr) {
+                            overdueItems.push(t);
+                            overdueTotal += amt;
+                        } else if (t.date === todayStr) {
+                            todayItems.push(t);
+                            todayTotal += amt;
+                        } else if (t.date <= in3DaysStr) {
+                            upcomingItems.push(t);
+                            upcomingTotal += amt;
+                        }
+                    });
+
+                    overdueItems.sort((a, b) => a.date.localeCompare(b.date));
+                    todayItems.sort((a, b) => a.date.localeCompare(b.date));
+                    upcomingItems.sort((a, b) => a.date.localeCompare(b.date));
+
+                    return {
+                        overdueItems,
+                        overdueCount: overdueItems.length,
+                        overdueTotal,
+                        todayItems,
+                        todayCount: todayItems.length,
+                        todayTotal,
+                        upcomingItems,
+                        upcomingCount: upcomingItems.length,
+                        upcomingTotal,
+                        hasAny: (overdueItems.length + todayItems.length + upcomingItems.length) > 0
+                    };
+                },
+                openDueAlertModal(mode) {
+                    this.dueAlertModal = { open: true, mode };
+                },
+                get activeDueAlertItems() {
+                    const alerts = this.smartDueAlerts;
+                    if (this.dueAlertModal.mode === 'overdue') return alerts.overdueItems;
+                    if (this.dueAlertModal.mode === 'upcoming') return alerts.upcomingItems;
+                    return alerts.todayItems;
+                },
+                get activeDueAlertTitle() {
+                    if (this.dueAlertModal.mode === 'overdue') return 'Lançamentos Atrasados';
+                    if (this.dueAlertModal.mode === 'upcoming') return 'Vencem nos Próximos 3 Dias';
+                    return 'Vencem Hoje';
+                },
+                evaluateAmountExpression(rawInput) {
+                    const str = String(rawInput ?? '').trim();
+                    if (!str) return null;
+                    if (/^\d+([.,]\d+)?$/.test(str)) {
+                        const n = parseFloat(str.replace(',', '.'));
+                        return isNaN(n) ? null : Number(n.toFixed(2));
+                    }
+                    const normalized = str.replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/').replace(/\s+/g, '');
+                    if (!/^[\d.+\-*/()]+$/.test(normalized)) return null;
+                    try {
+                        const result = Function('"use strict"; return (' + normalized + ')')();
+                        if (typeof result === 'number' && isFinite(result) && result >= 0) {
+                            return Number(result.toFixed(2));
+                        }
+                    } catch (e) {}
+                    return null;
+                },
+                get evaluatedFormAmount() {
+                    return this.evaluateAmountExpression(this.form.amount);
+                },
+                appendCalcToken(token) {
+                    const curr = String(this.form.amount || '');
+                    if (token === 'C') {
+                        this.form.amount = '';
+                        return;
+                    }
+                    if (token === '=') {
+                        const res = this.evaluateAmountExpression(curr);
+                        if (res !== null) this.form.amount = String(res);
+                        return;
+                    }
+                    this.form.amount = curr + token;
+                },
+                applyQuickTemplate(tpl) {
+                    this.editingId = null;
+                    this.editBatchInfo = { total: 1, future: 1 };
+                    this.editScope = 'single';
+                    const validCard = tpl.useCreditCard && this.cards.some(c => c.id === tpl.cardId);
+                    this.form = {
+                        ...this.form,
+                        type: tpl.type || 'expense',
+                        description: tpl.title || '',
+                        category: tpl.category || 'Outros',
+                        user: tpl.user || 'Compartilhado',
+                        useCreditCard: validCard,
+                        cardId: validCard ? tpl.cardId : (this.cards[0]?.id || ''),
+                        installments: 1,
+                        recurrence: 'nenhuma',
+                        status: 'completed',
+                        amount: ''
+                    };
+                    this.$nextTick(() => {
+                        const inp = document.getElementById('tx-amount-input');
+                        if (inp) inp.focus();
+                    });
+                    this.showToast(`Atalho "${tpl.title}" aplicado! Digite o valor.`);
+                },
+                saveCurrentAsTemplate() {
+                    const title = (this.form.description || '').trim();
+                    if (!title) {
+                        this.showToast('Preencha a descrição antes de salvar como favorito.', 'error');
+                        return;
+                    }
+                    const existsIdx = this.quickTemplates.findIndex(t => t.title.toLowerCase() === title.toLowerCase());
+                    const tplObj = {
+                        id: existsIdx !== -1 ? this.quickTemplates[existsIdx].id : ('tpl_' + Date.now()),
+                        title,
+                        type: this.form.type === 'transfer' ? 'expense' : this.form.type,
+                        category: this.form.category || 'Outros',
+                        user: this.form.user || 'Compartilhado',
+                        useCreditCard: !!this.form.useCreditCard,
+                        cardId: this.form.useCreditCard ? (this.form.cardId || '') : ''
+                    };
+                    if (existsIdx !== -1) this.quickTemplates[existsIdx] = tplObj;
+                    else this.quickTemplates.unshift(tplObj);
+                    this.saveToStorage();
+                    this.showToast(`"${title}" salvo nos favoritos de 1 toque!`);
+                },
+                removeQuickTemplate(tplId) {
+                    this.quickTemplates = this.quickTemplates.filter(t => t.id !== tplId);
+                    this.saveToStorage();
+                    this.showToast('Atalho removido.');
+                },
+                duplicateCurrentTransaction() {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const cleanDesc = this.extractBaseTitleAndSuffix(this.form.description).base;
+                    this.editingId = null;
+                    this.editBatchInfo = { total: 1, future: 1 };
+                    this.editScope = 'single';
+                    this.form = {
+                        ...this.form,
+                        description: cleanDesc,
+                        date: todayStr,
+                        recurrence: 'nenhuma',
+                        installments: 1
+                    };
+                    this.showToast('Cópia preparada com a data de hoje! Ajuste se precisar e clique em Salvar.');
                 },
                 get metrics() {
                     const prior = this.priorAccumulatedBalances;
@@ -1212,13 +1387,14 @@
                     }
                 },
                 openModal(item = null, startInCardMode = false) {
+                    this.calcHelperOpen = false;
                     if (item) {
                         this.editingId = item.id;
                         const peers = this.getSeriesPeers(item);
                         const futurePeers = peers.filter(p => p.date >= item.date);
                         this.editBatchInfo = { total: peers.length, future: futurePeers.length };
                         this.editScope = 'single';
-                        this.form = { ...item, useCreditCard: !!item.cardId, installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
+                        this.form = { ...item, amount: String(item.amount ?? ''), useCreditCard: !!item.cardId, installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
                     } else {
                         this.editingId = null;
                         this.editBatchInfo = { total: 1, future: 1 };
@@ -1253,7 +1429,12 @@
                     }
                 },
                 saveTransaction() {
-                    if (!this.form.amount || !this.form.description || !this.form.date) return;
+                    const finalAmount = this.evaluateAmountExpression(this.form.amount);
+                    if (finalAmount === null || finalAmount <= 0 || !this.form.description || !this.form.date) {
+                        this.showToast('Informe um valor válido, descrição e data.', 'error');
+                        return;
+                    }
+                    this.form.amount = finalAmount;
 
                     if (this.form.type === 'transfer') {
                         if (!this.form.fromAccountId || !this.form.toAccountId || this.form.fromAccountId === this.form.toAccountId) {
@@ -1659,12 +1840,13 @@
                         const res = await fetch(`${this.syncConfig.dbUrl}/rooms/${this.syncConfig.roomCode}.json?t=${Date.now()}`, { cache: 'no-store' });
                         const data = await res.json();
                         
-                        if (data && typeof data === 'object' && 'updatedAt' in data) {
+                        if (data && (Array.isArray(data.items) || data.isEmpty || Array.isArray(data.cards) || Array.isArray(data.accounts) || Array.isArray(data.categories))) {
                             const cloudItems = Array.isArray(data.items) ? data.items : [];
                             const cloudCards = Array.isArray(data.cards) ? data.cards : [];
                             const cloudAccounts = Array.isArray(data.accounts) ? data.accounts : [];
                             const cloudCategories = Array.isArray(data.categories) ? data.categories : null;
                             const cloudBudgets = data.budgets && typeof data.budgets === 'object' ? data.budgets : null;
+                            const cloudTemplates = Array.isArray(data.quickTemplates) ? data.quickTemplates : null;
                             const cloudUpdated = Number(data.updatedAt) || 0;
                             
                             if (cloudUpdated >= this.localUpdatedAt || this.transactions.length === 0) {
@@ -1678,12 +1860,16 @@
                                         categories: cloudBudgets.categories && typeof cloudBudgets.categories === 'object' ? cloudBudgets.categories : {}
                                     };
                                 }
+                                if (cloudTemplates && cloudTemplates.length > 0) {
+                                    this.quickTemplates = cloudTemplates;
+                                }
                                 this.localUpdatedAt = cloudUpdated;
                                 localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                                 localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                                 localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                                 localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
                                 localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
+                                localStorage.setItem('paulo_isabela_templates_v1', JSON.stringify(this.quickTemplates));
                                 localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             } else {
                                 await this.pushToCloud();
@@ -1718,6 +1904,7 @@
                                 accounts: this.accounts,
                                 categories: this.categoriesList,
                                 budgets: this.budgets,
+                                quickTemplates: this.quickTemplates,
                                 isEmpty: this.transactions.length === 0,
                                 updatedAt: ts
                             })
@@ -1745,12 +1932,16 @@
                                     categories: data.budgets.categories && typeof data.budgets.categories === 'object' ? data.budgets.categories : {}
                                 };
                             }
+                            if (Array.isArray(data.quickTemplates) && data.quickTemplates.length > 0) {
+                                this.quickTemplates = data.quickTemplates;
+                            }
                             this.localUpdatedAt = cloudUpdated;
                             localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                             localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                             localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                             localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
                             localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
+                            localStorage.setItem('paulo_isabela_templates_v1', JSON.stringify(this.quickTemplates));
                             localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             this.renderAllCharts();
                         }
@@ -1945,6 +2136,10 @@
                     </button>
                 </div>
 
+                <button @click="goToCurrentMonth()" class="px-2.5 py-1.5 rounded-full bg-[#1c1c22] hover:bg-[#25252d] border border-[#2c2c35] text-purple-300 text-xs font-semibold transition" title="Voltar para o mês atual">
+                    Hoje
+                </button>
+
                 <button @click="toggleAllMonthsMode()" :class="allMonthsMode ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#1c1c22] text-gray-300 border-[#2c2c35] hover:bg-[#25252d]'" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition">
                     <i class="fa-solid fa-layer-group"></i>
                     <span>Consolidado Ano</span>
@@ -2036,6 +2231,51 @@
 
             <!-- ==================== TAB: DASHBOARD ==================== -->
             <div x-show="activeTab === 'dashboard'" class="space-y-6">
+                <!-- Alertas Inteligentes de Vencimento -->
+                <div x-show="smartDueAlerts.hasAny" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    <div x-show="smartDueAlerts.overdueCount > 0" @click="openDueAlertModal('overdue')"
+                         class="cursor-pointer bg-red-950/45 hover:bg-red-950/65 border border-red-700/60 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 transition">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-red-200 truncate" x-text="smartDueAlerts.overdueCount + ' lançamento(s) atrasado(s)'"></p>
+                                <p class="text-[11px] text-red-300/90" x-text="'Total: ' + formatCurrency(smartDueAlerts.overdueTotal) + ' • Toque para ver'"></p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-red-400 text-xs shrink-0"></i>
+                    </div>
+
+                    <div x-show="smartDueAlerts.todayCount > 0" @click="openDueAlertModal('today')"
+                         class="cursor-pointer bg-amber-950/45 hover:bg-amber-950/65 border border-amber-700/60 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 transition">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-bell text-xs"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-amber-200 truncate" x-text="smartDueAlerts.todayCount + ' vence(m) hoje'"></p>
+                                <p class="text-[11px] text-amber-300/90" x-text="'Total: ' + formatCurrency(smartDueAlerts.todayTotal) + ' • Toque para ver'"></p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-amber-400 text-xs shrink-0"></i>
+                    </div>
+
+                    <div x-show="smartDueAlerts.upcomingCount > 0" @click="openDueAlertModal('upcoming')"
+                         class="cursor-pointer bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 transition">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                                <i class="fa-regular fa-clock text-xs"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-cyan-200 truncate" x-text="smartDueAlerts.upcomingCount + ' vence(m) nos próx. 3 dias'"></p>
+                                <p class="text-[11px] text-cyan-300/90" x-text="'Total: ' + formatCurrency(smartDueAlerts.upcomingTotal) + ' • Toque para ver'"></p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-cyan-400 text-xs shrink-0"></i>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Despesas por Categoria -->
                     <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 md:p-6">
@@ -2266,6 +2506,167 @@
                             </template>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- ==================== TAB: TRANSAÇÕES (EXTRATO) ==================== -->
+            <div x-show="activeTab === 'transactions'" class="space-y-4">
+                <!-- Barra de Busca e Filtros -->
+                <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-3.5 md:p-4 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <!-- Desktop Select All -->
+                        <label class="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-[#121216] border border-[#2c2c35] cursor-pointer text-xs text-gray-300 shrink-0">
+                            <input type="checkbox" :checked="isAllFilteredSelected" @change="toggleSelectAllFiltered()" class="w-4 h-4 accent-purple-600 rounded">
+                            <span>Todas</span>
+                        </label>
+
+                        <!-- Mobile Selection Mode Button -->
+                        <button type="button" @click="mobileSelectionMode = !mobileSelectionMode; if(!mobileSelectionMode) selectedTxIds = []"
+                                :class="mobileSelectionMode ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#121216] text-gray-300 border-[#2c2c35]'"
+                                class="md:hidden px-3 py-2 rounded-xl border text-xs font-semibold shrink-0 transition">
+                            <i class="fa-solid fa-check-double mr-1"></i>
+                            <span x-text="mobileSelectionMode ? 'Sair' : 'Selecionar'"></span>
+                        </button>
+
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                            <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria ou cartão..."
+                                   class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl pl-9 pr-8 py-2 text-xs md:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500">
+                            <button x-show="searchQuery" @click="searchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-1 bg-[#121216] p-1 rounded-xl border border-[#2c2c35] overflow-x-auto max-w-full">
+                            <button @click="filterType = 'todos'; filterStatusOnly = 'all'" :class="filterType === 'todos' && filterStatusOnly === 'all' ? 'bg-purple-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Todas</button>
+                            <button @click="filterStatusOnly = (filterStatusOnly === 'pending' ? 'all' : 'pending')" :class="filterStatusOnly === 'pending' ? 'bg-amber-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Pendentes</button>
+                            <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Receitas</button>
+                            <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Despesas</button>
+                            <button @click="filterType = 'transfer'" :class="filterType === 'transfer' ? 'bg-cyan-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Transferências</button>
+                        </div>
+
+                        <div x-show="filterCategory" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-600/20 border border-purple-500/40 text-purple-300 text-xs">
+                            <span x-text="'Categoria: ' + filterCategory"></span>
+                            <button @click="filterCategory = ''" class="hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Ações em Lote -->
+                    <div x-show="selectedTxIds.length > 0" class="flex flex-wrap items-center justify-between gap-2 bg-purple-950/40 border border-purple-500/40 rounded-xl p-3">
+                        <div class="flex items-center gap-2">
+                            <button @click="toggleSelectAllFiltered()" class="text-xs text-purple-300 underline" x-text="isAllFilteredSelected ? 'Desmarcar todos' : 'Marcar todos'"></button>
+                            <span class="text-xs font-semibold text-white" x-text="selectedTxIds.length + ' selecionado(s)'"></span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button @click="bulkUpdateStatus('completed')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">Efetivar</button>
+                            <button @click="bulkUpdateStatus('pending')" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition">Pendente</button>
+                            <button @click="promptBulkDelete()" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista Agrupada por Dia -->
+                <template x-if="groupedDailyTransactions.length === 0">
+                    <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-12 text-center space-y-2">
+                        <i class="fa-regular fa-folder-open text-3xl text-gray-500"></i>
+                        <p class="text-sm text-gray-300 font-medium">Nenhum lançamento encontrado neste período/filtro.</p>
+                    </div>
+                </template>
+
+                <div class="space-y-4">
+                    <template x-for="group in groupedDailyTransactions" :key="group.date">
+                        <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl overflow-hidden">
+                            <!-- Cabeçalho do Dia -->
+                            <div class="bg-[#18181e] px-4 py-2.5 border-b border-[#2c2c35] flex items-center justify-between">
+                                <div>
+                                    <span class="hidden md:inline text-xs font-bold text-white" x-text="formatDateHeader(group.date)"></span>
+                                    <span class="md:hidden text-xs font-bold text-white" x-text="formatMobileDateHeader(group.date)"></span>
+                                </div>
+                                <span class="text-[11px] text-gray-400">
+                                    Movimento: <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="(group.daySubtotal >= 0 ? '+' : '') + formatCurrency(group.daySubtotal)"></strong>
+                                </span>
+                            </div>
+
+                            <!-- Itens do Dia -->
+                            <div class="divide-y divide-[#2c2c35]/70">
+                                <template x-for="tx in group.items" :key="tx.id">
+                                    <div>
+                                        <!-- VISUAL MOBILE (Limpo estilo Mobills) -->
+                                        <div @click="mobileSelectionMode ? toggleSelectTx(tx.id) : openModal(tx)"
+                                             class="md:hidden px-4 py-3.5 flex items-center justify-between gap-3 active:bg-[#25252d] transition">
+                                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                                <input x-show="mobileSelectionMode" type="checkbox" :checked="selectedTxIds.includes(tx.id)" @click.stop="toggleSelectTx(tx.id)" class="w-4 h-4 accent-purple-600 shrink-0">
+                                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm shrink-0 shadow"
+                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
+                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-[13px] font-semibold text-white leading-snug break-words" x-text="tx.description"></p>
+                                                    <p class="text-[11px] text-gray-400 mt-0.5 truncate"
+                                                       x-text="(tx.type === 'transfer' ? 'Transferência' : (tx.category || 'Outros')) + ' | ' + (tx.account || 'Carteira')"></p>
+                                                </div>
+                                            </div>
+                                            <div class="flex flex-col items-end shrink-0 gap-1">
+                                                <span class="text-[13px] font-bold"
+                                                      :class="tx.type === 'income' ? 'text-emerald-400' : (tx.type === 'transfer' ? 'text-cyan-400' : 'text-red-400')"
+                                                      x-text="formatCurrency(tx.amount)"></span>
+                                                <button type="button" @click.stop="toggleStatus(tx.id)"
+                                                        class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] transition"
+                                                        :class="tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'"
+                                                        :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
+                                                    <i class="fa-solid" :class="tx.status === 'completed' ? 'fa-check' : 'fa-exclamation'"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- VISUAL DESKTOP (Completo) -->
+                                        <div class="hidden md:flex px-4 py-3 items-center justify-between gap-4 hover:bg-[#222229] transition">
+                                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                                <input type="checkbox" :checked="selectedTxIds.includes(tx.id)" @change="toggleSelectTx(tx.id)" class="w-4 h-4 accent-purple-600 rounded shrink-0">
+                                                <button type="button" @click="toggleStatus(tx.id)"
+                                                        class="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 transition"
+                                                        :class="tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'"
+                                                        :title="tx.status === 'completed' ? 'Efetivado (clique para marcar pendente)' : 'Pendente (clique para efetivar)'">
+                                                    <i class="fa-solid" :class="tx.status === 'completed' ? 'fa-check' : 'fa-exclamation'"></i>
+                                                </button>
+                                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs shrink-0"
+                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
+                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
+                                                    <p class="text-xs text-gray-400 truncate"
+                                                       x-text="(tx.type === 'transfer' ? 'Transferência' : (tx.category || 'Outros')) + ' • ' + (tx.account || 'Carteira') + ' • ' + (tx.user === 'Compartilhado' ? 'Casa' : tx.user)"></p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3 shrink-0">
+                                                <span class="text-sm font-bold"
+                                                      :class="tx.type === 'income' ? 'text-emerald-400' : (tx.type === 'transfer' ? 'text-cyan-400' : 'text-red-400')"
+                                                      x-text="formatCurrency(tx.amount)"></span>
+                                                <button @click="openModal(tx)" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#2c2c35] transition" title="Editar">
+                                                    <i class="fa-solid fa-pen text-xs"></i>
+                                                </button>
+                                                <button @click="promptDelete(tx)" class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#2c2c35] transition" title="Excluir">
+                                                    <i class="fa-solid fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Pílula Saldo Previsto Final do Dia -->
+                            <div class="bg-[#15151a] px-4 py-2.5 border-t border-[#2c2c35]/80 flex justify-center">
+                                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1c1c22] border border-[#2c2c35] text-xs md:text-sm font-semibold text-gray-300">
+                                    <i class="fa-solid fa-chart-line text-purple-400 text-[11px]"></i>
+                                    <span>Saldo Previsto Final do Dia:</span>
+                                    <strong :class="group.runningBalance >= 0 ? 'text-cyan-300' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -2846,6 +3247,26 @@
                 <button @click="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
+            <!-- Atalhos Favoritos de 1 Toque (apenas em novo lançamento) -->
+            <div x-show="!editingId && quickTemplates.length > 0" class="space-y-1.5">
+                <p class="text-[11px] font-semibold text-gray-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Preenchimento Rápido (1 toque):
+                </p>
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <template x-for="tpl in quickTemplates" :key="tpl.id">
+                        <div class="inline-flex items-center bg-[#121216] border border-[#2c2c35] hover:border-purple-500/60 rounded-full shrink-0 transition">
+                            <button type="button" @click="applyQuickTemplate(tpl)" class="px-3 py-1.5 text-xs font-medium text-gray-200 hover:text-white flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full" :style="'background-color:' + getCategoryColor(tpl.category)"></span>
+                                <span x-text="tpl.title"></span>
+                            </button>
+                            <button type="button" @click.stop="removeQuickTemplate(tpl.id)" class="pr-2.5 pl-1 py-1.5 text-[10px] text-gray-500 hover:text-red-400" title="Remover favorito">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
             <!-- Type Switcher -->
             <div class="grid grid-cols-3 gap-1.5 bg-[#121216] p-1.5 rounded-xl border border-[#2c2c35]">
                 <button type="button" @click="setFormType('expense')" :class="form.type === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400'" class="py-2 rounded-lg text-xs transition">Despesa</button>
@@ -2905,8 +3326,17 @@
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1" x-text="form.useCreditCard ? 'Valor Total da Compra (R$)' : 'Valor (R$)'"></label>
-                    <input type="number" step="0.01" x-model="form.amount" placeholder="0,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs text-gray-400" x-text="form.useCreditCard ? 'Valor Total (R$)' : 'Valor (R$)'"></label>
+                        <button type="button" @click="calcHelperOpen = !calcHelperOpen" class="text-[11px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span x-text="calcHelperOpen ? 'Fechar calc.' : 'Calc.'"></span>
+                        </button>
+                    </div>
+                    <input id="tx-amount-input" type="text" inputmode="decimal" x-model="form.amount" placeholder="0,00 ou 45+30" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <p x-show="evaluatedFormAmount !== null && /[+\-*/×÷]/.test(String(form.amount))" class="text-[11px] text-cyan-400 font-semibold mt-1">
+                        = <span x-text="formatCurrency(evaluatedFormAmount)"></span>
+                    </p>
                 </div>
                 <div>
                     <label class="block text-xs text-gray-400 mb-1" x-text="form.useCreditCard ? 'Data da Compra' : 'Data'"></label>
@@ -2914,8 +3344,24 @@
                 </div>
             </div>
 
+            <!-- Mini Calculadora Embutida -->
+            <div x-show="calcHelperOpen" class="bg-[#121216] border border-purple-500/30 rounded-xl p-2.5 grid grid-cols-6 gap-1.5">
+                <button type="button" @click="appendCalcToken('+')" class="py-2 rounded-lg bg-[#25252d] hover:bg-purple-600 text-white text-xs font-bold">+</button>
+                <button type="button" @click="appendCalcToken('-')" class="py-2 rounded-lg bg-[#25252d] hover:bg-purple-600 text-white text-xs font-bold">-</button>
+                <button type="button" @click="appendCalcToken('*')" class="py-2 rounded-lg bg-[#25252d] hover:bg-purple-600 text-white text-xs font-bold">×</button>
+                <button type="button" @click="appendCalcToken('/')" class="py-2 rounded-lg bg-[#25252d] hover:bg-purple-600 text-white text-xs font-bold">÷</button>
+                <button type="button" @click="appendCalcToken('=')" class="py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">=</button>
+                <button type="button" @click="appendCalcToken('C')" class="py-2 rounded-lg bg-red-950/70 hover:bg-red-800 text-red-200 text-xs font-bold">C</button>
+            </div>
+
             <div>
-                <label class="block text-xs text-gray-400 mb-1">Descrição</label>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs text-gray-400">Descrição</label>
+                    <button x-show="!editingId && form.type !== 'transfer'" type="button" @click="saveCurrentAsTemplate()"
+                            class="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1">
+                        <i class="fa-regular fa-star"></i> Salvar como favorito
+                    </button>
+                </div>
                 <input type="text" x-model="form.description" placeholder="Ex: Mercado, Salário, Aporte Reserva..." class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
             </div>
 
@@ -2975,10 +3421,14 @@
             </div>
 
             <div class="flex items-center justify-between gap-2 pt-2">
-                <div>
+                <div class="flex items-center gap-1.5">
                     <button x-show="editingId" type="button" @click="promptDelete(transactions.find(t => t.id === editingId))"
-                            class="px-3.5 py-2.5 rounded-xl bg-red-950/70 hover:bg-red-900/80 border border-red-800/70 text-red-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                            class="px-3 py-2.5 rounded-xl bg-red-950/70 hover:bg-red-900/80 border border-red-800/70 text-red-300 text-xs font-semibold flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-trash"></i> Excluir
+                    </button>
+                    <button x-show="editingId" type="button" @click="duplicateCurrentTransaction()"
+                            class="px-3 py-2.5 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] border border-[#363644] text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition" title="Criar uma cópia com data de hoje">
+                        <i class="fa-regular fa-copy"></i> Duplicar
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
@@ -3238,6 +3688,73 @@
             <div class="flex justify-end gap-2 pt-2">
                 <button @click="deleteModal.open = false" class="px-4 py-2 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
                 <button @click="confirmDeleteAction()" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: DETALHE DOS VENCIMENTOS ==================== -->
+    <div x-show="dueAlertModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div @click.away="dueAlertModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-5 py-4 border-b border-[#2c2c35] flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl flex items-center justify-center text-xs"
+                          :class="dueAlertModal.mode === 'overdue' ? 'bg-red-500/20 text-red-400' : (dueAlertModal.mode === 'upcoming' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-amber-500/20 text-amber-400')">
+                        <i class="fa-solid" :class="dueAlertModal.mode === 'overdue' ? 'fa-triangle-exclamation' : (dueAlertModal.mode === 'upcoming' ? 'fa-clock' : 'fa-bell')"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-bold text-white" x-text="activeDueAlertTitle"></h3>
+                        <p class="text-[11px] text-gray-400" x-text="activeDueAlertItems.length + ' lançamento(s) pendente(s)'"></p>
+                    </div>
+                </div>
+                <button @click="dueAlertModal.open = false" class="p-2 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto divide-y divide-[#2c2c35]/70">
+                <template x-if="activeDueAlertItems.length === 0">
+                    <div class="p-10 text-center space-y-2">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-400"></i>
+                        <p class="text-sm font-semibold text-white">Tudo quitado por aqui!</p>
+                    </div>
+                </template>
+
+                <template x-for="tx in activeDueAlertItems" :key="tx.id">
+                    <div class="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#222229] transition">
+                        <div @click="dueAlertModal.open = false; openModal(tx)" class="cursor-pointer flex items-center gap-3 min-w-0 flex-1">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs shrink-0"
+                                 :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
+                                <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs sm:text-sm font-semibold text-white leading-snug break-words" x-text="tx.description"></p>
+                                <p class="text-[11px] text-gray-400 mt-0.5"
+                                   x-text="formatDateHeader(tx.date) + ' • ' + (tx.category || 'Outros') + ' • ' + (tx.account || 'Carteira')"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <span class="text-xs sm:text-sm font-bold"
+                                  :class="tx.type === 'income' ? 'text-emerald-400' : (tx.type === 'transfer' ? 'text-cyan-400' : 'text-red-400')"
+                                  x-text="formatCurrency(tx.amount)"></span>
+                            <button type="button" @click="toggleStatus(tx.id); showToast('Lançamento efetivado!')"
+                                    class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 transition"
+                                    title="Marcar como pago/recebido">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Baixar</span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="px-5 py-3.5 bg-[#18181e] border-t border-[#2c2c35] flex items-center justify-between gap-2">
+                <button type="button" @click="dueAlertModal.open = false; goToCurrentMonth(); navigateToFilteredTransactions('todos', 'pending')"
+                        class="text-xs font-semibold text-purple-400 hover:text-purple-300 transition">
+                    Ver todos pendentes no extrato
+                </button>
+                <button type="button" @click="dueAlertModal.open = false"
+                        class="px-4 py-2 rounded-xl bg-[#25252d] text-gray-200 text-xs font-semibold">
+                    Fechar
+                </button>
             </div>
         </div>
     </div>
