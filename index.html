@@ -145,6 +145,9 @@
                 dashIncomeListOpen: false,
                 reportSubTab: 'categories',
                 reportViewType: 'despesas',
+                budgets: { monthlyTotalLimit: 0, categories: {} },
+                budgetModal: { open: false, categoryName: '', amount: '' },
+                totalBudgetModal: { open: false, amount: '' },
                 toast: { visible: false, message: '', type: 'success' },
                 defaultFirebaseConfig: {
                     dbUrl: 'https://financas-paulo-isabela-default-rtdb.firebaseio.com',
@@ -250,6 +253,13 @@
                         if (Array.isArray(savedAccounts)) this.accounts = savedAccounts;
                         const savedCats = JSON.parse(localStorage.getItem('paulo_isabela_categories_v1') || 'null');
                         if (Array.isArray(savedCats) && savedCats.length > 0) this.categoriesList = savedCats;
+                        const savedBudgets = JSON.parse(localStorage.getItem('paulo_isabela_budgets_v1') || 'null');
+                        if (savedBudgets && typeof savedBudgets === 'object') {
+                            this.budgets = {
+                                monthlyTotalLimit: Number(savedBudgets.monthlyTotalLimit) || 0,
+                                categories: savedBudgets.categories && typeof savedBudgets.categories === 'object' ? savedBudgets.categories : {}
+                            };
+                        }
                         this.localUpdatedAt = Number(localStorage.getItem('paulo_isabela_updated_at') || '0');
                     } catch(e) { this.transactions = []; this.cards = []; this.accounts = []; }
 
@@ -286,6 +296,7 @@
                     localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                     localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                     localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
+                    localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
                     localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                     if (syncCloud && this.syncConfig.connected) this.pushToCloud();
                 },
@@ -294,7 +305,7 @@
                     setTimeout(() => { this.toast.visible = false; }, 3500);
                 },
                 get pageTitle() {
-                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', accounts: 'Contas & Reservas', cards: 'Cartões de Crédito', reports: 'Relatórios & Previsões', categories: 'Categorias', settings: 'Configurações / Backup' };
+                    const titles = { dashboard: 'Dashboard', transactions: 'Transações', planning: 'Planejamento & Metas', accounts: 'Contas & Reservas', cards: 'Cartões de Crédito', reports: 'Relatórios & Previsões', categories: 'Categorias', settings: 'Configurações / Backup' };
                     return titles[this.activeTab] || 'Dashboard';
                 },
                 get formattedSelectedMonth() {
@@ -493,6 +504,127 @@
                         entry.totalAmount += Number(t.amount) || 0;
                     });
                     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+                },
+                get globalPeriodExpenses() {
+                    return this.transactions.filter(t => {
+                        if (t.type !== 'expense') return false;
+                        if (!this.allMonthsMode) {
+                            const prefix = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`;
+                            if (!t.date || !t.date.startsWith(prefix)) return false;
+                        } else {
+                            if (!t.date || !t.date.startsWith(String(this.selectedYear))) return false;
+                        }
+                        return true;
+                    });
+                },
+                get planningOverview() {
+                    const multiplier = this.allMonthsMode ? 12 : 1;
+                    const expenses = this.globalPeriodExpenses;
+                    const spentByCategory = {};
+                    let totalSpent = 0;
+
+                    expenses.forEach(t => {
+                        const cat = (t.category || 'Outros').trim();
+                        const amt = Number(t.amount) || 0;
+                        spentByCategory[cat] = (spentByCategory[cat] || 0) + amt;
+                        totalSpent += amt;
+                    });
+
+                    const totalLimit = (Number(this.budgets.monthlyTotalLimit) || 0) * multiplier;
+                    const totalRemaining = totalLimit - totalSpent;
+                    const totalPercent = totalLimit > 0 ? (totalSpent / totalLimit) * 100 : 0;
+
+                    const catBudgets = this.budgets.categories || {};
+                    const allNames = new Set([
+                        ...Object.keys(catBudgets),
+                        ...this.allCategoriesWithStats.map(c => c.name)
+                    ]);
+
+                    const items = Array.from(allNames).map(name => {
+                        const monthlyGoal = Number(catBudgets[name]) || 0;
+                        const limit = monthlyGoal * multiplier;
+                        const spent = spentByCategory[name] || 0;
+                        const remaining = limit - spent;
+                        const percent = limit > 0 ? (spent / limit) * 100 : 0;
+                        return {
+                            name,
+                            color: this.getCategoryColor(name),
+                            icon: this.getCategoryIcon(name),
+                            monthlyGoal,
+                            limit,
+                            spent,
+                            remaining,
+                            percent,
+                            hasGoal: monthlyGoal > 0
+                        };
+                    });
+
+                    const configured = items
+                        .filter(i => i.hasGoal)
+                        .sort((a, b) => b.percent - a.percent || b.spent - a.spent);
+                    const unconfigured = items
+                        .filter(i => !i.hasGoal)
+                        .sort((a, b) => b.spent - a.spent);
+
+                    const sumCategoryGoals = configured.reduce((s, i) => s + i.limit, 0);
+
+                    return {
+                        totalLimit,
+                        totalSpent,
+                        totalRemaining,
+                        totalPercent,
+                        sumCategoryGoals,
+                        configured,
+                        unconfigured
+                    };
+                },
+                openTotalBudgetModal() {
+                    this.totalBudgetModal = {
+                        open: true,
+                        amount: this.budgets.monthlyTotalLimit > 0 ? String(this.budgets.monthlyTotalLimit) : ''
+                    };
+                },
+                saveTotalBudget() {
+                    const val = Math.max(0, Number(this.totalBudgetModal.amount) || 0);
+                    this.budgets.monthlyTotalLimit = val;
+                    this.totalBudgetModal.open = false;
+                    this.saveToStorage();
+                    this.showToast(val > 0 ? 'Teto geral mensal atualizado!' : 'Teto geral mensal removido.');
+                },
+                openCategoryBudgetModal(catName = '') {
+                    const defaultCat = catName || (this.planningOverview.unconfigured[0]?.name || this.allCategoriesWithStats[0]?.name || 'Alimentação');
+                    const currentVal = Number((this.budgets.categories || {})[defaultCat]) || 0;
+                    this.budgetModal = {
+                        open: true,
+                        categoryName: defaultCat,
+                        amount: currentVal > 0 ? String(currentVal) : ''
+                    };
+                },
+                onBudgetCategorySelectChange() {
+                    const currentVal = Number((this.budgets.categories || {})[this.budgetModal.categoryName]) || 0;
+                    this.budgetModal.amount = currentVal > 0 ? String(currentVal) : '';
+                },
+                saveCategoryBudget() {
+                    const name = (this.budgetModal.categoryName || '').trim();
+                    if (!name) return;
+                    const val = Math.max(0, Number(this.budgetModal.amount) || 0);
+                    if (!this.budgets.categories) this.budgets.categories = {};
+                    if (val > 0) {
+                        this.budgets.categories[name] = val;
+                        this.showToast(`Meta de ${name} salva (${this.formatCurrency(val)}/mês)!`);
+                    } else {
+                        delete this.budgets.categories[name];
+                        this.showToast(`Meta de ${name} removida.`);
+                    }
+                    this.budgetModal.open = false;
+                    this.saveToStorage();
+                },
+                removeCategoryBudget(catName) {
+                    if (this.budgets.categories && catName in this.budgets.categories) {
+                        delete this.budgets.categories[catName];
+                        this.saveToStorage();
+                        this.showToast(`Meta de ${catName} removida.`);
+                    }
                 },
                 openCategoryModal(cat = null) {
                     if (cat) {
@@ -1532,6 +1664,7 @@
                             const cloudCards = Array.isArray(data.cards) ? data.cards : [];
                             const cloudAccounts = Array.isArray(data.accounts) ? data.accounts : [];
                             const cloudCategories = Array.isArray(data.categories) ? data.categories : null;
+                            const cloudBudgets = data.budgets && typeof data.budgets === 'object' ? data.budgets : null;
                             const cloudUpdated = Number(data.updatedAt) || 0;
                             
                             if (cloudUpdated >= this.localUpdatedAt || this.transactions.length === 0) {
@@ -1539,11 +1672,18 @@
                                 if (Array.isArray(data.cards)) this.cards = cloudCards;
                                 if (Array.isArray(data.accounts)) this.accounts = cloudAccounts;
                                 if (cloudCategories && cloudCategories.length > 0) this.categoriesList = cloudCategories;
+                                if (cloudBudgets) {
+                                    this.budgets = {
+                                        monthlyTotalLimit: Number(cloudBudgets.monthlyTotalLimit) || 0,
+                                        categories: cloudBudgets.categories && typeof cloudBudgets.categories === 'object' ? cloudBudgets.categories : {}
+                                    };
+                                }
                                 this.localUpdatedAt = cloudUpdated;
                                 localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                                 localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                                 localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                                 localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
+                                localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
                                 localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             } else {
                                 await this.pushToCloud();
@@ -1577,6 +1717,7 @@
                                 cards: this.cards,
                                 accounts: this.accounts,
                                 categories: this.categoriesList,
+                                budgets: this.budgets,
                                 isEmpty: this.transactions.length === 0,
                                 updatedAt: ts
                             })
@@ -1598,11 +1739,18 @@
                             if (Array.isArray(data.cards)) this.cards = data.cards;
                             if (Array.isArray(data.accounts)) this.accounts = data.accounts;
                             if (Array.isArray(data.categories) && data.categories.length > 0) this.categoriesList = data.categories;
+                            if (data.budgets && typeof data.budgets === 'object') {
+                                this.budgets = {
+                                    monthlyTotalLimit: Number(data.budgets.monthlyTotalLimit) || 0,
+                                    categories: data.budgets.categories && typeof data.budgets.categories === 'object' ? data.budgets.categories : {}
+                                };
+                            }
                             this.localUpdatedAt = cloudUpdated;
                             localStorage.setItem('paulo_isabela_transactions_v1', JSON.stringify(this.transactions));
                             localStorage.setItem('paulo_isabela_cards_v1', JSON.stringify(this.cards));
                             localStorage.setItem('paulo_isabela_accounts_v1', JSON.stringify(this.accounts));
                             localStorage.setItem('paulo_isabela_categories_v1', JSON.stringify(this.categoriesList));
+                            localStorage.setItem('paulo_isabela_budgets_v1', JSON.stringify(this.budgets));
                             localStorage.setItem('paulo_isabela_updated_at', String(this.localUpdatedAt));
                             this.renderAllCharts();
                         }
@@ -1717,6 +1865,10 @@
             <button @click="switchTab('transactions')" :class="activeTab === 'transactions' ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'text-gray-400 hover:bg-[#25252d] hover:text-white'" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
                 <i class="fa-solid fa-list-ul w-5 text-center"></i>
                 <span>Transações</span>
+            </button>
+            <button @click="switchTab('planning')" :class="activeTab === 'planning' ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'text-gray-400 hover:bg-[#25252d] hover:text-white'" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
+                <i class="fa-solid fa-flag w-5 text-center"></i>
+                <span>Planejamento</span>
             </button>
             <button @click="switchTab('accounts')" :class="activeTab === 'accounts' ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'text-gray-400 hover:bg-[#25252d] hover:text-white'" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
                 <i class="fa-solid fa-building-columns w-5 text-center"></i>
@@ -1967,181 +2119,306 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Resumo de Cartões de Crédito no Dashboard -->
+                <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 md:p-6 space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                                <i class="fa-solid fa-credit-card text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white leading-tight">Cartões de crédito</h3>
+                                <p class="text-[11px] text-gray-400" x-text="'Faturas de ' + (allMonthsMode ? 'Ano ' + selectedYear : formattedSelectedMonth)"></p>
+                            </div>
+                        </div>
+                        <button @click="filteredCardsSummary.length > 0 ? switchTab('cards') : openCardModal()"
+                                class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+                            <span x-text="filteredCardsSummary.length > 0 ? 'Gerenciar' : '+ Cadastrar'"></span>
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <template x-if="filteredCardsSummary.length === 0">
+                        <div class="py-6 text-center space-y-2.5 bg-[#121216] border border-[#2c2c35] rounded-xl p-4">
+                            <p class="text-xs text-gray-400">Nenhum cartão cadastrado para este filtro.</p>
+                            <button @click="openCardModal()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                                + Adicionar Cartão
+                            </button>
+                        </div>
+                    </template>
+
+                    <div x-show="filteredCardsSummary.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        <template x-for="card in filteredCardsSummary" :key="card.id">
+                            <div @click="navigateToCardTransactions(card.id)"
+                                 class="cursor-pointer bg-[#121216] hover:bg-[#222229] border border-[#2c2c35] rounded-xl p-4 space-y-3 transition">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-[11px] shrink-0 shadow"
+                                             :style="'background-color:' + (card.color || getBankInfo(card.bank).color)"
+                                             x-text="getBankInfo(card.bank).short"></div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-bold text-white truncate" x-text="card.name"></p>
+                                            <p class="text-[11px] text-gray-400">Vence dia <strong class="text-gray-300" x-text="card.dueDay"></strong></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click.stop="openModalForCard(card.id)"
+                                            class="w-7 h-7 rounded-lg bg-purple-600/20 hover:bg-purple-600/35 text-purple-300 flex items-center justify-center shrink-0 transition"
+                                            title="Lançar compra neste cartão">
+                                        <i class="fa-solid fa-plus text-xs"></i>
+                                    </button>
+                                </div>
+
+                                <div class="flex items-end justify-between">
+                                    <div>
+                                        <p class="text-[11px] text-gray-400">Fatura atual</p>
+                                        <p class="text-base font-bold text-purple-400" x-text="formatCurrency(card.periodTotal)"></p>
+                                    </div>
+                                    <div class="text-right" x-show="card.limit > 0">
+                                        <p class="text-[11px] text-gray-400">Limite disp.</p>
+                                        <p class="text-xs font-semibold" :class="card.availableLimit >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(card.availableLimit)"></p>
+                                    </div>
+                                </div>
+
+                                <div x-show="card.limit > 0" class="space-y-1">
+                                    <div class="w-full h-1.5 bg-[#1c1c22] rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all"
+                                             :class="card.limitPercent > 85 ? 'bg-red-500' : (card.limitPercent > 60 ? 'bg-amber-500' : 'bg-purple-500')"
+                                             :style="'width:' + Math.min(100, Math.max(0, card.limitPercent)) + '%'"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[10px] text-gray-500">
+                                        <span x-text="Math.round(Math.max(0, card.limitPercent)) + '% usado'"></span>
+                                        <span x-text="'Limite: ' + formatCurrency(card.limit)"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Resumo de Planejamento / Orçamento no Dashboard -->
+                <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 md:p-6 space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                                <i class="fa-solid fa-flag text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white leading-tight">Planejamento & Orçamento</h3>
+                                <p class="text-[11px] text-gray-400" x-text="'Metas globais da família • ' + (allMonthsMode ? 'Ano ' + selectedYear : formattedSelectedMonth)"></p>
+                            </div>
+                        </div>
+                        <button @click="switchTab('planning')" class="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+                            <span>Gerenciar metas</span>
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <template x-if="planningOverview.totalLimit === 0 && planningOverview.configured.length === 0">
+                        <div class="py-5 text-center space-y-2.5 bg-[#121216] border border-[#2c2c35] rounded-xl p-4">
+                            <p class="text-xs text-gray-400">Defina um teto mensal de gastos e metas por categoria para acompanhar o orçamento do casal.</p>
+                            <button @click="switchTab('planning')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                                Configurar Orçamento
+                            </button>
+                        </div>
+                    </template>
+
+                    <div x-show="planningOverview.totalLimit > 0 || planningOverview.configured.length > 0" class="space-y-4">
+                        <div x-show="planningOverview.totalLimit > 0" class="bg-[#121216] border border-[#2c2c35] rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-300 font-semibold">Teto Geral de Despesas</span>
+                                <span class="font-bold" :class="planningOverview.totalRemaining >= 0 ? 'text-emerald-400' : 'text-red-400'"
+                                      x-text="planningOverview.totalRemaining >= 0 ? 'Restam ' + formatCurrency(planningOverview.totalRemaining) : 'Excedido em ' + formatCurrency(Math.abs(planningOverview.totalRemaining))"></span>
+                            </div>
+                            <div class="w-full h-2.5 bg-[#1c1c22] rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all"
+                                     :class="planningOverview.totalPercent > 100 ? 'bg-red-500' : (planningOverview.totalPercent > 80 ? 'bg-amber-500' : 'bg-emerald-500')"
+                                     :style="'width:' + Math.min(100, Math.max(0, planningOverview.totalPercent)) + '%'"></div>
+                            </div>
+                            <div class="flex justify-between text-[11px] text-gray-400">
+                                <span>Gasto global: <strong class="text-white" x-text="formatCurrency(planningOverview.totalSpent)"></strong> (<span x-text="Math.round(planningOverview.totalPercent)"></span>%)</span>
+                                <span>Teto: <strong class="text-white" x-text="formatCurrency(planningOverview.totalLimit)"></strong></span>
+                            </div>
+                        </div>
+
+                        <div x-show="planningOverview.configured.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <template x-for="item in planningOverview.configured.slice(0, 6)" :key="item.name">
+                                <div @click="switchTab('planning')" class="cursor-pointer bg-[#121216] hover:bg-[#222229] border border-[#2c2c35] rounded-xl p-3.5 space-y-2 transition">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] shrink-0" :style="'background-color:' + item.color">
+                                                <i class="fa-solid" :class="item.icon"></i>
+                                            </span>
+                                            <span class="text-xs font-semibold text-white truncate" x-text="item.name"></span>
+                                        </div>
+                                        <span class="text-[11px] font-bold shrink-0" :class="item.percent > 100 ? 'text-red-400' : (item.percent > 80 ? 'text-amber-400' : 'text-emerald-400')" x-text="Math.round(item.percent) + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-[#1c1c22] rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full"
+                                             :class="item.percent > 100 ? 'bg-red-500' : (item.percent > 80 ? 'bg-amber-500' : 'bg-purple-500')"
+                                             :style="'width:' + Math.min(100, Math.max(0, item.percent)) + '%'"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[10px] text-gray-400">
+                                        <span x-text="formatCurrency(item.spent) + ' de ' + formatCurrency(item.limit)"></span>
+                                        <span :class="item.remaining >= 0 ? 'text-gray-300' : 'text-red-400 font-semibold'" x-text="item.remaining >= 0 ? 'Livre: ' + formatCurrency(item.remaining) : '+' + formatCurrency(Math.abs(item.remaining))"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- ==================== TAB: TRANSAÇÕES ==================== -->
-            <div x-show="activeTab === 'transactions'" class="space-y-4">
-                <!-- Filter & Search Bar -->
-                <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-4 space-y-3">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label class="hidden md:flex items-center gap-2 bg-[#121216] border border-[#2c2c35] px-3 py-2 rounded-xl cursor-pointer select-none">
-                            <input type="checkbox" :checked="isAllFilteredSelected" @change="toggleSelectAllFiltered()" class="w-4 h-4 rounded accent-purple-600">
-                            <span class="text-xs font-semibold text-gray-200">Todas</span>
-                        </label>
-                        <button type="button" @click="mobileSelectionMode = !mobileSelectionMode; if(!mobileSelectionMode) selectedTxIds = []"
-                                :class="mobileSelectionMode ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#121216] text-gray-300 border-[#2c2c35]'"
-                                class="md:hidden flex items-center gap-1.5 border px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition">
-                            <i class="fa-solid fa-check-double"></i>
-                            <span x-text="mobileSelectionMode ? 'Cancelar' : 'Selecionar'"></span>
+            <!-- ==================== TAB: PLANEJAMENTO & METAS ==================== -->
+            <div x-show="activeTab === 'planning'" class="space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Planejamento & Orçamento Mensal</h3>
+                        <p class="text-xs text-gray-400">Metas globais recorrentes para toda a família (despesas efetivadas e pendentes).</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button @click="openTotalBudgetModal()" class="px-4 py-2.5 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] border border-[#363644] text-white text-xs font-semibold flex items-center gap-2 transition">
+                            <i class="fa-solid fa-gauge-high text-amber-400"></i> Definir Teto Geral
                         </button>
-                        <button type="button" x-show="mobileSelectionMode" @click="toggleSelectAllFiltered()"
-                                class="md:hidden bg-[#121216] border border-[#2c2c35] text-purple-300 px-3 py-2 rounded-xl text-xs font-semibold shrink-0">
-                            <span x-text="isAllFilteredSelected ? 'Desmarcar' : 'Todas'"></span>
+                        <button @click="openCategoryBudgetModal()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-2 transition">
+                            <i class="fa-solid fa-plus"></i> Meta por Categoria
                         </button>
-                        <div class="relative flex-1 min-w-[180px]">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                            <input type="text" x-model="searchQuery" placeholder="Buscar por descrição, categoria..." class="w-full bg-[#121216] border border-[#2c2c35] text-sm text-white rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-purple-500">
+                    </div>
+                </div>
+
+                <!-- Card Principal: Teto Geral de Despesas -->
+                <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 md:p-6 space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-shield-halved text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-base font-bold text-white">Teto Geral de Despesas (<span x-text="allMonthsMode ? 'Ano ' + selectedYear : formattedSelectedMonth"></span>)</h4>
+                                <p class="text-xs text-gray-400">Soma todas as despesas da família no período (independente das reservas).</p>
+                            </div>
+                        </div>
+                        <button @click="openTotalBudgetModal()" class="px-3 py-1.5 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] text-purple-300 text-xs font-semibold shrink-0 transition">
+                            <i class="fa-solid fa-pen mr-1"></i> <span x-text="planningOverview.totalLimit > 0 ? 'Editar Teto' : 'Definir Teto'"></span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="bg-[#121216] border border-[#2c2c35] rounded-xl p-4">
+                            <p class="text-xs text-gray-400">Total Gasto no Período</p>
+                            <p class="text-xl font-bold text-red-400 mt-1" x-text="formatCurrency(planningOverview.totalSpent)"></p>
+                        </div>
+                        <div class="bg-[#121216] border border-[#2c2c35] rounded-xl p-4">
+                            <p class="text-xs text-gray-400">Teto Geral Definido</p>
+                            <p class="text-xl font-bold text-white mt-1" x-text="planningOverview.totalLimit > 0 ? formatCurrency(planningOverview.totalLimit) : 'Não definido'"></p>
+                            <p x-show="planningOverview.sumCategoryGoals > 0" class="text-[11px] text-gray-500 mt-1">Soma das categorias: <span x-text="formatCurrency(planningOverview.sumCategoryGoals)"></span></p>
+                        </div>
+                        <div class="bg-[#121216] border border-[#2c2c35] rounded-xl p-4">
+                            <p class="text-xs text-gray-400">Saldo Disponível no Teto</p>
+                            <p class="text-xl font-bold mt-1"
+                               :class="planningOverview.totalLimit === 0 ? 'text-gray-500' : (planningOverview.totalRemaining >= 0 ? 'text-emerald-400' : 'text-red-400')"
+                               x-text="planningOverview.totalLimit > 0 ? formatCurrency(planningOverview.totalRemaining) : '-'"></p>
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-1.5 bg-[#121216] p-1 rounded-xl border border-[#2c2c35] overflow-x-auto">
-                            <button @click="filterType = 'todos'" :class="filterType === 'todos' ? 'bg-purple-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs transition">Todas</button>
-                            <button @click="filterType = 'income'" :class="filterType === 'income' ? 'bg-emerald-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs transition">Receitas</button>
-                            <button @click="filterType = 'expense'" :class="filterType === 'expense' ? 'bg-red-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs transition">Despesas</button>
-                            <button @click="filterType = 'transfer'" :class="filterType === 'transfer' ? 'bg-cyan-600 text-white font-semibold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg text-xs transition">Transferências</button>
+                    <div x-show="planningOverview.totalLimit > 0" class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-400">Comprometimento do teto geral</span>
+                            <span class="font-bold" :class="planningOverview.totalPercent > 100 ? 'text-red-400' : (planningOverview.totalPercent > 80 ? 'text-amber-400' : 'text-emerald-400')" x-text="planningOverview.totalPercent.toFixed(1) + '%'"></span>
                         </div>
-
-                        <div x-show="filterCategory" class="flex items-center gap-2 bg-purple-600/20 border border-purple-500/40 text-purple-300 px-3 py-1 rounded-full text-xs">
-                            <span>Categoria: <strong x-text="filterCategory"></strong></span>
-                            <button @click="filterCategory = ''" class="hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    </div>
-
-                    <!-- Bulk Actions Bar -->
-                    <div x-show="selectedTxIds.length > 0" x-cloak class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#2c2c35]">
-                        <span class="text-xs font-semibold text-purple-400"><span x-text="selectedTxIds.length"></span> selecionada(s)</span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button @click="bulkUpdateStatus('completed')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
-                                <i class="fa-solid fa-check"></i> Efetivar
-                            </button>
-                            <button @click="bulkUpdateStatus('pending')" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
-                                <i class="fa-regular fa-clock"></i> Pendente
-                            </button>
-                            <button @click="promptBulkDelete()" class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
-                                <i class="fa-solid fa-trash"></i> Excluir
-                            </button>
-                            <button @click="selectedTxIds = []; mobileSelectionMode = false" class="px-2.5 py-1.5 rounded-xl bg-[#25252d] text-gray-300 text-xs">Limpar</button>
+                        <div class="w-full h-3 bg-[#121216] rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all"
+                                 :class="planningOverview.totalPercent > 100 ? 'bg-red-500' : (planningOverview.totalPercent > 80 ? 'bg-amber-500' : 'bg-gradient-to-r from-purple-600 to-emerald-400')"
+                                 :style="'width:' + Math.min(100, Math.max(0, planningOverview.totalPercent)) + '%'"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Daily Grouped List -->
-                <template x-if="groupedDailyTransactions.length === 0">
-                    <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-12 text-center text-gray-500 text-sm">
-                        Nenhum lançamento encontrado para os filtros atuais.
-                    </div>
-                </template>
+                <!-- Lista de Categorias com Orçamento Definido -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span>Orçamento por Categoria</span>
+                        <span class="px-2 py-0.5 rounded-full bg-purple-600/20 text-purple-300 text-xs" x-text="planningOverview.configured.length"></span>
+                    </h4>
 
-                <div class="space-y-4">
-                    <template x-for="group in groupedDailyTransactions" :key="group.date">
-                        <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl overflow-hidden">
-                            <!-- Day Header -->
-                            <div class="bg-[#23232b] px-4 py-2.5 flex items-center justify-between border-b border-[#2c2c35]">
-                                <span class="md:hidden text-sm font-bold text-white" x-text="formatMobileDateHeader(group.date)"></span>
-                                <span class="hidden md:inline text-sm font-bold text-white" x-text="formatDateHeader(group.date)"></span>
-                                <span class="text-[11px] md:text-xs text-gray-400">Movimento: <strong :class="group.daySubtotal >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(group.daySubtotal)"></strong></span>
-                            </div>
-
-                            <!-- Items -->
-                            <div class="divide-y divide-[#2c2c35]">
-                                <template x-for="tx in group.items" :key="tx.id">
-                                    <div>
-                                        <!-- MOBILE ROW (Clean Mobills-style layout, full readable description) -->
-                                        <div @click="mobileSelectionMode ? toggleSelectTx(tx.id) : openModal(tx)"
-                                             class="md:hidden px-3.5 py-3 flex items-center justify-between gap-2.5 active:bg-[#25252d] transition cursor-pointer">
-                                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                                <input x-show="mobileSelectionMode" type="checkbox" :checked="selectedTxIds.includes(tx.id)" @click.stop="toggleSelectTx(tx.id)" class="w-4 h-4 rounded accent-purple-600 shrink-0">
-
-                                                <!-- Circular Category Icon -->
-                                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm shrink-0"
-                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
-                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
-                                                </div>
-
-                                                <!-- Description + Category | Account -->
-                                                <div class="min-w-0 flex-1">
-                                                    <p class="text-[13px] font-semibold text-gray-100 leading-snug break-words" x-text="tx.description"></p>
-                                                    <p class="text-[11px] text-gray-400 mt-0.5 truncate">
-                                                        <span x-text="tx.type === 'transfer' ? 'Transferência' : tx.category"></span>
-                                                        <span class="mx-1 text-gray-600">|</span>
-                                                        <span x-text="tx.account || 'Carteira'"></span>
-                                                        <span x-show="tx.user && tx.user !== 'Compartilhado'" class="text-purple-400 ml-1" x-text="'• ' + tx.user"></span>
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <!-- Right Side: Amount + Status Pin Toggle -->
-                                            <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
-                                                <span class="text-[13px] font-bold tracking-tight"
-                                                      :class="tx.type === 'transfer' ? 'text-cyan-400' : (tx.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
-                                                      x-text="formatCurrency(tx.amount)"></span>
-                                                <button type="button" @click.stop="toggleStatus(tx.id)"
-                                                        class="w-5 h-5 rounded-full flex items-center justify-center transition"
-                                                        :class="tx.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'"
-                                                        :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
-                                                    <i class="fa-solid text-[9px]" :class="tx.status === 'completed' ? 'fa-check' : 'fa-thumbtack'"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <!-- DESKTOP ROW (Unchanged) -->
-                                        <div class="hidden md:flex px-5 py-3.5 items-center justify-between gap-3 hover:bg-[#222229] transition">
-                                            <div class="flex items-center gap-3 min-w-0">
-                                                <input type="checkbox" :checked="selectedTxIds.includes(tx.id)" @change="toggleSelectTx(tx.id)" class="w-4 h-4 rounded accent-purple-600 shrink-0">
-
-                                                <!-- Status Toggle -->
-                                                <button @click="toggleStatus(tx.id)" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition"
-                                                        :class="tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'"
-                                                        :title="tx.status === 'completed' ? 'Efetivado' : 'Pendente'">
-                                                    <i class="fa-solid text-xs" :class="tx.status === 'completed' ? 'fa-check' : 'fa-exclamation'"></i>
-                                                </button>
-
-                                                <!-- Category Icon -->
-                                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs shrink-0"
-                                                     :style="'background-color:' + (tx.type === 'transfer' ? '#06b6d4' : getCategoryColor(tx.category))">
-                                                    <i class="fa-solid" :class="tx.type === 'transfer' ? 'fa-arrow-right-arrow-left' : getCategoryIcon(tx.category)"></i>
-                                                </div>
-
-                                                <!-- Info -->
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-white truncate" x-text="tx.description"></p>
-                                                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
-                                                        <span x-text="tx.type === 'transfer' ? 'Transferência' : tx.category"></span>
-                                                        <span>•</span>
-                                                        <span x-text="tx.account || 'Carteira'"></span>
-                                                        <span x-show="tx.user && tx.user !== 'Compartilhado'" class="px-1.5 py-0.2 rounded bg-[#2c2c35] text-gray-300" x-text="tx.user"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Amount & Actions -->
-                                            <div class="flex items-center gap-3 shrink-0">
-                                                <span class="text-sm font-bold"
-                                                      :class="tx.type === 'transfer' ? 'text-cyan-400' : (tx.type === 'income' ? 'text-emerald-400' : 'text-red-400')"
-                                                      x-text="formatCurrency(tx.amount)"></span>
-                                                <button @click="openModal(tx)" class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2c2c35] transition" title="Editar">
-                                                    <i class="fa-solid fa-pen text-xs"></i>
-                                                </button>
-                                                <button @click="promptDelete(tx)" class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#2c2c35] transition" title="Excluir">
-                                                    <i class="fa-solid fa-trash text-xs"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <!-- Day Projected Balance Footer -->
-                            <div class="bg-[#18181e] px-4 py-2.5 flex justify-center border-t border-[#2c2c35]">
-                                <span class="px-4 py-1.5 rounded-full bg-[#25252d] border border-[#363644] text-xs md:text-sm text-gray-200 font-medium shadow-sm flex items-center gap-1.5">
-                                    <i class="fa-solid fa-wallet text-purple-400 text-xs"></i>
-                                    <span>Saldo Previsto Final do Dia</span>
-                                    <strong class="font-bold tracking-tight ml-0.5" :class="group.runningBalance >= 0 ? 'text-cyan-300' : 'text-red-400'" x-text="formatCurrency(group.runningBalance)"></strong>
-                                </span>
-                            </div>
+                    <template x-if="planningOverview.configured.length === 0">
+                        <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-10 text-center space-y-3">
+                            <i class="fa-solid fa-bullseye text-3xl text-purple-400"></i>
+                            <p class="text-sm text-gray-300 font-medium">Nenhuma meta por categoria definida ainda.</p>
+                            <p class="text-xs text-gray-500 max-w-md mx-auto">Escolha categorias como Alimentação, Mercado ou Lazer para acompanhar quanto ainda podem gastar no mês.</p>
+                            <button @click="openCategoryBudgetModal()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                                + Criar Primeira Meta
+                            </button>
                         </div>
                     </template>
+
+                    <div x-show="planningOverview.configured.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <template x-for="item in planningOverview.configured" :key="item.name">
+                            <div class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 space-y-3.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div @click="navigateToCategoryTransactions('expense', item.name)" class="cursor-pointer flex items-center gap-3 min-w-0">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm shrink-0 shadow" :style="'background-color:' + item.color">
+                                            <i class="fa-solid" :class="item.icon"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h5 class="font-bold text-white text-sm truncate" x-text="item.name"></h5>
+                                            <p class="text-[11px] text-gray-400">Meta: <strong class="text-gray-200" x-text="formatCurrency(item.limit)"></strong></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button @click="openCategoryBudgetModal(item.name)" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#25252d] transition" title="Editar meta">
+                                            <i class="fa-solid fa-pen text-xs"></i>
+                                        </button>
+                                        <button @click="removeCategoryBudget(item.name)" class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#25252d] transition" title="Remover meta">
+                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <div class="flex items-end justify-between text-xs">
+                                        <div>
+                                            <span class="text-gray-400">Gasto: </span>
+                                            <strong class="text-white text-sm" x-text="formatCurrency(item.spent)"></strong>
+                                        </div>
+                                        <span class="font-bold" :class="item.percent > 100 ? 'text-red-400' : (item.percent > 80 ? 'text-amber-400' : 'text-emerald-400')" x-text="item.percent.toFixed(1) + '%'"></span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-[#121216] rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all"
+                                             :class="item.percent > 100 ? 'bg-red-500' : (item.percent > 80 ? 'bg-amber-500' : 'bg-purple-500')"
+                                             :style="'width:' + Math.min(100, Math.max(0, item.percent)) + '%'"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[11px] pt-0.5">
+                                        <span class="text-gray-500" x-text="item.remaining >= 0 ? 'Disponível para gastar' : 'Ultrapassou o limite em'"></span>
+                                        <strong :class="item.remaining >= 0 ? 'text-emerald-400' : 'text-red-400'" x-text="formatCurrency(Math.abs(item.remaining))"></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Categorias sem meta definida (com gasto no período) -->
+                <div x-show="planningOverview.unconfigured.length > 0" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl p-5 space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400">Outras categorias sem meta definida</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        <template x-for="item in planningOverview.unconfigured" :key="item.name">
+                            <div class="bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shrink-0" :style="'background-color:' + item.color">
+                                        <i class="fa-solid" :class="item.icon"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-gray-200 truncate" x-text="item.name"></p>
+                                        <p class="text-[10px] text-gray-500" x-text="item.spent > 0 ? 'Gasto: ' + formatCurrency(item.spent) : 'Sem gastos no período'"></p>
+                                    </div>
+                                </div>
+                                <button @click="openCategoryBudgetModal(item.name)" class="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/35 text-purple-300 text-[11px] font-semibold shrink-0 transition">
+                                    + Meta
+                                </button>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </div>
 
@@ -2533,7 +2810,7 @@
             <i class="fa-solid fa-credit-card text-base"></i>
             <span>Cartões</span>
         </button>
-        <button @click="mobileMoreOpen = !mobileMoreOpen" :class="['accounts','reports','categories','settings'].includes(activeTab) ? 'text-purple-400' : 'text-gray-400'" class="flex flex-col items-center gap-1 py-1 px-2 text-[11px] font-medium">
+        <button @click="mobileMoreOpen = !mobileMoreOpen" :class="['planning','accounts','reports','categories','settings'].includes(activeTab) ? 'text-purple-400' : 'text-gray-400'" class="flex flex-col items-center gap-1 py-1 px-2 text-[11px] font-medium">
             <i class="fa-solid fa-bars text-base"></i>
             <span>Mais</span>
         </button>
@@ -2543,6 +2820,9 @@
     <div x-show="mobileMoreOpen" @click="mobileMoreOpen = false" x-cloak class="md:hidden fixed inset-0 bg-black/70 z-40 flex items-end">
         <div @click.stop class="w-full bg-[#1c1c22] border-t border-[#2c2c35] rounded-t-3xl p-5 space-y-2 pb-8">
             <div class="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-3"></div>
+            <button @click="switchTab('planning'); mobileMoreOpen = false" class="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-[#25252d] text-white text-sm font-medium">
+                <i class="fa-solid fa-flag text-amber-400 w-5"></i> Planejamento & Metas
+            </button>
             <button @click="switchTab('accounts'); mobileMoreOpen = false" class="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-[#25252d] text-white text-sm font-medium">
                 <i class="fa-solid fa-building-columns text-cyan-400 w-5"></i> Contas & Reservas
             </button>
@@ -2867,6 +3147,52 @@
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" @click="categoryModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
                 <button type="button" @click="saveCategory()" class="px-5 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Salvar Categoria</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: TETO GERAL DE DESPESAS ==================== -->
+    <div x-show="totalBudgetModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div @click.away="totalBudgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Teto Geral Mensal</h3>
+                <button @click="totalBudgetModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-gray-400">Defina o limite máximo de despesas mensais da família (deixe 0 para remover).</p>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Valor do Teto Mensal (R$)</label>
+                <input type="number" step="0.01" min="0" x-model="totalBudgetModal.amount" placeholder="Ex: 7500,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="totalBudgetModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                <button type="button" @click="saveTotalBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar Teto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ORÇAMENTO POR CATEGORIA ==================== -->
+    <div x-show="budgetModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div @click.away="budgetModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Meta Mensal por Categoria</h3>
+                <button @click="budgetModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Categoria</label>
+                <select x-model="budgetModal.categoryName" @change="onBudgetCategorySelectChange()" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white">
+                    <template x-for="cat in allCategoriesWithStats" :key="cat.name">
+                        <option :value="cat.name" x-text="cat.name"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Limite Mensal (R$)</label>
+                <input type="number" step="0.01" min="0" x-model="budgetModal.amount" placeholder="Ex: 1200,00" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                <p class="text-[11px] text-gray-500 mt-1">Essa meta valerá automaticamente para todos os meses.</p>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="budgetModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                <button type="button" @click="saveCategoryBudget()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar Meta</button>
             </div>
         </div>
     </div>
