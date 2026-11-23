@@ -266,7 +266,7 @@
                 editingId: null,
                 editScope: 'single',
                 editBatchInfo: { total: 1, future: 1 },
-                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardId: '', installments: 1, fromAccountId: 'wallet', toAccountId: '' },
+                form: { type: 'expense', amount: '', date: new Date().toISOString().split('T')[0], description: '', category: 'Outros', user: 'Compartilhado', account: 'Carteira', status: 'completed', recurrence: 'nenhuma', repeatCount: 12, useCreditCard: false, cardMode: 'installment', cardId: '', installments: 1, fromAccountId: 'wallet', toAccountId: '' },
                 importModal: { open: false, parsedRows: [], replaceExisting: true },
                 deleteModal: { open: false, item: null, card: null, account: null, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 },
                 shortMonthNames: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
@@ -787,24 +787,64 @@
                     const list = this.monthFilteredTransactions;
                     if (!list.length) return [];
 
-                    const dateMap = {};
-                    list.forEach(t => {
+                    const hasActiveFilter = Boolean(
+                        this.filterType !== 'todos' ||
+                        this.filterStatusOnly !== 'all' ||
+                        this.filterCategory ||
+                        this.filterCardId ||
+                        this.searchQuery
+                    );
+
+                    // Calcula o saldo acumulado real dia a dia sobre TODAS as transações do período
+                    // para que filtros de busca/categoria não distorçam o Saldo Previsto Final do Dia
+                    const fullPeriodList = this.basePeriodTransactions;
+                    const fullDateMap = {};
+                    fullPeriodList.forEach(t => {
                         const d = t.date || 'Sem data';
-                        if (!dateMap[d]) dateMap[d] = [];
-                        dateMap[d].push(t);
+                        if (!fullDateMap[d]) fullDateMap[d] = [];
+                        fullDateMap[d].push(t);
                     });
 
-                    const ascDates = Object.keys(dateMap).sort((a, b) => a.localeCompare(b));
-                    let running = this.priorAccumulatedBalances.priorProjectedBalance;
-                    const computed = ascDates.map(d => {
-                        const items = dateMap[d];
-                        const daySubtotal = items.reduce((acc, t) => {
+                    const allAscDates = Object.keys(fullDateMap).sort((a, b) => a.localeCompare(b));
+                    let running = this.priorAccumulatedBalances.baseStartingBalance;
+                    const runningByDate = {};
+                    const subtotalByDate = {};
+
+                    allAscDates.forEach(d => {
+                        const dayItems = fullDateMap[d];
+                        const daySub = dayItems.reduce((acc, t) => {
                             const amt = Number(t.amount) || 0;
                             if (t.type === 'transfer') return acc + this.getTransferWalletEffect(t);
                             return acc + (t.type === 'income' ? amt : -amt);
                         }, 0);
-                        running += daySubtotal;
-                        return { date: d, items, daySubtotal, runningBalance: running };
+                        running += daySub;
+                        subtotalByDate[d] = daySub;
+                        runningByDate[d] = running;
+                    });
+
+                    const filteredDateMap = {};
+                    list.forEach(t => {
+                        const d = t.date || 'Sem data';
+                        if (!filteredDateMap[d]) filteredDateMap[d] = [];
+                        filteredDateMap[d].push(t);
+                    });
+
+                    const ascDates = Object.keys(filteredDateMap).sort((a, b) => a.localeCompare(b));
+                    const computed = ascDates.map(d => {
+                        const items = filteredDateMap[d];
+                        const daySubtotal = hasActiveFilter
+                            ? items.reduce((acc, t) => {
+                                const amt = Number(t.amount) || 0;
+                                if (t.type === 'transfer') return acc + this.getTransferWalletEffect(t);
+                                return acc + (t.type === 'income' ? amt : -amt);
+                            }, 0)
+                            : (subtotalByDate[d] || 0);
+                        return {
+                            date: d,
+                            items,
+                            daySubtotal,
+                            runningBalance: runningByDate[d] ?? 0
+                        };
                     });
 
                     return computed.reverse();
@@ -1117,10 +1157,12 @@
                         despesasConcluidas: expConc,
                         balancoMensal: bal,
                         saldoAtual: prior.priorCompletedBalance + (incConc - expConc + transferEffectCompleted),
-                        saldoPrevistoMes: prior.priorProjectedBalance + (bal + transferEffectAll)
+                        saldoPrevistoMes: prior.baseStartingBalance + (bal + transferEffectAll)
                     };
                 },
                 get priorAccumulatedBalances() {
+                    const now = new Date();
+                    const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
                     const cutoffDate = this.allMonthsMode
                         ? `${this.selectedYear}-01-01`
                         : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
@@ -1138,13 +1180,18 @@
                         else if (t.type === 'income') delta = amt;
                         else delta = -amt;
 
-                        priorProjected += delta;
                         if (t.status === 'completed') priorCompleted += delta;
+
+                        // Pendências antigas vencidas antes do mês atual não inflam/distorcem o saldo previsto do mês atual (padrão Mobills)
+                        if (t.status === 'completed' || t.date >= currentMonthStart) {
+                            priorProjected += delta;
+                        }
                     });
 
                     return {
                         priorCompletedBalance: priorCompleted,
-                        priorProjectedBalance: priorProjected
+                        priorProjectedBalance: priorProjected,
+                        baseStartingBalance: cutoffDate <= currentMonthStart ? priorCompleted : priorProjected
                     };
                 },
                 getTransferWalletEffect(t) {
@@ -1269,11 +1316,13 @@
                 },
                 get filteredCardsSummary() {
                     const now = new Date();
-                    const currentMonthCutoff = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+                    const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+                    const currentMonthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-31`;
                     const selectedMonthCutoff = this.allMonthsMode
                         ? `${this.selectedYear}-01-01`
                         : `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-01`;
-                    const effectiveCutoff = selectedMonthCutoff > currentMonthCutoff ? selectedMonthCutoff : currentMonthCutoff;
+                    const effectiveCutoff = selectedMonthCutoff > currentMonthStart ? selectedMonthCutoff : currentMonthStart;
+                    const activeInvoiceEnd = effectiveCutoff.slice(0, 7) + '-31';
 
                     return this.cards.filter(c => this.selectedUserFilter === 'Todos' || c.user === this.selectedUserFilter).map(card => {
                         const periodItems = this.basePeriodTransactions.filter(t => t.cardId === card.id);
@@ -1281,7 +1330,13 @@
                         const pendingTotal = periodItems.filter(t => t.status !== 'completed').reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         
                         const totalCommitted = this.transactions
-                            .filter(t => t.cardId === card.id && t.status !== 'completed' && (!t.date || t.date >= effectiveCutoff))
+                            .filter(t => {
+                                if (t.cardId !== card.id || t.status === 'completed') return false;
+                                if (t.date && t.date < effectiveCutoff) return false;
+                                // Cobranças recorrentes/assinaturas só comprometem o limite da fatura vigente, sem travar meses futuros
+                                if (t.isCardRecurring && t.date && t.date > activeInvoiceEnd) return false;
+                                return true;
+                            })
                             .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
                         const limit = Number(card.limit) || 0;
                         const availableLimit = limit - totalCommitted;
@@ -1309,6 +1364,12 @@
                     if (!card) return '';
                     const n = Math.max(1, Number(this.form.installments) || 1);
                     const firstDue = this.computeCardDueDate(this.form.date, card, 0);
+                    if (this.form.cardMode === 'recurring') {
+                        const lastDue = this.computeCardDueDate(this.form.date, card, n - 1);
+                        return n === 1
+                            ? `Cobrança recorrente única em ${this.formatDateHeader(firstDue)} (não trava limite futuro).`
+                            : `${n} cobranças mensais de ${this.formatCurrency(this.evaluatedFormAmount || 0)} (${this.formatDateHeader(firstDue)} até ${this.formatDateHeader(lastDue)}) — sem travar o limite futuro.`;
+                    }
                     if (n === 1) return `Será lançado na fatura com vencimento em ${this.formatDateHeader(firstDue)}.`;
                     const lastDue = this.computeCardDueDate(this.form.date, card, n - 1);
                     return `1ª parcela vence em ${this.formatDateHeader(firstDue)} e última (${n}/${n}) em ${this.formatDateHeader(lastDue)}.`;
@@ -1802,6 +1863,7 @@
                         return;
                     }
                     this.form.useCreditCard = true;
+                    this.form.cardMode = 'installment';
                     if (!this.form.cardId && this.cards.length > 0) {
                         this.form.cardId = this.cards[0].id;
                     }
@@ -1814,7 +1876,7 @@
                         const futurePeers = peers.filter(p => p.date >= item.date);
                         this.editBatchInfo = { total: peers.length, future: futurePeers.length };
                         this.editScope = 'single';
-                        this.form = { ...item, amount: String(item.amount ?? ''), useCreditCard: !!item.cardId, installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
+                        this.form = { ...item, amount: String(item.amount ?? ''), useCreditCard: !!item.cardId, cardMode: item.isCardRecurring ? 'recurring' : 'installment', installments: 1, fromAccountId: item.fromAccountId || 'wallet', toAccountId: item.toAccountId || '' };
                     } else {
                         this.editingId = null;
                         this.editBatchInfo = { total: 1, future: 1 };
@@ -1831,6 +1893,7 @@
                             recurrence: 'nenhuma',
                             repeatCount: 12,
                             useCreditCard: startInCardMode,
+                            cardMode: 'installment',
                             cardId: startInCardMode && this.cards.length > 0 ? this.cards[0].id : '',
                             installments: 1,
                             fromAccountId: 'wallet',
@@ -1922,10 +1985,11 @@
                             this.showToast('Selecione um cartão de crédito.', 'error');
                             return;
                         }
-                        const installments = Math.max(1, Math.min(48, Number(this.form.installments) || 1));
-                        const totalAmount = Number(this.form.amount);
-                        const baseInstallment = Math.floor((totalAmount / installments) * 100) / 100;
-                        const firstInstallment = Number((totalAmount - baseInstallment * (installments - 1)).toFixed(2));
+                        const isRecurringCard = this.form.cardMode === 'recurring';
+                        const installments = Math.max(1, Math.min(60, Number(this.form.installments) || 1));
+                        const inputAmount = Number(this.form.amount);
+                        const baseInstallment = isRecurringCard ? inputAmount : Math.floor((inputAmount / installments) * 100) / 100;
+                        const firstInstallment = isRecurringCard ? inputAmount : Number((inputAmount - baseInstallment * (installments - 1)).toFixed(2));
                         const seriesId = installments > 1 ? 'ser_cc_' + Date.now() + Math.random().toString(36).substring(2, 6) : undefined;
 
                         for (let i = 0; i < installments; i++) {
@@ -1944,10 +2008,15 @@
                                 user: this.form.user,
                                 account: card.name,
                                 cardId: card.id,
+                                isCardRecurring: isRecurringCard,
                                 status: 'pending'
                             });
                         }
-                        this.showToast(installments > 1 ? `${installments} parcelas lançadas no vencimento do cartão ${card.name}!` : `Compra lançada na fatura do ${card.name}!`);
+                        this.showToast(
+                            isRecurringCard
+                                ? `${installments} cobrança(s) recorrente(s) agendada(s) no ${card.name} (sem travar limite futuro)!`
+                                : (installments > 1 ? `${installments} parcelas lançadas no vencimento do cartão ${card.name}!` : `Compra lançada na fatura do ${card.name}!`)
+                        );
                     } else {
                         const count = Number(this.form.recurrence !== 'nenhuma' ? this.form.repeatCount : 1) || 1;
                         const baseDate = new Date(this.form.date + 'T00:00:00');
@@ -3737,6 +3806,21 @@
 
             <!-- Credit Card Fields -->
             <div x-show="!editingId && form.type === 'expense' && form.useCreditCard" class="bg-purple-950/25 border border-purple-500/30 rounded-xl p-3.5 space-y-3">
+                <div>
+                    <label class="block text-[11px] text-gray-400 mb-1">Modalidade no Cartão</label>
+                    <div class="grid grid-cols-2 gap-1.5 bg-[#121216] p-1 rounded-xl border border-[#2c2c35]">
+                        <button type="button" @click="form.cardMode = 'installment'"
+                                :class="form.cardMode === 'installment' ? 'bg-purple-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                                class="py-1.5 px-2 rounded-lg text-[11px] transition">
+                            Parcelada (trava limite)
+                        </button>
+                        <button type="button" @click="form.cardMode = 'recurring'; if(form.installments <= 1) form.installments = 12"
+                                :class="form.cardMode === 'recurring' ? 'bg-cyan-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                                class="py-1.5 px-2 rounded-lg text-[11px] transition">
+                            Recorrente (não trava limite)
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] text-gray-400 mb-1">Cartão</label>
@@ -3747,11 +3831,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] text-gray-400 mb-1">Parcelas (1x a 48x)</label>
-                        <input type="number" min="1" max="48" x-model="form.installments" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3 py-2 text-xs text-white">
+                        <label class="block text-[11px] text-gray-400 mb-1" x-text="form.cardMode === 'recurring' ? 'Repetir por (meses)' : 'Parcelas (1x a 60x)'"></label>
+                        <input type="number" min="1" max="60" x-model="form.installments" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3 py-2 text-xs text-white">
                     </div>
                 </div>
-                <p x-show="cardInstallmentPreview" class="text-[11px] text-purple-300" x-text="cardInstallmentPreview"></p>
+                <p x-show="cardInstallmentPreview" class="text-[11px]" :class="form.cardMode === 'recurring' ? 'text-cyan-300' : 'text-purple-300'" x-text="cardInstallmentPreview"></p>
             </div>
 
             <!-- Transfer Accounts -->
@@ -3779,7 +3863,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block text-xs text-gray-400" x-text="form.useCreditCard ? 'Valor Total (R$)' : 'Valor (R$)'"></label>
+                        <label class="block text-xs text-gray-400" x-text="form.useCreditCard ? (form.cardMode === 'recurring' ? 'Valor Mensal (R$)' : 'Valor Total (R$)') : 'Valor (R$)'"></label>
                         <button type="button" @click="calcHelperOpen = !calcHelperOpen" class="text-[11px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
                             <i class="fa-solid fa-calculator"></i>
                             <span x-text="calcHelperOpen ? 'Fechar calc.' : 'Calc.'"></span>
