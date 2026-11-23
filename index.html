@@ -180,6 +180,16 @@
                     skipCredits: true,
                     rows: []
                 },
+                payInvoiceModal: {
+                    open: false,
+                    cardId: '',
+                    cardName: '',
+                    amount: 0,
+                    itemsCount: 0,
+                    payDate: new Date().toISOString().split('T')[0],
+                    dueDate: '',
+                    moveItemsToPayDate: true
+                },
                 accountModal: { open: false, editingId: null },
                 accountForm: { bank: 'nubank', name: '', categoryType: 'Reserva de Emergência', user: 'Compartilhado', initialBalance: '', goal: '' },
                 bankList: [
@@ -1688,15 +1698,75 @@
                     this.renderAllCharts();
                     this.showToast(`${toImport.length} compras importadas para a fatura do ${card.name}!`);
                 },
-                payCardInvoice(card) {
+                openPayCardInvoiceModal(card) {
+                    const pendingItems = this.transactions.filter(t => {
+                        if (t.cardId !== card.id || t.status === 'completed') return false;
+                        return this.allMonthsMode
+                            ? (t.date && t.date.startsWith(String(this.selectedYear)))
+                            : (t.date && t.date.startsWith(`${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`));
+                    });
+                    if (pendingItems.length === 0) return;
+
+                    const totalAmount = pendingItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+                    const dueDay = Number(card.dueDay) || 10;
+                    const maxDay = new Date(this.selectedYear, this.selectedMonth + 1, 0).getDate();
+                    const defaultDueDate = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}-${String(Math.min(dueDay, maxDay)).padStart(2, '0')}`;
+
+                    this.payInvoiceModal = {
+                        open: true,
+                        cardId: card.id,
+                        cardName: card.name,
+                        amount: totalAmount,
+                        itemsCount: pendingItems.length,
+                        payDate: new Date().toISOString().split('T')[0],
+                        dueDate: defaultDueDate,
+                        moveItemsToPayDate: true
+                    };
+                },
+                confirmPayCardInvoice() {
+                    const modal = this.payInvoiceModal;
+                    if (!modal.cardId || !modal.payDate) {
+                        this.showToast('Selecione a data do pagamento.', 'error');
+                        return;
+                    }
                     let count = 0;
                     this.transactions.forEach(t => {
-                        if (t.cardId === card.id && t.status !== 'completed') {
+                        if (t.cardId === modal.cardId && t.status !== 'completed') {
                             const matchPeriod = this.allMonthsMode
-                                ? t.date.startsWith(String(this.selectedYear))
-                                : t.date.startsWith(`${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`);
+                                ? (t.date && t.date.startsWith(String(this.selectedYear)))
+                                : (t.date && t.date.startsWith(`${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`));
                             if (matchPeriod) {
+                                if (!t.originalDueDate) t.originalDueDate = t.date;
+                                t.paidDate = modal.payDate;
+                                if (modal.moveItemsToPayDate) {
+                                    t.date = modal.payDate;
+                                }
                                 t.status = 'completed';
+                                count++;
+                            }
+                        }
+                    });
+                    this.payInvoiceModal.open = false;
+                    if (count > 0) {
+                        this.saveToStorage();
+                        this.renderAllCharts();
+                        this.showToast(`Fatura do ${modal.cardName} paga em ${this.formatDateHeader(modal.payDate)} (${count} item(ns))!`);
+                    }
+                },
+                reopenCardInvoice(card) {
+                    let count = 0;
+                    this.transactions.forEach(t => {
+                        if (t.cardId === card.id && t.status === 'completed') {
+                            const matchPeriod = this.allMonthsMode
+                                ? (t.date && t.date.startsWith(String(this.selectedYear)))
+                                : (t.date && t.date.startsWith(`${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, '0')}`));
+                            if (matchPeriod) {
+                                t.status = 'pending';
+                                if (t.originalDueDate) {
+                                    t.date = t.originalDueDate;
+                                    delete t.originalDueDate;
+                                }
+                                delete t.paidDate;
                                 count++;
                             }
                         }
@@ -1704,7 +1774,7 @@
                     if (count > 0) {
                         this.saveToStorage();
                         this.renderAllCharts();
-                        this.showToast(`Fatura do cartão ${card.name} paga (${count} lançamento(s) efetivado(s))!`);
+                        this.showToast(`Fatura do ${card.name} reaberta (${count} lançamento(s) voltou(aram) para pendente)!`);
                     }
                 },
                 navigateToCardTransactions(cardId) {
@@ -3355,7 +3425,12 @@
                                     <button @click="navigateToCardTransactions(card.id)" class="px-3 py-1.5 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] text-gray-200 text-xs font-medium transition">
                                         Ver Itens (<span x-text="card.items.length"></span>)
                                     </button>
-                                    <button x-show="card.pendingTotal > 0" @click="payCardInvoice(card)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+                                    <button x-show="card.items.some(i => i.status === 'completed')" @click="reopenCardInvoice(card)"
+                                            class="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1 transition"
+                                            title="Voltar lançamentos pagos desta fatura para pendente">
+                                        <i class="fa-solid fa-rotate-left"></i> Reabrir Fatura
+                                    </button>
+                                    <button x-show="card.pendingTotal > 0" @click="openPayCardInvoiceModal(card)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
                                         Pagar Fatura
                                     </button>
                                 </div>
@@ -4138,6 +4213,52 @@
                         Importar para Fatura
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: PAGAR FATURA DO CARTÃO ==================== -->
+    <div x-show="payInvoiceModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div @click.away="payInvoiceModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white">Pagar Fatura</h3>
+                    <p class="text-xs text-purple-400 font-semibold" x-text="payInvoiceModal.cardName"></p>
+                </div>
+                <button @click="payInvoiceModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-[#121216] border border-[#2c2c35] rounded-xl p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-400">Valor em aberto (<span x-text="payInvoiceModal.itemsCount"></span> item(ns))</p>
+                    <p class="text-xl font-bold text-emerald-400 mt-0.5" x-text="formatCurrency(payInvoiceModal.amount)"></p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs text-gray-400">Data em que a fatura foi paga *</label>
+                    <button x-show="payInvoiceModal.dueDate" type="button" @click="payInvoiceModal.payDate = payInvoiceModal.dueDate"
+                            class="text-[11px] text-purple-400 hover:text-purple-300 font-semibold">
+                        Usar vencimento (<span x-text="formatDateHeader(payInvoiceModal.dueDate)"></span>)
+                    </button>
+                </div>
+                <input type="date" x-model="payInvoiceModal.payDate" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+            </div>
+
+            <label class="flex items-start gap-2.5 bg-[#121216] border border-[#2c2c35] p-3 rounded-xl cursor-pointer text-xs text-gray-300">
+                <input type="checkbox" x-model="payInvoiceModal.moveItemsToPayDate" class="w-4 h-4 accent-purple-600 mt-0.5 shrink-0">
+                <span>Registrar a saída no extrato na data do pagamento (se você reabrir a fatura depois, a data de vencimento original volta automaticamente).</span>
+            </label>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="payInvoiceModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                <button type="button" @click="confirmPayCardInvoice()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-check"></i> Confirmar Pagamento
+                </button>
             </div>
         </div>
     </div>
