@@ -192,6 +192,17 @@
                 },
                 accountModal: { open: false, editingId: null },
                 accountForm: { bank: 'nubank', name: '', categoryType: 'Reserva de Emergência', user: 'Compartilhado', initialBalance: '', goal: '' },
+                yieldModal: {
+                    open: false,
+                    accountId: '',
+                    accountName: '',
+                    currentBalance: 0,
+                    mode: 'newBalance',
+                    newBalanceInput: '',
+                    yieldAmountInput: '',
+                    date: new Date().toISOString().split('T')[0],
+                    note: 'Rendimento do período'
+                },
                 bankList: [
                     { id: 'nubank', name: 'Nubank', short: 'Nu', color: '#820ad1' },
                     { id: 'itau', name: 'Itaú', short: 'Itaú', color: '#ec7000' },
@@ -1299,6 +1310,61 @@
                 },
                 promptDeleteAccount(acc) {
                     this.deleteModal = { open: true, item: null, card: null, account: acc, category: null, clearAll: false, bulkCount: 0, scope: 'single', seriesCount: 1, futureCount: 1 };
+                },
+                openYieldModal(acc) {
+                    this.yieldModal = {
+                        open: true,
+                        accountId: acc.id,
+                        accountName: acc.name,
+                        currentBalance: Number(acc.currentBalance) || 0,
+                        mode: 'newBalance',
+                        newBalanceInput: '',
+                        yieldAmountInput: '',
+                        date: new Date().toISOString().split('T')[0],
+                        note: 'Rendimento do período'
+                    };
+                },
+                get computedYieldDelta() {
+                    if (this.yieldModal.mode === 'newBalance') {
+                        const raw = String(this.yieldModal.newBalanceInput ?? '').trim();
+                        if (!raw) return null;
+                        const target = this.evaluateAmountExpression(raw);
+                        if (target === null) return null;
+                        return Number((target - (Number(this.yieldModal.currentBalance) || 0)).toFixed(2));
+                    } else {
+                        const raw = String(this.yieldModal.yieldAmountInput ?? '').trim().replace(',', '.');
+                        if (!raw) return null;
+                        const val = parseFloat(raw);
+                        return isNaN(val) ? null : Number(val.toFixed(2));
+                    }
+                },
+                saveAccountYield() {
+                    const delta = this.computedYieldDelta;
+                    if (delta === null || delta === 0) {
+                        this.showToast('Informe um saldo diferente do atual ou um valor de rendimento válido.', 'error');
+                        return;
+                    }
+                    const accIdx = this.accounts.findIndex(a => a.id === this.yieldModal.accountId);
+                    if (accIdx === -1) return;
+
+                    const acc = this.accounts[accIdx];
+                    acc.initialBalance = Number(((Number(acc.initialBalance) || 0) + delta).toFixed(2));
+                    if (!Array.isArray(acc.yieldHistory)) acc.yieldHistory = [];
+                    acc.yieldHistory.unshift({
+                        id: 'yld_' + Date.now(),
+                        date: this.yieldModal.date || new Date().toISOString().split('T')[0],
+                        amount: delta,
+                        resultingBalance: Number(((Number(this.yieldModal.currentBalance) || 0) + delta).toFixed(2)),
+                        note: (this.yieldModal.note || 'Rendimento do período').trim()
+                    });
+
+                    this.yieldModal.open = false;
+                    this.saveToStorage();
+                    this.showToast(
+                        delta > 0
+                            ? `Rendimento de +${this.formatCurrency(delta)} registrado em ${acc.name}!`
+                            : `Reajuste de ${this.formatCurrency(delta)} aplicado em ${acc.name}!`
+                    );
                 },
                 openTransferModal(fromId = 'wallet', toId = '') {
                     if (this.accounts.length === 0) {
@@ -3398,6 +3464,16 @@
                                 <p x-show="acc.projectedBalance !== acc.currentBalance" class="text-xs text-gray-400 mt-0.5">Projetado (com pendentes): <span class="text-gray-200" x-text="formatCurrency(acc.projectedBalance)"></span></p>
                             </div>
 
+                            <!-- Últimos Rendimentos / Reajustes registrados -->
+                            <div x-show="Array.isArray(acc.yieldHistory) && acc.yieldHistory.length > 0" class="bg-[#121216] border border-[#2c2c35] rounded-xl px-3 py-2 flex items-center justify-between text-[11px]">
+                                <span class="text-gray-400 truncate pr-2">
+                                    <i class="fa-solid fa-arrow-trend-up text-amber-400 mr-1"></i>
+                                    Último rendimento (<span x-text="formatDateHeader(acc.yieldHistory?.[0]?.date)"></span>):
+                                </span>
+                                <strong :class="(acc.yieldHistory?.[0]?.amount ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'"
+                                        x-text="((acc.yieldHistory?.[0]?.amount ?? 0) >= 0 ? '+' : '') + formatCurrency(acc.yieldHistory?.[0]?.amount ?? 0)"></strong>
+                            </div>
+
                             <div x-show="acc.goal > 0" class="space-y-1.5">
                                 <div class="flex justify-between text-xs">
                                     <span class="text-gray-400">Meta: <strong class="text-white" x-text="formatCurrency(acc.goal)"></strong></span>
@@ -3408,11 +3484,14 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[#2c2c35]">
-                                <button @click="openTransferModal('wallet', acc.id)" class="py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-                                    <i class="fa-solid fa-plus"></i> Guardar / Aportar
+                            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[#2c2c35]">
+                                <button @click="openTransferModal('wallet', acc.id)" class="py-2 px-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1 transition">
+                                    <i class="fa-solid fa-plus"></i> Aportar
                                 </button>
-                                <button @click="openTransferModal(acc.id, 'wallet')" class="py-2 px-3 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] text-gray-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                                <button @click="openYieldModal(acc)" class="py-2 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1 transition" title="Atualizar saldo pelo app do banco ou lançar rendimento">
+                                    <i class="fa-solid fa-arrow-trend-up"></i> Rendimento
+                                </button>
+                                <button @click="openTransferModal(acc.id, 'wallet')" class="py-2 px-2 rounded-xl bg-[#25252d] hover:bg-[#2f2f39] text-gray-200 text-xs font-semibold flex items-center justify-center gap-1 transition">
                                     <i class="fa-solid fa-arrow-up-from-bracket"></i> Resgatar
                                 </button>
                             </div>
@@ -4089,6 +4168,82 @@
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" @click="accountModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
                 <button type="button" @click="saveAccount()" class="px-5 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-semibold">Salvar Conta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: RENDIMENTO / REAJUSTE DE INVESTIMENTO ==================== -->
+    <div x-show="yieldModal.open" x-cloak class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div @click.away="yieldModal.open = false" class="bg-[#1c1c22] border border-[#2c2c35] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-up text-amber-400"></i>
+                        <span>Rendimento / Reajuste</span>
+                    </h3>
+                    <p class="text-xs text-purple-400 font-semibold" x-text="yieldModal.accountName"></p>
+                </div>
+                <button @click="yieldModal.open = false" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-[#121216] border border-[#2c2c35] rounded-xl p-3.5 flex items-center justify-between">
+                <span class="text-xs text-gray-400">Saldo registrado atualmente:</span>
+                <strong class="text-sm text-white" x-text="formatCurrency(yieldModal.currentBalance)"></strong>
+            </div>
+
+            <!-- Seletor de Modo -->
+            <div class="grid grid-cols-2 gap-1.5 bg-[#121216] p-1 rounded-xl border border-[#2c2c35]">
+                <button type="button" @click="yieldModal.mode = 'newBalance'"
+                        :class="yieldModal.mode === 'newBalance' ? 'bg-amber-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                        class="py-2 px-2 rounded-lg text-xs transition">
+                    Informar Novo Saldo
+                </button>
+                <button type="button" @click="yieldModal.mode = 'yieldAmount'"
+                        :class="yieldModal.mode === 'yieldAmount' ? 'bg-amber-600 text-white font-semibold' : 'text-gray-400 hover:text-white'"
+                        class="py-2 px-2 rounded-lg text-xs transition">
+                    Informar Rendimento (+/-)
+                </button>
+            </div>
+
+            <div x-show="yieldModal.mode === 'newBalance'">
+                <label class="block text-xs text-gray-400 mb-1">Novo Saldo Atual no Banco (R$) *</label>
+                <input type="text" inputmode="decimal" x-model="yieldModal.newBalanceInput" placeholder="Ex: 10095,40"
+                       class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div x-show="yieldModal.mode === 'yieldAmount'">
+                <label class="block text-xs text-gray-400 mb-1">Valor do Rendimento ou Variação (R$) *</label>
+                <input type="text" inputmode="decimal" x-model="yieldModal.yieldAmountInput" placeholder="Ex: 95,40 ou -12,30"
+                       class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+
+            <!-- Prévia automática do cálculo -->
+            <div x-show="computedYieldDelta !== null && computedYieldDelta !== 0"
+                 class="bg-[#121216] border rounded-xl p-3.5 flex items-center justify-between text-xs"
+                 :class="computedYieldDelta >= 0 ? 'border-emerald-600/40' : 'border-red-600/40'">
+                <span class="text-gray-300" x-text="computedYieldDelta >= 0 ? 'Rendimento líquido calculado:' : 'Variação negativa calculada:'"></span>
+                <strong class="text-sm" :class="computedYieldDelta >= 0 ? 'text-emerald-400' : 'text-red-400'"
+                        x-text="(computedYieldDelta >= 0 ? '+' : '') + formatCurrency(computedYieldDelta)"></strong>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Data de Referência</label>
+                    <input type="date" x-model="yieldModal.date" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Observação</label>
+                    <input type="text" x-model="yieldModal.note" placeholder="Ex: CDI Novembro" class="w-full bg-[#121216] border border-[#2c2c35] rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+            </div>
+
+            <p class="text-[11px] text-gray-500">Este ajuste atualiza diretamente o patrimônio desta reserva/investimento, sem movimentar a Carteira do dia a dia.</p>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="yieldModal.open = false" class="px-4 py-2.5 rounded-xl bg-[#25252d] text-gray-300 text-xs font-semibold">Cancelar</button>
+                <button type="button" @click="saveAccountYield()" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition">
+                    Atualizar Saldo
+                </button>
             </div>
         </div>
     </div>
